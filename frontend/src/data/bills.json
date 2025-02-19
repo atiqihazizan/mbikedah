@@ -1,493 +1,429 @@
 [
-	{
-		"id": 1,
-		"issue_at": "2025-02-01",
-		"no_project": "P001",
-		"issue_to": "Finance",
-		"issue_desc": "Pengadaan alat tulis",
-		"total": 1500,
-		"status":0,
-		"payment_type":0,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Office",
-				"desc": "Pulpen",
-				"ref": "ABC123",
-				"qty": "10",
-				"price": "50",
-				"amount": 500
-			},
-			{
-				"id": 2,
-				"budget": "Office",
-				"desc": "Kertas A4",
-				"ref": "XYZ789",
-				"qty": "5",
-				"price": "200",
-				"amount": 1000
-			},
-			{
-				"id": 3,
-				"budget": "Office",
-				"desc": "Spidol",
-				"ref": "SP123",
-				"qty": "3",
-				"price": "50",
-				"amount": 150
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 2,
-		"issue_at": "2025-02-02",
-		"no_project": "P002",
-		"issue_to": "HR",
-		"issue_desc": "Pelatihan pegawai baru",
-		"total": 5000,
-		"status":2,
-		"payment_type":0,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Training",
-				"desc": "Sertifikasi",
-				"ref": "HR001",
-				"qty": "2",
-				"price": "2500",
-				"amount": 5000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 3,
-		"issue_at": "2025-02-03",
-		"no_project": "P003",
-		"issue_to": "IT",
-		"issue_desc": "Pengadaan laptop baru",
-		"total": 18000,
-		"status":5,
-		"payment_type":1,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "IT",
-				"desc": "Laptop Dell",
-				"ref": "IT100",
-				"qty": "3",
-				"price": "6000",
-				"amount": 18000
-			},
-			{
-				"id": 2,
-				"budget": "IT",
-				"desc": "Mouse Wireless",
-				"ref": "IT200",
-				"qty": "5",
-				"price": "200",
-				"amount": 1000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 4,
-		"issue_at": "2025-02-04",
-		"no_project": "P004",
-		"issue_to": "Logistics",
-		"issue_desc": "Pengadaan kendaraan operasional",
-		"total": 45000,
-		"status":3,
-		"payment_type":0,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Transport",
-				"desc": "Mobil operasional",
-				"ref": "LOG200",
-				"qty": "1",
-				"price": "45000",
-				"amount": 45000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 5,
-		"issue_at": "2025-02-05",
-		"no_project": "P005",
-		"issue_to": "Marketing",
-		"issue_desc": "Kampanye media sosial",
-		"total": 7000,
-		"status":5,
-		"payment_type":2,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Marketing",
-				"desc": "Iklan Facebook",
-				"ref": "MKT001",
-				"qty": "1",
-				"price": "7000",
-				"amount": 7000
-			},
-			{
-				"id": 2,
-				"budget": "Marketing",
-				"desc": "Iklan Instagram",
-				"ref": "MKT002",
-				"qty": "1",
-				"price": "5000",
-				"amount": 5000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 6,
-		"issue_at": "2025-02-06",
-		"no_project": "P006",
-		"issue_to": "Procurement",
-		"issue_desc": "Pembelian perangkat server",
-		"total": 25000,
-		"status":3,
-		"payment_type":0,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "IT",
-				"desc": "Server HP",
-				"ref": "PROC100",
-				"qty": "2",
-				"price": "12500",
-				"amount": 25000
-			},
-			{
-				"id": 2,
-				"budget": "IT",
-				"desc": "UPS 5KVA",
-				"ref": "PROC200",
-				"qty": "1",
-				"price": "5000",
-				"amount": 5000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 20,
-		"issue_at": "2025-02-20",
-		"no_project": "P020",
-		"issue_to": "Legal",
-		"issue_desc": "Pembuatan kontrak vendor baru",
-		"total": 8000,
-		"status":3,
-		"payment_type":0,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Legal",
-				"desc": "Jasa pengacara",
-				"ref": "LGL700",
-				"qty": "1",
-				"price": "8000",
-				"amount": 8000
-			},
-			{
-				"id": 2,
-				"budget": "Legal",
-				"desc": "Dokumentasi hukum",
-				"ref": "LGL800",
-				"qty": "1",
-				"price": "3000",
-				"amount": 3000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 7,
-		"issue_at": "2025-02-07",
-		"no_project": "P007",
-		"issue_to": "Finance",
-		"issue_desc": "Pembayaran honorarium seminar",
-		"total": 2500,
-		"status":4,
-		"payment_type":0,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Seminar",
-				"desc": "Honorarium Pembicara",
-				"ref": "FIN100",
-				"qty": "2",
-				"price": "1000",
-				"amount": 2000
-			},
-			{
-				"id": 2,
-				"budget": "Seminar",
-				"desc": "Materi Seminar",
-				"ref": "FIN200",
-				"qty": "1",
-				"price": "500",
-				"amount": 500
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 8,
-		"issue_at": "2025-02-08",
-		"no_project": "P008",
-		"issue_to": "HR",
-		"issue_desc": "Rekrutmen pegawai baru",
-		"total": 7000,
-		"status":3,
-		"payment_type":0,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Recruitment",
-				"desc": "Biaya Wawancara",
-				"ref": "HR101",
-				"qty": "5",
-				"price": "500",
-				"amount": 2500
-			},
-			{
-				"id": 2,
-				"budget": "Recruitment",
-				"desc": "Tes Kesehatan",
-				"ref": "HR102",
-				"qty": "5",
-				"price": "1000",
-				"amount": 5000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 9,
-		"issue_at": "2025-02-09",
-		"no_project": "P009",
-		"issue_to": "IT",
-		"issue_desc": "Pembaruan perangkat lunak perusahaan",
-		"total": 12000,
-		"status":5,
-		"payment_type":1,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Software",
-				"desc": "Lisensi Perangkat Lunak",
-				"ref": "IT300",
-				"qty": "3",
-				"price": "2000",
-				"amount": 6000
-			},
-			{
-				"id": 2,
-				"budget": "Software",
-				"desc": "Pelatihan Pengguna",
-				"ref": "IT400",
-				"qty": "2",
-				"price": "3000",
-				"amount": 6000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 10,
-		"issue_at": "2025-02-10",
-		"no_project": "P010",
-		"issue_to": "Logistics",
-		"issue_desc": "Pengadaan alat pengamanan",
-		"total": 8000,
-		"status":4,
-		"payment_type":0,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Security",
-				"desc": "Alarm Keamanan",
-				"ref": "LOG300",
-				"qty": "2",
-				"price": "2000",
-				"amount": 4000
-			},
-			{
-				"id": 2,
-				"budget": "Security",
-				"desc": "Kamera CCTV",
-				"ref": "LOG400",
-				"qty": "2",
-				"price": "2000",
-				"amount": 4000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 11,
-		"issue_at": "2025-02-11",
-		"no_project": "P011",
-		"issue_to": "Marketing",
-		"issue_desc": "Pembuatan materi iklan",
-		"total": 3000,
-		"status":4,
-		"payment_type":0,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Advertising",
-				"desc": "Desain Banner",
-				"ref": "MKT100",
-				"qty": "1",
-				"price": "1000",
-				"amount": 1000
-			},
-			{
-				"id": 2,
-				"budget": "Advertising",
-				"desc": "Foto Produk",
-				"ref": "MKT200",
-				"qty": "1",
-				"price": "2000",
-				"amount": 2000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 12,
-		"issue_at": "2025-02-12",
-		"no_project": "P012",
-		"issue_to": "Procurement",
-		"issue_desc": "Pembelian perangkat IT",
-		"total": 15000,
-		"status":3,
-		"payment_type":0,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "IT",
-				"desc": "Monitor LED",
-				"ref": "PROC300",
-				"qty": "3",
-				"price": "3000",
-				"amount": 9000
-			},
-			{
-				"id": 2,
-				"budget": "IT",
-				"desc": "Keyboard Mechanical",
-				"ref": "PROC400",
-				"qty": "5",
-				"price": "600",
-				"amount": 3000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 13,
-		"issue_at": "2025-02-13",
-		"no_project": "P013",
-		"issue_to": "Finance",
-		"issue_desc": "Pembayaran sewa kantor",
-		"total": 12000,
-		"status":5,
-		"payment_type":1,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Office",
-				"desc": "Sewa Gedung",
-				"ref": "FIN300",
-				"qty": "1",
-				"price": "12000",
-				"amount": 12000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 14,
-		"issue_at": "2025-02-14",
-		"no_project": "P014",
-		"issue_to": "HR",
-		"issue_desc": "Pengadaan pelatihan kepemimpinan",
-		"total": 10000,
-		"status":4,
-		"payment_type":0,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Training",
-				"desc": "Pelatihan Kepemimpinan",
-				"ref": "HR200",
-				"qty": "5",
-				"price": "2000",
-				"amount": 10000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 15,
-		"issue_at": "2025-02-15",
-		"no_project": "P015",
-		"issue_to": "IT",
-		"issue_desc": "Upgrade jaringan kantor",
-		"total": 25000,
-		"status":5,
-		"payment_type":2,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "IT",
-				"desc": "Router Cisco",
-				"ref": "IT500",
-				"qty": "2",
-				"price": "5000",
-				"amount": 10000
-			},
-			{
-				"id": 2,
-				"budget": "IT",
-				"desc": "Firewall",
-				"ref": "IT600",
-				"qty": "1",
-				"price": "15000",
-				"amount": 15000
-			}
-		],
-		"attach": []
-	},
-	{
-		"id": 16,
-		"issue_at": "2025-02-16",
-		"no_project": "P016",
-		"issue_to": "Finance",
-		"issue_desc": "Pembayaran pajak tahunan",
-		"total": 8000,
-		"status":5,
-		"payment_type":2,
-		"detail": [
-			{
-				"id": 1,
-				"budget": "Finance",
-				"desc": "Pajak Penghasilan",
-				"ref": "FIN500",
-				"qty": "1",
-				"price": "8000",
-				"amount": 8000
-			}
-		],
-		"attach": []
-	}
+  {
+    "title": "Test Billing Title 1",
+    "issue_desc": "Test Billing Description 1",
+    "no_project": "PRJ001",
+    "issue_to": 3,
+    "total": 1573.45,
+    "running_no": "0023",
+    "billing_type_id": 2,
+    "payment_type_id": 3,
+    "department_id": 1,
+    "detail": [
+      {
+        "desc": "Item Description A",
+        "budget_code": "BUD012",
+        "budget": 800.50,
+        "price": 400.25,
+        "qty": 2,
+        "unit": "kg",
+        "budget_id": 5,
+        "budget_year": 2023
+      },
+      {
+        "desc": "Item Description B",
+        "budget_code": "BUD015",
+        "budget": 772.95,
+        "price": 386.48,
+        "qty": 2,
+        "unit": "liter",
+        "budget_id": 2,
+        "budget_year": 2024
+      }
+    ]
+  },
+  {
+    "title": "Test Billing Title 2",
+    "issue_desc": "Test Billing Description 2",
+    "no_project": "PRJ045",
+    "issue_to": 1,
+    "total": 2678.90,
+    "running_no": "0045",
+    "billing_type_id": 3,
+    "payment_type_id": 1,
+    "department_id": 4,
+    "detail": [
+      {
+        "desc": "Item Description C",
+        "budget_code": "BUD025",
+        "budget": 1800.00,
+        "price": 900.00,
+        "qty": 2,
+        "unit": "box",
+        "budget_id": 3,
+        "budget_year": 2025
+      }
+    ]
+  },
+  {
+    "title": "Test Billing Title 3",
+    "issue_desc": "Test Billing Description 3",
+    "no_project": "PRJ078",
+    "issue_to": 2,
+    "total": 3950.75,
+    "running_no": "0078",
+    "billing_type_id": 5,
+    "payment_type_id": 4,
+    "department_id": 2,
+    "detail": [
+      {
+        "desc": "Item Description D",
+        "budget_code": "BUD035",
+        "budget": 1200.00,
+        "price": 600.00,
+        "qty": 2,
+        "unit": "set",
+        "budget_id": 1,
+        "budget_year": 2022
+      },
+      {
+        "desc": "Item Description E",
+        "budget_code": "BUD040",
+        "budget": 2750.75,
+        "price": 1375.37,
+        "qty": 2,
+        "unit": "piece",
+        "budget_id": 6,
+        "budget_year": 2023
+      }
+    ]
+  },
+  {
+    "title": "Test Billing Title 4",
+    "issue_desc": "Test Billing Description 4",
+    "no_project": "PRJ099",
+    "issue_to": 4,
+    "total": 1890.00,
+    "running_no": "0099",
+    "billing_type_id": 1,
+    "payment_type_id": 5,
+    "department_id": 3,
+    "detail": [
+      {
+        "desc": "Item Description F",
+        "budget_code": "BUD050",
+        "budget": 1890.00,
+        "price": 945.00,
+        "qty": 2,
+        "unit": "pack",
+        "budget_id": 4,
+        "budget_year": 2024
+      }
+    ]
+  },
+  {
+    "title": "Test Billing Title 5",
+    "issue_desc": "Test Billing Description 5",
+    "no_project": "PRJ120",
+    "issue_to": 5,
+    "total": 5123.67,
+    "running_no": "0120",
+    "billing_type_id": 4,
+    "payment_type_id": 2,
+    "department_id": 5,
+    "detail": [
+      {
+        "desc": "Item Description G",
+        "budget_code": "BUD065",
+        "budget": 2500.00,
+        "price": 1250.00,
+        "qty": 2,
+        "unit": "bundle",
+        "budget_id": 2,
+        "budget_year": 2025
+      },
+      {
+        "desc": "Item Description H",
+        "budget_code": "BUD075",
+        "budget": 2623.67,
+        "price": 1311.83,
+        "qty": 2,
+        "unit": "roll",
+        "budget_id": 7,
+        "budget_year": 2023
+      }
+    ]
+  },
+
+  {
+    "title": "Test Billing Title 6",
+    "issue_desc": "Test Billing Description 6",
+    "no_project": "PRJ130",
+    "issue_to": 2,
+    "total": 4290.50,
+    "running_no": "0130",
+    "billing_type_id": 3,
+    "payment_type_id": 1,
+    "department_id": 1,
+    "detail": [
+      {
+        "desc": "Item Description I",
+        "budget_code": "BUD085",
+        "budget": 1500.00,
+        "price": 750.00,
+        "qty": 2,
+        "unit": "box",
+        "budget_id": 8,
+        "budget_year": 2025
+      },
+      {
+        "desc": "Item Description J",
+        "budget_code": "BUD090",
+        "budget": 2790.50,
+        "price": 1395.25,
+        "qty": 2,
+        "unit": "piece",
+        "budget_id": 3,
+        "budget_year": 2023
+      }
+    ]
+  },
+  {
+    "title": "Test Billing Title 7",
+    "issue_desc": "Test Billing Description 7",
+    "no_project": "PRJ140",
+    "issue_to": 3,
+    "total": 3125.25,
+    "running_no": "0140",
+    "billing_type_id": 1,
+    "payment_type_id": 4,
+    "department_id": 2,
+    "detail": [
+      {
+        "desc": "Item Description K",
+        "budget_code": "BUD095",
+        "budget": 3125.25,
+        "price": 1562.63,
+        "qty": 2,
+        "unit": "roll",
+        "budget_id": 5,
+        "budget_year": 2024
+      }
+    ]
+  },
+  {
+    "title": "Test Billing Title 8",
+    "issue_desc": "Test Billing Description 8",
+    "no_project": "PRJ150",
+    "issue_to": 4,
+    "total": 2710.00,
+    "running_no": "0150",
+    "billing_type_id": 2,
+    "payment_type_id": 5,
+    "department_id": 4,
+    "detail": [
+      {
+        "desc": "Item Description L",
+        "budget_code": "BUD100",
+        "budget": 1300.00,
+        "price": 650.00,
+        "qty": 2,
+        "unit": "pack",
+        "budget_id": 9,
+        "budget_year": 2022
+      },
+      {
+        "desc": "Item Description M",
+        "budget_code": "BUD105",
+        "budget": 1410.00,
+        "price": 705.00,
+        "qty": 2,
+        "unit": "bundle",
+        "budget_id": 6,
+        "budget_year": 2025
+      }
+    ]
+  },
+  {
+    "title": "Test Billing Title 9",
+    "issue_desc": "Test Billing Description 9",
+    "no_project": "PRJ160",
+    "issue_to": 5,
+    "total": 5235.80,
+    "running_no": "0160",
+    "billing_type_id": 4,
+    "payment_type_id": 3,
+    "department_id": 3,
+    "detail": [
+      {
+        "desc": "Item Description N",
+        "budget_code": "BUD110",
+        "budget": 2500.00,
+        "price": 1250.00,
+        "qty": 2,
+        "unit": "kg",
+        "budget_id": 1,
+        "budget_year": 2023
+      },
+      {
+        "desc": "Item Description O",
+        "budget_code": "BUD115",
+        "budget": 2735.80,
+        "price": 1367.90,
+        "qty": 2,
+        "unit": "liter",
+        "budget_id": 7,
+        "budget_year": 2024
+      }
+    ]
+  },
+  {
+    "title": "Test Billing Title 10",
+    "issue_desc": "Test Billing Description 10",
+    "no_project": "PRJ170",
+    "issue_to": 1,
+    "total": 3895.60,
+    "running_no": "0170",
+    "billing_type_id": 2,
+    "payment_type_id": 2,
+    "department_id": 5,
+    "detail": [
+      {
+        "desc": "Item Description P",
+        "budget_code": "BUD120",
+        "budget": 1800.00,
+        "price": 900.00,
+        "qty": 2,
+        "unit": "carton",
+        "budget_id": 4,
+        "budget_year": 2025
+      },
+      {
+        "desc": "Item Description Q",
+        "budget_code": "BUD125",
+        "budget": 2095.60,
+        "price": 1047.80,
+        "qty": 2,
+        "unit": "meter",
+        "budget_id": 2,
+        "budget_year": 2023
+      }
+    ]
+  },
+
+  {
+    "title": "Billing Request A",
+    "issue_desc": "Purchase of office equipment",
+    "no_project": "PRJ180",
+    "issue_to": 2,
+    "total": 2350.75,
+    "running_no": "0180",
+    "billing_type_id": 1,
+    "payment_type_id": 3,
+    "department_id": 2,
+    "detail": [
+      {
+        "desc": "Printer Ink",
+        "budget_code": "BUD130",
+        "budget": 750.00,
+        "price": 750.00,
+        "qty": 1,
+        "unit": "box",
+        "budget_id": 5,
+        "budget_year": 2024
+      },
+      {
+        "desc": "Office Chair",
+        "budget_code": "BUD135",
+        "budget": 1600.75,
+        "price": 800.38,
+        "qty": 2,
+        "unit": "piece",
+        "budget_id": 8,
+        "budget_year": 2025
+      }
+    ]
+  },
+  {
+    "title": "Billing Request B",
+    "issue_desc": "Procurement of software licenses",
+    "no_project": "PRJ190",
+    "issue_to": 3,
+    "total": 4500.00,
+    "running_no": "0190",
+    "billing_type_id": 2,
+    "payment_type_id": 1,
+    "department_id": 3,
+    "detail": [
+      {
+        "desc": "Enterprise Software License",
+        "budget_code": "BUD140",
+        "budget": 4500.00,
+        "price": 4500.00,
+        "qty": 1,
+        "unit": "license",
+        "budget_id": 2,
+        "budget_year": 2024
+      }
+    ]
+  },
+  {
+    "title": "Billing Request C",
+    "issue_desc": "Maintenance of office air conditioning",
+    "no_project": "PRJ200",
+    "issue_to": 4,
+    "total": 3100.00,
+    "running_no": "0200",
+    "billing_type_id": 3,
+    "payment_type_id": 5,
+    "department_id": 1,
+    "detail": [
+      {
+        "desc": "Air Conditioner Service",
+        "budget_code": "BUD145",
+        "budget": 3100.00,
+        "price": 1550.00,
+        "qty": 2,
+        "unit": "unit",
+        "budget_id": 6,
+        "budget_year": 2025
+      }
+    ]
+  },
+  {
+    "title": "Billing Request D",
+    "issue_desc": "Purchase of new computers",
+    "no_project": "PRJ210",
+    "issue_to": 5,
+    "total": 8500.00,
+    "running_no": "0210",
+    "billing_type_id": 4,
+    "payment_type_id": 2,
+    "department_id": 4,
+    "detail": [
+      {
+        "desc": "Laptop HP EliteBook",
+        "budget_code": "BUD150",
+        "budget": 8500.00,
+        "price": 4250.00,
+        "qty": 2,
+        "unit": "piece",
+        "budget_id": 7,
+        "budget_year": 2023
+      }
+    ]
+  },
+  {
+    "title": "Billing Request E",
+    "issue_desc": "Procurement of networking devices",
+    "no_project": "PRJ220",
+    "issue_to": 1,
+    "total": 6450.00,
+    "running_no": "0220",
+    "billing_type_id": 1,
+    "payment_type_id": 4,
+    "department_id": 5,
+    "detail": [
+      {
+        "desc": "Network Switch",
+        "budget_code": "BUD155",
+        "budget": 6450.00,
+        "price": 2150.00,
+        "qty": 3,
+        "unit": "unit",
+        "budget_id": 3,
+        "budget_year": 2024
+      }
+    ]
+  }
 ]
