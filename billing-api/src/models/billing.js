@@ -1,14 +1,15 @@
 const { pool } = require('../config/database');
+const { BillingHistory } = require('./billingHistory');
 
 // Status transition rules
 const STATUS_TRANSITIONS = {
-  'Draft': ['Approval HOD'],
-  'Approval HOD': ['Checking Finance', 'Rejected'],
-  'Checking Finance': ['Approval Finance'],
-  'Approval Finance': ['Approved', 'Rejected'],
-  'Approved': ['Paid'],
-  'Paid': [],
-  'Rejected': []
+  1: [2],           // Draft -> Approval HOD
+  2: [3, 7],        // Approval HOD -> Checking Finance, Rejected
+  3: [4],           // Checking Finance -> Approval Finance
+  4: [5, 7],        // Approval Finance -> Approved, Rejected
+  5: [6],           // Approved -> Paid
+  6: [],            // Paid -> (no further transitions)
+  7: []             // Rejected -> (no further transitions)
 };
 
 class Billing {
@@ -18,15 +19,25 @@ class Billing {
       payment_type_id, created_by, status_id = 1 
     } = data;
 
-    const [result] = await pool.execute(
-      `INSERT INTO billings (
-        title, description, amount, billing_type_id, 
-        payment_type_id, created_by, status_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [title, description, amount, billing_type_id, payment_type_id, created_by, status_id]
-    );
+    try {
+      // Create billing
+      const [result] = await pool.execute(
+        'INSERT INTO billings (title, description, amount, billing_type_id, payment_type_id, created_by, status_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [title, description, amount, billing_type_id, payment_type_id, created_by, status_id]
+      );
 
-    return this.findById(result.insertId);
+      // Create initial history
+      await BillingHistory.create({
+        billing_id: result.insertId,
+        status_id: status_id,
+        remarks: 'Permohonan baru dibuat',
+        created_by: created_by
+      });
+
+      return this.findById(result.insertId);
+    } catch (error) {
+      throw error;
+    }
   }
 
   static async findById(id) {
@@ -44,7 +55,12 @@ class Billing {
       WHERE b.id = ?`,
       [id]
     );
-    return rows[0];
+
+    if (rows.length === 0) return null;
+
+    // Get billing history
+    const history = await BillingHistory.findByBillingId(id);
+    return { ...rows[0], history };
   }
 
   static async findAll(filters = {}) {
@@ -76,71 +92,55 @@ class Billing {
     query += ' ORDER BY b.created_at DESC';
 
     const [rows] = await pool.execute(query, params);
-    return rows;
+
+    // Get history for each billing
+    const billingsWithHistory = await Promise.all(
+      rows.map(async (billing) => {
+        const history = await BillingHistory.findByBillingId(billing.id);
+        return { ...billing, history };
+      })
+    );
+
+    return billingsWithHistory;
   }
 
-  static async update(id, data) {
-    const allowedFields = ['title', 'description', 'amount', 'billing_type_id', 'payment_type_id'];
-    const updates = [];
-    const values = [];
+  static async updateStatus(id, status_id, updated_by, remarks = null) {
+    try {
+      // Get current billing status
+      const [currentBilling] = await pool.execute(
+        'SELECT status_id FROM billings WHERE id = ?',
+        [id]
+      );
 
-    allowedFields.forEach(field => {
-      if (data[field] !== undefined) {
-        updates.push(`${field} = ?`);
-        values.push(data[field]);
+      if (!currentBilling || currentBilling.length === 0) {
+        throw new Error('Billing not found');
       }
-    });
 
-    if (updates.length === 0) return false;
+      const currentStatus = currentBilling[0].status_id;
 
-    values.push(id);
-    const query = `UPDATE billings SET ${updates.join(', ')} WHERE id = ?`;
-    const [result] = await pool.execute(query, values);
-    return result.affectedRows > 0;
-  }
+      // Check if status transition is allowed
+      if (!STATUS_TRANSITIONS[currentStatus].includes(status_id)) {
+        throw new Error('Invalid status transition');
+      }
 
-  static async updateStatus(id, newStatusId, userId) {
-    const billing = await this.findById(id);
-    if (!billing) {
-      throw new Error('Billing not found');
+      // Update billing status
+      await pool.execute(
+        'UPDATE billings SET status_id = ?, updated_by = ? WHERE id = ?',
+        [status_id, updated_by, id]
+      );
+
+      // Add status history
+      await BillingHistory.create({
+        billing_id: id,
+        status_id: status_id,
+        remarks: remarks,
+        created_by: updated_by
+      });
+
+      return true;
+    } catch (error) {
+      throw error;
     }
-
-    // Get status names
-    const [[currentStatus]] = await pool.execute(
-      'SELECT status_name FROM billing_status WHERE id = ?',
-      [billing.status_id]
-    );
-    const [[newStatus]] = await pool.execute(
-      'SELECT status_name FROM billing_status WHERE id = ?',
-      [newStatusId]
-    );
-
-    // Check if transition is allowed
-    const allowedNextStatuses = STATUS_TRANSITIONS[currentStatus.status_name] || [];
-    if (!allowedNextStatuses.includes(newStatus.status_name)) {
-      throw new Error(`Invalid status transition from ${currentStatus.status_name} to ${newStatus.status_name}`);
-    }
-
-    // Update status
-    const [result] = await pool.execute(
-      'UPDATE billings SET status_id = ?, updated_by = ? WHERE id = ?',
-      [newStatusId, userId, id]
-    );
-
-    // Create history record
-    await pool.execute(
-      `INSERT INTO billing_history (
-        billing_id, status_id, updated_by, notes
-      ) VALUES (?, ?, ?, ?)`,
-      [id, newStatusId, userId, `Status changed to ${newStatus.status_name}`]
-    );
-
-    return result.affectedRows > 0;
-  }
-
-  static async delete(id) {
-    const [result] = await pool.execute('DELETE FROM billings WHERE id = ?', [id]);
-    return result.affectedRows > 0;
   }
 }
 
@@ -163,9 +163,7 @@ CREATE TABLE IF NOT EXISTS billings (
   FOREIGN KEY (payment_type_id) REFERENCES payment_type(id),
   FOREIGN KEY (status_id) REFERENCES billing_status(id),
   FOREIGN KEY (created_by) REFERENCES users(id),
-  FOREIGN KEY (updated_by) REFERENCES users(id),
-  INDEX idx_status (status_id),
-  INDEX idx_created_by (created_by)
+  FOREIGN KEY (updated_by) REFERENCES users(id)
 )`;
 
-module.exports = { Billing, createTableSQL };
+module.exports = { Billing, createTableSQL, STATUS_TRANSITIONS };
