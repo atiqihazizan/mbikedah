@@ -23,20 +23,20 @@ const navigation = [
   { text: "Permohonan Bayaran", to: "", type: 0 },
   {
     text: "Permohonan Baru",
-    to: "/payments/form",
+    to: "/billing/form",
     icon: <FilePlus size={20} />,
     type: 1,
   },
   {
     text: "Masih Aktif",
-    to: "/payments/incomplete",
+    to: "/billing/icomplete",
     icon: <FolderOpen size={20} />,
     type: 1,
     badgeCount: 3,
   },
   {
     text: "Sudah Selesai",
-    to: "/payments/completed",
+    to: "/billing/archive",
     icon: <Archive size={20} />,
     type: 1,
   },

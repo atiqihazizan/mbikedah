@@ -42,7 +42,7 @@ export default {
   },
   plugins: [
     require("@tailwindcss/forms"),
-    require("tw-elements/dist/plugin.cjs"),
+    require("tw-elements/dist/plugin.cjs")
   ],
   darkMode: "class",
 };

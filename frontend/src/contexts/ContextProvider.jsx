@@ -10,7 +10,9 @@ const StateContext = createContext({
 });
 
 export const ContextProvider = ({ children }) => {
-	const [currentUser, setCurrentUser] = useState({});
+	const [currentUser, setCurrentUser] = useState({
+		role: "",
+	});
 	const [userToken, _setUserToken] = useState(
 		localStorage.getItem("MBI_TOKEN") || ""
 	);

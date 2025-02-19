@@ -62,7 +62,7 @@ function Payments() {
         <div className="flex gap-0.5">
           <TButton
             nClasses="btn btn-sm btn-icon btn-clear btn-light"
-            to={`/payments/incomplete/${id}`}
+            to={`/billing/incomplete/${id}`}
           >
             <i className="ki-filled ki-notepad"></i>
           </TButton>
