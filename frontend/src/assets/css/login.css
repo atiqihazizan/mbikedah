@@ -1,0 +1,22 @@
+.alm {
+    --tw-bg-opacity: 1;
+    background-color: rgb(255 255 255 / var(--tw-bg-opacity));
+}
+.axu {
+    --tw-text-opacity: 1;
+    color: rgb(17 24 39 / var(--tw-text-opacity));
+}
+.axq {
+    --tw-text-opacity: 1;
+    color: rgb(107 114 128 / var(--tw-text-opacity));
+}
+.awo {
+    line-height: 1.5rem;
+}
+.avz {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+.lb {
+    margin-top: 0.5rem;
+}

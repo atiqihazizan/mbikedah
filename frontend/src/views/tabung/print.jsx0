@@ -1,0 +1,534 @@
+import React from "react";
+import MTALogoImg from "../../components/Core/ImgMTA";
+
+function PreviewTabung({
+	data,
+	others = [],
+	typeList = [],
+	aName = [],
+	aMoney = [],
+}) {
+	// const total = (() => {
+	// 	const t = aMoney.reduce((p, a) => p + a.value, 0);
+	// 	return new Intl.NumberFormat().format(t);
+	// })();
+	const { dateTime, voucher, ttype, total: _total } = data;
+	const jenis = ttype ? typeList.find((f) => (f.key = ttype)).value : "";
+	const total = new Intl.NumberFormat().format(parseFloat(_total));
+	const border1px = "1px solid windowtext";
+	const igno = { msoIgnore: "colspan" };
+	const hgtSrc = { msoHeightSource: "userset" };
+	const hgt18 = { height: "18.75pt" };
+	const hgt15 = { height: "15pt" };
+	const borderRB = { borderRight: border1px, borderBottom: border1px };
+	const borderR = { borderRight: border1px };
+
+	return (
+		<>
+			<meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
+			<meta name="ProgId" content="Excel.Sheet" />
+			<meta name="Generator" content="Aspose.Cells 24.8" />
+			<div id="section">
+				<div id="table_0" sheetname="kutipan Jumaat">
+					<table
+						border={0}
+						cellPadding={0}
+						cellSpacing={0}
+						width={614}
+						style={{
+							borderCollapse: "collapse",
+							tableLayout: "fixed",
+							width: "460pt",
+						}}
+					>
+						<colgroup>
+							<col
+								width={46}
+								style={{ msoWidthSource: "userset", width: "34.5pt" }}
+							/>
+							<col
+								width={31}
+								style={{ msoWidthSource: "userset", width: "23.25pt" }}
+							/>
+							<col
+								width={30}
+								style={{ msoWidthSource: "userset", width: "22.5pt" }}
+							/>
+							<col
+								width={32}
+								style={{ msoWidthSource: "userset", width: "24pt" }}
+							/>
+							<col
+								width={21}
+								span={2}
+								style={{ msoWidthSource: "userset", width: "15.75pt" }}
+							/>
+							<col
+								width={26}
+								style={{ msoWidthSource: "userset", width: "19.5pt" }}
+							/>
+							<col
+								width={22}
+								style={{ msoWidthSource: "userset", width: "16.5pt" }}
+							/>
+							<col
+								width={20}
+								style={{ msoWidthSource: "userset", width: "15pt" }}
+							/>
+							<col
+								width={32}
+								style={{ msoWidthSource: "userset", width: "24pt" }}
+							/>
+							<col
+								width={29}
+								style={{ msoWidthSource: "userset", width: "21.75pt" }}
+							/>
+							<col
+								width={26}
+								span={2}
+								style={{ msoWidthSource: "userset", width: "19.5pt" }}
+							/>
+							<col
+								width={36}
+								style={{ msoWidthSource: "userset", width: "27pt" }}
+							/>
+							<col width={64} style={{ width: "48pt" }} />
+							<col
+								width={8}
+								style={{ msoWidthSource: "userset", width: "6pt" }}
+							/>
+							<col
+								width={21}
+								style={{ msoWidthSource: "userset", width: "15.75pt" }}
+							/>
+							<col
+								width={23}
+								style={{ msoWidthSource: "userset", width: "17.25pt" }}
+							/>
+							<col
+								width={30}
+								style={{ msoWidthSource: "userset", width: "22.5pt" }}
+							/>
+							<col
+								width={34}
+								style={{ msoWidthSource: "userset", width: "25.5pt" }}
+							/>
+							<col
+								width={36}
+								style={{ msoWidthSource: "userset", width: "27pt" }}
+							/>
+						</colgroup>
+						<tbody>
+							<tr height={51} style={{ ...hgtSrc, height: "38.25pt" }}>
+								<td
+									height={51}
+									width={46}
+									style={{
+										textAlign: "left",
+										height: "38.25pt",
+										width: "34.5pt",
+										verticalAlign: "top",
+									}}
+									align="left"
+								>
+									<span
+										style={{
+											msoIgnore: "vglayout",
+											position: "absolute",
+											zIndex: 1,
+											marginLeft: 3,
+											marginTop: 5,
+											width: 321,
+											height: 97,
+										}}
+									>
+										<MTALogoImg />
+									</span>
+									<span style={{ msoIgnore: "vglayout2" }}>
+										<table cellPadding={0} cellSpacing={0}>
+											<tbody>
+												<tr>
+													<td
+														height={51}
+														width={46}
+														style={{ height: "38.25pt", width: "34.5pt" }}
+													/>
+												</tr>
+											</tbody>
+										</table>
+									</span>
+								</td>
+								<td colSpan={20} width={568} style={{ ...igno }} />
+							</tr>
+							<tr height={27} style={{ ...hgtSrc, height: "20.25pt" }}>
+								<td
+									colSpan={14}
+									height={27}
+									style={{ ...igno, height: "20.25pt" }}
+								/>
+								<td className="x89">No. Resit</td>
+								<td className="x26">:</td>
+								<td colSpan={2} className="x37" style={{ ...igno }}>
+									{voucher ?? ""}
+								</td>
+								<td colSpan={3} className="x36" style={{ ...igno }} />
+							</tr>
+							<tr height={21} style={{ ...hgtSrc, height: "15.75pt" }}>
+								<td
+									colSpan={14}
+									height={21}
+									style={{ ...igno, height: "15.75pt" }}
+								/>
+								<td className="x89">Tabung</td>
+								<td className="x26">:</td>
+								<td colSpan={4} className="x38" style={{ ...igno }}>
+									{jenis}
+								</td>
+								<td />
+							</tr>
+							<tr height={20} style={{ ...hgtSrc, ...hgt15 }}>
+								<td colSpan={21} height={20} style={{ ...igno, ...hgt15 }} />
+							</tr>
+							<tr height={25} style={{ ...hgtSrc, ...hgt18 }}>
+								<td
+									colSpan={20}
+									height={25}
+									className="x39"
+									style={{ ...hgt18 }}
+								>
+									MAKLUMAT PEMBUKAAN DAN PENGIRAAN WANG TABUNG MASJID
+								</td>
+								<td />
+							</tr>
+							<tr height={13} style={{ ...hgtSrc, height: "9.75pt" }}>
+								<td
+									colSpan={21}
+									height={13}
+									style={{ ...igno, height: "9.75pt" }}
+								/>
+							</tr>
+							<tr height={20} style={{ ...hgtSrc, ...hgt15 }}>
+								<td colSpan={20}>
+									<InfoDate date={dateTime} time={"2:00 PM"} typ={ttype} />
+								</td>
+								<td className="x25" />
+							</tr>
+							<tr height={12} style={{ ...hgtSrc, height: "9pt" }}>
+								<td
+									colSpan={21}
+									height={12}
+									style={{ ...igno, height: "9pt" }}
+								/>
+							</tr>
+							<tr
+								height={27}
+								className="x25"
+								style={{ ...hgtSrc, height: "20.25pt" }}
+							>
+								<td
+									colSpan={10}
+									height={25}
+									className="x40"
+									style={{ ...borderRB, ...hgt18 }}
+								>
+									JENIS WANG
+								</td>
+								<td colSpan={4} className="x43" style={{ ...borderR }}>
+									KUANTITI
+								</td>
+								<td colSpan={6} className="x46" style={{ ...borderRB }}>
+									JUMLAH (RM)
+								</td>
+								<td className="x25" />
+							</tr>
+
+							{aMoney.map(({ value, name, money }, i) => (
+								<tr key={i} height={20} style={{ ...hgtSrc, ...hgt15 }}>
+									<td
+										colSpan={10}
+										height={18}
+										className="x49"
+										style={{ ...borderRB, height: "13.5pt" }}
+									>
+										<div className="m-auto w-[130px] px-10">
+											<div className="flex justify-around">
+												<span>{name.split(" ")[0]}</span>
+												<span>{name.split(" ")[1]}</span>
+											</div>
+										</div>
+									</td>
+									<td colSpan={4} className="x52" style={{ ...borderRB }}>
+										{value > 0
+											? new Intl.NumberFormat().format(
+													parseFloat(parseInt(value) / money)
+											  )
+											: ""}
+									</td>
+									<td colSpan={6} className="x53" style={{ ...borderRB }}>
+										{value > 0 && (
+											<>
+												<div className="flex justify-between px-3">
+													<span>RM</span>
+													<span>
+														{new Intl.NumberFormat().format(parseFloat(value))}
+													</span>
+												</div>
+											</>
+										)}
+									</td>
+									<td />
+								</tr>
+							))}
+
+							<tr height={20} style={{ ...hgtSrc, ...hgt15 }}>
+								<td
+									colSpan={14}
+									height={18}
+									className="x65"
+									style={{ ...borderRB, height: "13.5pt" }}
+								>
+									JUMLAH
+								</td>
+								<td colSpan={6} className="x66" style={{ ...borderRB }}>
+									<div className="flex justify-between px-3">
+										<span>RM</span>
+										<span>{total}</span>
+									</div>
+								</td>
+								<td />
+							</tr>
+							<tr height={20} style={{ ...hgtSrc, ...hgt15 }}>
+								<td colSpan={21} height={20} style={{ ...igno, ...hgt15 }} />
+							</tr>
+							<tr height={21} style={{ ...hgtSrc, height: "15.75pt" }}>
+								<td
+									colSpan={21}
+									height={21}
+									className="x26"
+									style={{ ...igno, height: "15.75pt" }}
+								>
+									Lain barangan yang bernilai
+								</td>
+							</tr>
+							<tr height={21} style={{ ...hgtSrc, height: "15.75pt" }}>
+								<td height={20} className="x27" style={{ ...hgt15 }}>
+									Bil
+								</td>
+								<td colSpan={9} className="x69" style={{ ...borderRB }}>
+									Lain-lain
+								</td>
+								<td colSpan={4} className="x69" style={{ ...borderRB }}>
+									Kuantiti
+								</td>
+								<td colSpan={6} className="x72" style={{ ...borderR }}>
+									Catatan
+								</td>
+								<td />
+							</tr>
+
+							{others.map(({ perkara, qty, remark }, i) => (
+								<tr key={i} height={20} style={{ ...hgtSrc, ...hgt15 }}>
+									<td height={18} className="x22" style={{ height: "13.5pt" }}>
+										{i + 1}
+									</td>
+									<td colSpan={9} className="x73" style={{ ...borderRB }}>
+										{perkara}
+									</td>
+									<td colSpan={4} className="x73" style={{ ...borderRB }}>
+										{qty}
+									</td>
+									<td colSpan={6} className="x76" style={{ ...borderRB }}>
+										{remark}
+									</td>
+									<td />
+								</tr>
+							))}
+
+							<tr height={20} style={{ ...hgtSrc, ...hgt15 }}>
+								<td colSpan={21} height={20} style={{ ...igno, ...hgt15 }} />
+							</tr>
+							<tr height={21} style={{ ...hgtSrc, height: "15.75pt" }}>
+								<td
+									colSpan={5}
+									height={21}
+									className="x21"
+									style={{ ...igno, height: "15.75pt" }}
+								>
+									JUMLAH KESELURUHAN :
+								</td>
+								<td colSpan={4} className="x77">
+									<div className="flex justify-between px-3">
+										<span>RM</span>
+										<span>{total}</span>
+									</div>
+								</td>
+								<td colSpan={12} style={{ ...igno }} />
+							</tr>
+							<tr height={20} style={{ ...hgtSrc, ...hgt15 }}>
+								<td
+									colSpan={21}
+									height={20}
+									className="x21"
+									style={{ ...igno, ...hgt15 }}
+								/>
+							</tr>
+							<tr height={20} style={{ ...hgtSrc, ...hgt15 }}>
+								<td
+									colSpan={14}
+									height={18}
+									className="x78"
+									style={{
+										...borderRB,
+										height: "13.5pt",
+									}}
+								>
+									Nama Pembuka/Pengira
+								</td>
+								<td colSpan={6} className="x81" style={{ ...borderRB }}>
+									Tandatangan
+								</td>
+								<td />
+							</tr>
+
+							{aName.map((n, idx) => (
+								<tr
+									key={idx}
+									height={34}
+									style={{ ...hgtSrc, height: "25.5pt" }}
+								>
+									<td
+										colSpan={14}
+										height={32}
+										className="x83"
+										style={{ ...borderRB, height: "24pt" }}
+									>
+										{n}
+									</td>
+									<td colSpan={6} className="x65" style={{ ...borderRB }} />
+									<td />
+								</tr>
+							))}
+
+							<tr height={20} style={{ ...hgtSrc, ...hgt15 }}>
+								<td colSpan={21} height={20} style={{ ...igno, ...hgt15 }} />
+							</tr>
+							<tr height={25} style={{ ...hgtSrc, ...hgt18 }}>
+								<td
+									colSpan={12}
+									height={25}
+									className="x87"
+									style={{ ...hgt18 }}
+								>
+									Tandatangan Pengerusi / Timbalan Pengerusi
+								</td>
+								<td colSpan={9} className="x23" style={{ ...igno }} />
+							</tr>
+							<tr height={25} style={{ ...hgtSrc, ...hgt18 }}>
+								<td height={25} className="x23" style={{ ...hgt18 }}>
+									Nama
+								</td>
+								<td className="x23">:</td>
+								<td colSpan={19} className="x23" style={{ ...igno }} />
+							</tr>
+							<tr height={25} style={{ ...hgtSrc, ...hgt18 }}>
+								<td height={25} className="x23" style={{ ...hgt18 }}>
+									No. K/P
+								</td>
+								<td className="x23">:</td>
+								<td colSpan={19} className="x23" style={{ ...igno }} />
+							</tr>
+							<tr height={18} style={{ ...hgtSrc, height: "13.5pt" }}>
+								<td
+									colSpan={21}
+									height={18}
+									className="x23"
+									style={{ ...igno, height: "13.5pt" }}
+								/>
+							</tr>
+							<tr height={25} style={{ ...hgtSrc, ...hgt18 }}>
+								<td
+									colSpan={7}
+									height={25}
+									className="x25"
+									style={{ ...igno, ...hgt18, overflow: "hidden" }}
+								>
+									Tandatanga Penerimaan Bendahari :&nbsp;
+								</td>
+								<td colSpan={4} className="x88">
+									<div className="flex justify-between px-5">
+										<span>RM</span>
+										<span>{total}</span>
+									</div>
+								</td>
+								<td colSpan={10} className="x25" style={{ ...igno }} />
+							</tr>
+							<tr height={25} style={{ ...hgtSrc, ...hgt18 }}>
+								<td
+									colSpan={4}
+									height={25}
+									className="x87"
+									style={{ ...hgt18 }}
+								>
+									Nama
+								</td>
+								<td colSpan={17} className="x23" style={{ ...igno }} />
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<style
+				dangerouslySetInnerHTML={{
+					__html:
+						"\ntr\n {mso-height-source:auto;\n mso-ruby-visibility:none;}\ncol\n {mso-width-source:auto;\n mso-ruby-visibility:none;}\nbr\n {mso-data-placement:same-cell;}\nruby\n {ruby-align:left;}\n.style0\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n mso-style-name:Normal;\n mso-style-id:0;}\ntd\n {mso-style-parent:style0;\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n mso-ignore:padding;}\n.x15\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x21\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x22\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x23\n {\n mso-number-format:General;\n text-align:left;\n vertical-align:middle;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x24\n {\n mso-number-format:General;\n text-align:left;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x25\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:middle;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x26\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:12pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x27\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:12pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:none;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x28\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:20pt;\n font-weight:400;\n font-style:normal;\n font-family:'Wingdings 2',serif;\n mso-protection:locked visible;\n }\n.x29\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:unlocked visible;\n }\n.x30\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#2F5597;\n font-size:16pt;\n font-weight:700;\n font-style:normal;\n font-family:'Tw Cen MT',sans-serif;\n mso-protection:locked visible;\n }\n.x31\n {\n mso-number-format:'MM\\/dd\\/yyyy';\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x32\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x33\n {\n mso-number-format:'MM\\/dd\\/yyyy';\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x34\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#2F5597;\n font-size:9pt;\n font-weight:700;\n font-style:normal;\n font-family:'Tw Cen MT',sans-serif;\n mso-protection:locked visible;\n }\n.x35\n {\n mso-number-format:'\\@';\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x36\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:12pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x37\n {\n mso-number-format:'\\@';\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:12pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x38\n {\n mso-number-format:General;\n text-align:general;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:12pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x39\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n font-size:14pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x40\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:'Calibri Light',sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x41\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:'Calibri Light',sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x42\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:'Calibri Light',sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x43\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:'Calibri Light',sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:none;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x44\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:'Calibri Light',sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:none;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x45\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:'Calibri Light',sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:none;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x46\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:'Calibri Light',sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x47\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:'Calibri Light',sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x48\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:'Calibri Light',sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x49\n {\n mso-number-format:'\\@';\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x50\n {\n mso-number-format:'\\@';\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x51\n {\n mso-number-format:'\\@';\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x52\n {\n mso-number-format:'\\@';\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x53\n {\n mso-number-format:'_-\\0022RM\\0022* \\#\\,\\#\\#0\\.00_-\\;\\\\-\\0022RM\\0022* \\#\\,\\#\\#0\\.00_-\\;_-\\0022RM\\0022* \\0022-\\0022??_-\\;_-\\@_-';\n text-align:right;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x54\n {\n mso-number-format:'_-\\0022RM\\0022* \\#\\,\\#\\#0\\.00_-\\;\\\\-\\0022RM\\0022* \\#\\,\\#\\#0\\.00_-\\;_-\\0022RM\\0022* \\0022-\\0022??_-\\;_-\\@_-';\n text-align:right;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x55\n {\n mso-number-format:'_-\\0022RM\\0022* \\#\\,\\#\\#0\\.00_-\\;\\\\-\\0022RM\\0022* \\#\\,\\#\\#0\\.00_-\\;_-\\0022RM\\0022* \\0022-\\0022??_-\\;_-\\@_-';\n text-align:right;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x56\n {\n mso-number-format:'\\@';\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x57\n {\n mso-number-format:'\\@';\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x58\n {\n mso-number-format:'\\@';\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x59\n {\n mso-number-format:'\\@';\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x60\n {\n mso-number-format:'\\@';\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x61\n {\n mso-number-format:'\\@';\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x62\n {\n mso-number-format:'\\@';\n text-align:right;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x63\n {\n mso-number-format:'\\@';\n text-align:right;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x64\n {\n mso-number-format:'\\@';\n text-align:right;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x65\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x66\n {\n mso-number-format:'_-\\[$RM-4409\\]* \\#\\,\\#\\#0\\.00_-\\;\\\\-\\[$RM-4409\\]* \\#\\,\\#\\#0\\.00_-\\;_-\\[$RM-4409\\]* \\0022-\\0022??_-\\;_-\\@_-';\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x67\n {\n mso-number-format:'_-\\[$RM-4409\\]* \\#\\,\\#\\#0\\.00_-\\;\\\\-\\[$RM-4409\\]* \\#\\,\\#\\#0\\.00_-\\;_-\\[$RM-4409\\]* \\0022-\\0022??_-\\;_-\\@_-';\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x68\n {\n mso-number-format:'_-\\[$RM-4409\\]* \\#\\,\\#\\#0\\.00_-\\;\\\\-\\[$RM-4409\\]* \\#\\,\\#\\#0\\.00_-\\;_-\\[$RM-4409\\]* \\0022-\\0022??_-\\;_-\\@_-';\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x69\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:12pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x70\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:12pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x71\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:12pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x72\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:12pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:none;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x73\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x74\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x75\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x76\n {\n mso-number-format:General;\n text-align:left;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x77\n {\n mso-number-format:'_-\\0022RM\\0022* \\#\\,\\#\\#0\\.00_-\\;\\\\-\\0022RM\\0022* \\#\\,\\#\\#0\\.00_-\\;_-\\0022RM\\0022* \\0022-\\0022??_-\\;_-\\@_-';\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x78\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x79\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x80\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x81\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x82\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:#D0CECE;\n mso-pattern:auto none;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x83\n {\n mso-number-format:General;\n text-align:left;\n vertical-align:middle;\n white-space:normal;word-wrap:break-word;\n mso-char-indent-count:1;\n padding-left:10px;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x84\n {\n mso-number-format:General;\n text-align:left;\n vertical-align:middle;\n white-space:normal;word-wrap:break-word;\n mso-char-indent-count:1;\n padding-left:10px;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:none;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x85\n {\n mso-number-format:General;\n text-align:left;\n vertical-align:middle;\n white-space:normal;word-wrap:break-word;\n mso-char-indent-count:1;\n padding-left:10px;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:none;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x86\n {\n mso-number-format:General;\n text-align:center;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n border-top:1px solid windowtext;\n border-right:1px solid windowtext;\n border-bottom:1px solid windowtext;\n border-left:1px solid windowtext;\n mso-diagonal-down:none;\n mso-diagonal-up:none;\n mso-protection:locked visible;\n }\n.x87\n {\n mso-number-format:General;\n text-align:left;\n vertical-align:middle;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x88\n {\n mso-number-format:'_-\\0022RM\\0022* \\#\\,\\#\\#0\\.00_-\\;\\\\-\\0022RM\\0022* \\#\\,\\#\\#0\\.00_-\\;_-\\0022RM\\0022* \\0022-\\0022??_-\\;_-\\@_-';\n text-align:center;\n vertical-align:middle;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:11pt;\n font-weight:700;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n.x89\n {\n mso-number-format:General;\n text-align:left;\n vertical-align:bottom;\n white-space:nowrap;\n background:auto;\n mso-pattern:auto;\n color:#000000;\n font-size:12pt;\n font-weight:400;\n font-style:normal;\n font-family:Calibri,sans-serif;\n mso-protection:locked visible;\n }\n#section {\noverflow: none;\nheight: expression(window.screen.height - 39);\nwidth: window.screen.width;\nfloat:left;\npadding:10px;}\n.push{\nwidth:1px;\nheight:31px;\nclear:both;\n}\n#footer {\nbackground-color:#808080;\nwidth:100%;\ntext-align:left;\npadding:5px;\nposition: fixed;\nbottom:0px;\n}\n\n",
+				}}
+			/>
+		</>
+	);
+}
+function InfoDate({date,time,typ}){
+	const days = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+	const dateStr = date ? new Date(date).toLocaleDateString().replaceAll("/", "-") : ""
+	const dayStr = date ? days[new Date(date).getDay()] : ''
+	return (
+		<div className="flex justify-between">
+			<div className="flex w-[117] justify-start">
+				<span>Tarikh</span>
+				<span className="px-1">:</span>
+				<span>{dateStr}</span>
+			</div>
+			<div className="flex w-[117px] justify-center">
+				<span>Hari</span>
+				<span className="px-1">:</span>
+				<span>{dayStr}</span>
+			</div>
+			<div className="flex w-[117px] justify-end">
+				{typ == 2 && (
+					<>
+						<span>Time</span>
+						<span className="px-1">:</span>
+						<span>{time}</span>
+					</>
+				)}
+			</div>
+		</div>
+	);
+}
+const TabungPrint = React.forwardRef((props, ref) => {
+	const { userCount, typeMoney, data, typeList, others } = props;
+	return (
+		<div ref={ref} className="flex justify-center px-20 pt-10 pb-5">
+			{
+				<PreviewTabung
+					data={data}
+					aName={userCount}
+					aMoney={typeMoney}
+					typeList={typeList}
+					others={others}
+				/>
+			}
+		</div>
+	);
+});
+
+export default TabungPrint;

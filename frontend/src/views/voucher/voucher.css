@@ -1,0 +1,26 @@
+.bg {
+	width: 100%;
+	/* width: "210mm", height: "297mm", */
+	/* width: 199mm;
+	height: 140mm;*/
+	/* background-image: url('../../assets/vouhcer_temp.jpeg'); */
+}
+
+@media print {
+
+	body {
+		/* zoom: 140%; */
+		margin: 0 !important;
+		padding: 0;
+		background-image: url('../../assets/vouhcer_temp.jpeg');
+		background-size: 100%;
+		background-repeat: no-repeat;
+	}
+
+	@page {
+		size: A4 portrait;
+		/* size: 210mm 146mm; */
+		margin: 0 !important;
+		padding: 0 !important;
+	}
+}

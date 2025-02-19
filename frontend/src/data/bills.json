@@ -1,0 +1,493 @@
+[
+	{
+		"id": 1,
+		"issue_at": "2025-02-01",
+		"no_project": "P001",
+		"issue_to": "Finance",
+		"issue_desc": "Pengadaan alat tulis",
+		"total": 1500,
+		"status":0,
+		"payment_type":0,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Office",
+				"desc": "Pulpen",
+				"ref": "ABC123",
+				"qty": "10",
+				"price": "50",
+				"amount": 500
+			},
+			{
+				"id": 2,
+				"budget": "Office",
+				"desc": "Kertas A4",
+				"ref": "XYZ789",
+				"qty": "5",
+				"price": "200",
+				"amount": 1000
+			},
+			{
+				"id": 3,
+				"budget": "Office",
+				"desc": "Spidol",
+				"ref": "SP123",
+				"qty": "3",
+				"price": "50",
+				"amount": 150
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 2,
+		"issue_at": "2025-02-02",
+		"no_project": "P002",
+		"issue_to": "HR",
+		"issue_desc": "Pelatihan pegawai baru",
+		"total": 5000,
+		"status":2,
+		"payment_type":0,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Training",
+				"desc": "Sertifikasi",
+				"ref": "HR001",
+				"qty": "2",
+				"price": "2500",
+				"amount": 5000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 3,
+		"issue_at": "2025-02-03",
+		"no_project": "P003",
+		"issue_to": "IT",
+		"issue_desc": "Pengadaan laptop baru",
+		"total": 18000,
+		"status":5,
+		"payment_type":1,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "IT",
+				"desc": "Laptop Dell",
+				"ref": "IT100",
+				"qty": "3",
+				"price": "6000",
+				"amount": 18000
+			},
+			{
+				"id": 2,
+				"budget": "IT",
+				"desc": "Mouse Wireless",
+				"ref": "IT200",
+				"qty": "5",
+				"price": "200",
+				"amount": 1000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 4,
+		"issue_at": "2025-02-04",
+		"no_project": "P004",
+		"issue_to": "Logistics",
+		"issue_desc": "Pengadaan kendaraan operasional",
+		"total": 45000,
+		"status":3,
+		"payment_type":0,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Transport",
+				"desc": "Mobil operasional",
+				"ref": "LOG200",
+				"qty": "1",
+				"price": "45000",
+				"amount": 45000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 5,
+		"issue_at": "2025-02-05",
+		"no_project": "P005",
+		"issue_to": "Marketing",
+		"issue_desc": "Kampanye media sosial",
+		"total": 7000,
+		"status":5,
+		"payment_type":2,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Marketing",
+				"desc": "Iklan Facebook",
+				"ref": "MKT001",
+				"qty": "1",
+				"price": "7000",
+				"amount": 7000
+			},
+			{
+				"id": 2,
+				"budget": "Marketing",
+				"desc": "Iklan Instagram",
+				"ref": "MKT002",
+				"qty": "1",
+				"price": "5000",
+				"amount": 5000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 6,
+		"issue_at": "2025-02-06",
+		"no_project": "P006",
+		"issue_to": "Procurement",
+		"issue_desc": "Pembelian perangkat server",
+		"total": 25000,
+		"status":3,
+		"payment_type":0,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "IT",
+				"desc": "Server HP",
+				"ref": "PROC100",
+				"qty": "2",
+				"price": "12500",
+				"amount": 25000
+			},
+			{
+				"id": 2,
+				"budget": "IT",
+				"desc": "UPS 5KVA",
+				"ref": "PROC200",
+				"qty": "1",
+				"price": "5000",
+				"amount": 5000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 20,
+		"issue_at": "2025-02-20",
+		"no_project": "P020",
+		"issue_to": "Legal",
+		"issue_desc": "Pembuatan kontrak vendor baru",
+		"total": 8000,
+		"status":3,
+		"payment_type":0,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Legal",
+				"desc": "Jasa pengacara",
+				"ref": "LGL700",
+				"qty": "1",
+				"price": "8000",
+				"amount": 8000
+			},
+			{
+				"id": 2,
+				"budget": "Legal",
+				"desc": "Dokumentasi hukum",
+				"ref": "LGL800",
+				"qty": "1",
+				"price": "3000",
+				"amount": 3000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 7,
+		"issue_at": "2025-02-07",
+		"no_project": "P007",
+		"issue_to": "Finance",
+		"issue_desc": "Pembayaran honorarium seminar",
+		"total": 2500,
+		"status":4,
+		"payment_type":0,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Seminar",
+				"desc": "Honorarium Pembicara",
+				"ref": "FIN100",
+				"qty": "2",
+				"price": "1000",
+				"amount": 2000
+			},
+			{
+				"id": 2,
+				"budget": "Seminar",
+				"desc": "Materi Seminar",
+				"ref": "FIN200",
+				"qty": "1",
+				"price": "500",
+				"amount": 500
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 8,
+		"issue_at": "2025-02-08",
+		"no_project": "P008",
+		"issue_to": "HR",
+		"issue_desc": "Rekrutmen pegawai baru",
+		"total": 7000,
+		"status":3,
+		"payment_type":0,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Recruitment",
+				"desc": "Biaya Wawancara",
+				"ref": "HR101",
+				"qty": "5",
+				"price": "500",
+				"amount": 2500
+			},
+			{
+				"id": 2,
+				"budget": "Recruitment",
+				"desc": "Tes Kesehatan",
+				"ref": "HR102",
+				"qty": "5",
+				"price": "1000",
+				"amount": 5000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 9,
+		"issue_at": "2025-02-09",
+		"no_project": "P009",
+		"issue_to": "IT",
+		"issue_desc": "Pembaruan perangkat lunak perusahaan",
+		"total": 12000,
+		"status":5,
+		"payment_type":1,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Software",
+				"desc": "Lisensi Perangkat Lunak",
+				"ref": "IT300",
+				"qty": "3",
+				"price": "2000",
+				"amount": 6000
+			},
+			{
+				"id": 2,
+				"budget": "Software",
+				"desc": "Pelatihan Pengguna",
+				"ref": "IT400",
+				"qty": "2",
+				"price": "3000",
+				"amount": 6000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 10,
+		"issue_at": "2025-02-10",
+		"no_project": "P010",
+		"issue_to": "Logistics",
+		"issue_desc": "Pengadaan alat pengamanan",
+		"total": 8000,
+		"status":4,
+		"payment_type":0,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Security",
+				"desc": "Alarm Keamanan",
+				"ref": "LOG300",
+				"qty": "2",
+				"price": "2000",
+				"amount": 4000
+			},
+			{
+				"id": 2,
+				"budget": "Security",
+				"desc": "Kamera CCTV",
+				"ref": "LOG400",
+				"qty": "2",
+				"price": "2000",
+				"amount": 4000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 11,
+		"issue_at": "2025-02-11",
+		"no_project": "P011",
+		"issue_to": "Marketing",
+		"issue_desc": "Pembuatan materi iklan",
+		"total": 3000,
+		"status":4,
+		"payment_type":0,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Advertising",
+				"desc": "Desain Banner",
+				"ref": "MKT100",
+				"qty": "1",
+				"price": "1000",
+				"amount": 1000
+			},
+			{
+				"id": 2,
+				"budget": "Advertising",
+				"desc": "Foto Produk",
+				"ref": "MKT200",
+				"qty": "1",
+				"price": "2000",
+				"amount": 2000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 12,
+		"issue_at": "2025-02-12",
+		"no_project": "P012",
+		"issue_to": "Procurement",
+		"issue_desc": "Pembelian perangkat IT",
+		"total": 15000,
+		"status":3,
+		"payment_type":0,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "IT",
+				"desc": "Monitor LED",
+				"ref": "PROC300",
+				"qty": "3",
+				"price": "3000",
+				"amount": 9000
+			},
+			{
+				"id": 2,
+				"budget": "IT",
+				"desc": "Keyboard Mechanical",
+				"ref": "PROC400",
+				"qty": "5",
+				"price": "600",
+				"amount": 3000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 13,
+		"issue_at": "2025-02-13",
+		"no_project": "P013",
+		"issue_to": "Finance",
+		"issue_desc": "Pembayaran sewa kantor",
+		"total": 12000,
+		"status":5,
+		"payment_type":1,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Office",
+				"desc": "Sewa Gedung",
+				"ref": "FIN300",
+				"qty": "1",
+				"price": "12000",
+				"amount": 12000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 14,
+		"issue_at": "2025-02-14",
+		"no_project": "P014",
+		"issue_to": "HR",
+		"issue_desc": "Pengadaan pelatihan kepemimpinan",
+		"total": 10000,
+		"status":4,
+		"payment_type":0,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Training",
+				"desc": "Pelatihan Kepemimpinan",
+				"ref": "HR200",
+				"qty": "5",
+				"price": "2000",
+				"amount": 10000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 15,
+		"issue_at": "2025-02-15",
+		"no_project": "P015",
+		"issue_to": "IT",
+		"issue_desc": "Upgrade jaringan kantor",
+		"total": 25000,
+		"status":5,
+		"payment_type":2,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "IT",
+				"desc": "Router Cisco",
+				"ref": "IT500",
+				"qty": "2",
+				"price": "5000",
+				"amount": 10000
+			},
+			{
+				"id": 2,
+				"budget": "IT",
+				"desc": "Firewall",
+				"ref": "IT600",
+				"qty": "1",
+				"price": "15000",
+				"amount": 15000
+			}
+		],
+		"attach": []
+	},
+	{
+		"id": 16,
+		"issue_at": "2025-02-16",
+		"no_project": "P016",
+		"issue_to": "Finance",
+		"issue_desc": "Pembayaran pajak tahunan",
+		"total": 8000,
+		"status":5,
+		"payment_type":2,
+		"detail": [
+			{
+				"id": 1,
+				"budget": "Finance",
+				"desc": "Pajak Penghasilan",
+				"ref": "FIN500",
+				"qty": "1",
+				"price": "8000",
+				"amount": 8000
+			}
+		],
+		"attach": []
+	}
+]
