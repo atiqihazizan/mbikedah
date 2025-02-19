@@ -14,8 +14,8 @@ then
 fi
 
 # Restart PM2 service
-echo "Restarting PM2 service..."
-pm2 restart mbikedah || pm2 start src/server.js --name mbikedah
+# echo "Restarting PM2 service..."
+# pm2 restart mbikedah || pm2 start src/server.js --name mbikedah
 
 # Add all changes
 echo "Adding changes to git..."
