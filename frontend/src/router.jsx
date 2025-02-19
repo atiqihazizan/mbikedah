@@ -14,12 +14,12 @@ const router = createBrowserRouter([
 		path: "/",
 		element: <DefaultLayout />,
 		children: [
-			{ path: "/dashboard", element: <Navigate to="/" /> },
+			{ path: "/papan-pemuka", element: <Navigate to="/" /> },
 			{ path: "/", element: <Dashboard /> },
-			{ path: "/payments/incomplete", element: <Payments /> },
-			{ path: "/payments/completed", element: <Payments /> },
-			{ path: "/payments/form", element: <PaymentsForm /> },
-			{ path: "/payments/incomplete/:idform", element: <PaymentsForm /> },
+			{ path: "/pembayaran/belum-selesai", element: <Payments /> },
+			{ path: "/pembayaran/selesai", element: <Payments /> },
+			{ path: "/pembayaran/borang", element: <PaymentsForm /> },
+			{ path: "/pembayaran/belum-selesai/:idform", element: <PaymentsForm /> },
 		],
 	},
 	{
@@ -27,7 +27,7 @@ const router = createBrowserRouter([
 		element: <GuestLayout />,
 		children: [
 			{ path: "/login", element: <Login /> },
-			{ path: "/signup", element: <Signup /> },
+			{ path: "/daftar", element: <Signup /> },
 		],
 	},
 ]);
