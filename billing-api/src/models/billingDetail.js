@@ -6,22 +6,33 @@ class BillingDetail {
         try {
             await connection.beginTransaction();
 
-            for (const detail of details) {
-                await connection.execute(
-                    `INSERT INTO billing_details 
-                    (billing_id, description, budget, quantity, unit, reference) 
-                    VALUES (?, ?, ?, ?, ?, ?)`,
-                    [
-                        billingId,
-                        detail.description,
-                        detail.budget,
-                        detail.quantity,
-                        detail.unit,
-                        detail.reference
-                    ]
-                );
-            }
+            const createDetail = async (billingId, details) => {
+                const sql = `
+                    INSERT INTO billing_details 
+                    (billing_id, description, budget_code, budget, quantity, unit, reference) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                `;
 
+                try {
+                    for (const detail of details) {
+                        await connection.execute(sql, [
+                            billingId,
+                            detail.description,
+                            detail.budget_code,
+                            detail.budget,
+                            detail.quantity,
+                            detail.unit || 'unit',
+                            detail.reference || null
+                        ]);
+                    }
+                    return true;
+                } catch (error) {
+                    console.error('Error creating billing detail:', error);
+                    throw error;
+                }
+            };
+
+            await createDetail(billingId, details);
             await connection.commit();
             return true;
         } catch (error) {
@@ -47,6 +58,7 @@ CREATE TABLE IF NOT EXISTS billing_details (
     id INT NOT NULL AUTO_INCREMENT,
     billing_id INT NOT NULL,
     description TEXT NOT NULL,
+    budget_code VARCHAR(50) NOT NULL,
     budget DECIMAL(10,2) NOT NULL,
     quantity INT NOT NULL,
     unit VARCHAR(50) NOT NULL,

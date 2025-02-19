@@ -20,6 +20,7 @@ const createBillingValidation = [
     body('payment_type').isInt().withMessage('Payment type must be an integer'),
     body('detail').isArray().withMessage('Detail must be an array'),
     body('detail.*.desc').notEmpty().withMessage('Detail description is required'),
+    body('detail.*.budget_code').notEmpty().withMessage('Budget code is required'),
     body('detail.*.budget').isNumeric().withMessage('Detail budget must be a number'),
     body('detail.*.qty').isInt().withMessage('Detail quantity must be an integer'),
     body('detail.*.ref').optional().isString().withMessage('Detail reference must be a string')
