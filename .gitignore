@@ -1,14 +1,8 @@
 # Node.js
-node_modules/
-frontend/node_modules/
-frontend/package-lock.json
-frontend/dist/
-
-billing-api/node_modules/
-billing-api/package-lock.json
-
-frontend/deploy.sh
-billing-api/deploy.sh
+**/node_modules/
+**/dist/
+**/package-lock.json
+**/deploy.sh
 
 # Logs
 logs
@@ -18,7 +12,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # Dependency directories
-node_modules/
 jspm_packages/
 
 # Optional npm cache directory
