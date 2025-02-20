@@ -1,118 +1,118 @@
 const { pool } = require('../config/database');
 
 const BillingDetail = {
-    // Create new billing details
-    create: async (billingId, details) => {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
+	// Create new billing details
+	create: async (billingId, details) => {
+		const connection = await pool.getConnection();
+		try {
+			await connection.beginTransaction();
 						
-            for (const detail of details) {
-                await connection.query(
-                    `INSERT INTO billing_details (
-                        billing_id, 
-                        budget_id,
-                        budget_year,
-                        description,
-                        budget,
-                        qty,
-                        unit,
-                        budget_remaining,
-                        ref
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [
-                        billingId,
-                        detail.budget_id || null,
-                        detail.budget_year || null,
-                        detail.desc,
-                        detail.budget || 0,
-                        detail.qty || 0,
-                        detail.unit || '',
-                        detail.budget_remaining || 0,
-                        detail.ref || null
-                    ]
-                );
-            }
+			for (const detail of details) {
+				await connection.query(
+					`INSERT INTO billing_details (
+						billing_id, 
+						budget_id,
+						budget_year,
+						description,
+						budget,
+						qty,
+						unit,
+						budget_remaining,
+						ref
+					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					[
+						billingId,
+						detail.budget_id || null,
+						detail.budget_year || null,
+						detail.desc,
+						detail.budget || 0,
+						detail.qty || 0,
+						detail.unit || '',
+						detail.budget_remaining || 0,
+						detail.ref || null
+					]
+				);
+			}
 
-            await connection.commit();
-            return true;
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
-    },
+			await connection.commit();
+			return true;
+		} catch (error) {
+			await connection.rollback();
+			throw error;
+		} finally {
+			connection.release();
+		}
+	},
 
-    // Find billing details by billing ID
-    findByBillingId: async (billingId) => {
-        const [rows] = await db.query(
-            'SELECT * FROM billing_details WHERE billing_id = ?',
-            [billingId]
-        );
-        return rows;
-    },
+	// Find billing details by billing ID
+	findByBillingId: async (billingId) => {
+		const [rows] = await pool.query(
+			'SELECT * FROM billing_details WHERE billing_id = ?',
+			[billingId]
+		);
+		return rows;
+	},
 
-    // Update billing details
-    update: async (billingId, details) => {
-        const connection = await db.getConnection();
-        try {
-            await connection.beginTransaction();
+	// Update billing details
+	update: async (billingId, details) => {
+		const connection = await pool.getConnection();
+		try {
+			await connection.beginTransaction();
 
-            // Delete existing details
-            await connection.query(
-                'DELETE FROM billing_details WHERE billing_id = ?',
-                [billingId]
-            );
+			// Delete existing details
+			await connection.query(
+				'DELETE FROM billing_details WHERE billing_id = ?',
+				[billingId]
+			);
 
-            // Insert new details
-            for (const detail of details) {
-                await connection.query(
-                    `INSERT INTO billing_details (
-                        billing_id,
-                        budget_id,
-                        budget_year,
-                        desc,
-                        budget,
-                        qty,
-                        unit,
-                        amount,
-                        budget_remaining,
-                        ref
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [
-                        billingId,
-                        detail.budget_id,
-                        detail.budget_year,
-                        detail.desc,
-                        detail.budget || 0,
-                        detail.qty || 0,
-                        detail.unit || '',
-                        detail.amount || 0,
-                        detail.budget_remaining || 0,
-                        detail.ref || null
-                    ]
-                );
-            }
+			// Insert new details
+			for (const detail of details) {
+				await connection.query(
+					`INSERT INTO billing_details (
+						billing_id,
+						budget_id,
+						budget_year,
+						desc,
+						budget,
+						qty,
+						unit,
+						amount,
+						budget_remaining,
+						ref
+					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					[
+						billingId,
+						detail.budget_id,
+						detail.budget_year,
+						detail.desc,
+						detail.budget || 0,
+						detail.qty || 0,
+						detail.unit || '',
+						detail.amount || 0,
+						detail.budget_remaining || 0,
+						detail.ref || null
+					]
+				);
+			}
 
-            await connection.commit();
-            return true;
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
-    },
+			await connection.commit();
+			return true;
+		} catch (error) {
+			await connection.rollback();
+			throw error;
+		} finally {
+			connection.release();
+		}
+	},
 
-    // Delete billing details
-    delete: async (billingId) => {
-        const [result] = await db.query(
-            'DELETE FROM billing_details WHERE billing_id = ?',
-            [billingId]
-        );
-        return result.affectedRows > 0;
-    }
+	// Delete billing details
+	delete: async (billingId) => {
+		const [result] = await pool.query(
+			'DELETE FROM billing_details WHERE billing_id = ?',
+			[billingId]
+		);
+		return result.affectedRows > 0;
+	}
 };
 
 // SQL for creating billing_details table

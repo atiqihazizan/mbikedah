@@ -6,6 +6,10 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "pm2:start": "pm2 start src/server.js --name mbi-api",
+    "pm2:restart": "pm2 restart mbi-api",
+    "pm2:stop": "pm2 stop mbi-api",
+    "pm2:remove": "pm2 delete mbi-api",
     "test": "jest",
     "lint": "eslint src/",
     "format": "prettier --write 'src/**/*.js'"
