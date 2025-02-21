@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useStateContext } from "../contexts/ContextProvider";
 import {
   Package,
@@ -113,25 +113,27 @@ const navigation = [
 ];
 
 export default function DefaultLayout() {
-  const { currentUser, setCurrentUser, setUserToken } = useStateContext();
-  // if (!userToken) return <Navigate to="login" />;
+  const { currentUser, setCurrentUser, userToken, setUserToken } = useStateContext();
+  if (!userToken) return <Navigate to="/login" />;
 
   const logout = (ev) => {
     ev.preventDefault();
-    axiosClient.post("/logout").then(() => {
+    axiosClient.post("/auth/logout").then((e) => {
       setCurrentUser({});
       setUserToken(null);
     });
   };
 
   useEffect(() => {
-    // axiosClient
-    //   .get("/me")
-    //   .then(({ data }) => setCurrentUser(data))
-    //   .catch((e) => {
-    //     setCurrentUser({});
-    //     setUserToken(null);
-    //   });
+    axiosClient
+      .get("/auth/me")
+      .then(({user}) => {
+        setCurrentUser(user);
+      })
+      .catch((e) => {
+        setCurrentUser({});
+        setUserToken(null);
+      });
   }, []);
 
   return (

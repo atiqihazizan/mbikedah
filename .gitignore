@@ -1,7 +1,11 @@
-# Node.js
+# Node.js (di root project)
 **/node_modules/
 **/dist/
+**/xtrash/
 **/package-lock.json
+yarn.lock
+
+billing-api/
 
 # Optional build and deployment files
 **/deploy.sh
@@ -30,6 +34,8 @@ jspm_packages/
 
 # dotenv environment variables file
 .env
+.env.local
+.env.*.local
 
 # MacOS files
 .DS_Store
@@ -55,11 +61,43 @@ coverage/
 # TypeScript cache
 tscache/
 
-# Yarn Integrity file
-yarn.lock
-
 # Parcel-bundler cache
 dist/.cache
 
 # Storybook files
 .storybook-out/
+
+# Laravel (di dalam subfolder api)
+api/vendor/
+api/node_modules/
+api/storage/
+api/storage/*.key
+api/storage/oauth-private.key
+api/storage/oauth-public.key
+api/bootstrap/cache/
+api/public/storage
+api/public/hot
+api/public/mix-manifest.json
+api/public/js
+api/public/css
+api/public/build
+api/public/hot
+api/database/*.sqlite
+api/database/*.sqlite-journal
+
+# PHPUnit
+billing-api/.phpunit.result.cache
+
+# Composer lock file (optional)
+billing-api/composer.lock
+
+# Laravel Telescope (jika digunakan)
+billing-api/storage/telescope/
+
+# Laravel Debugbar (jika digunakan)
+billing-api/storage/debugbar/
+
+# Ignored IDE files
+*.iml
+*.ipr
+*.iws

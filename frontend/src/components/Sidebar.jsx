@@ -11,9 +11,9 @@ const SidebarContext = createContext();
 export default function Sidebar({ children ,logout}) {
   const [expanded, setExpanded] = useState(true)
   const {
-    currentUser: { fullname, staffno },
+    currentUser: { username, role },
   } = useStateContext();
-
+  
   return (
     <Menu as={"div"} className="relative">
       <aside className="h-screen inline-block">
@@ -43,7 +43,7 @@ export default function Sidebar({ children ,logout}) {
 
           <div className="border-t flex p-3">
             <img
-              src={`https://ui-avatars.com/api/?background=c7d2fe&color=3730a3&bold=true&name=${fullname}`}
+              src={`https://ui-avatars.com/api/?background=c7d2fe&color=3730a3&bold=true&name=${username}`}
               alt=""
               className="w-10 h-10 rounded-md"
             />
@@ -53,9 +53,9 @@ export default function Sidebar({ children ,logout}) {
               }`}
             >
               <div className="leading-4">
-                <h4 className="font-semibold">{staffno}</h4>
+                <h4 className="font-semibold">{role}</h4>
                 <span className="text-xs text-gray-600 text-nowrap">
-                  {fullname}
+                  {username}
                 </span>
               </div>
             </div>

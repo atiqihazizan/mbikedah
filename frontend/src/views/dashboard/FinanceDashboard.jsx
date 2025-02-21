@@ -5,6 +5,7 @@ import DashboardStats from "./components/DashboardStats";
 import DashboardChart from "./components/DashboardChart";
 import PendingItems from "./components/PendingItems";
 import RecentActivities from "./components/RecentActivities";
+import axiosClient from "../../axios";
 
 function FinanceDashboard() {
   const [isLoading, setIsLoading] = useState(true);
@@ -14,63 +15,79 @@ function FinanceDashboard() {
     totalUsers: "0",
     monthlyGrowth: "0"
   });
+  const [pendingItems, setPendingItems] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
 
-  const pendingItems = [
-    {
-      id: 1,
-      title: "Perlu Semakan",
-      count: 15,
-      amount: "RM 78,900.00",
-      status: "Belum Disemak",
-      department: "Jabatan Kewangan"
-    },
-    {
-      id: 2,
-      title: "Perlu Kelulusan",
-      count: 8,
-      amount: "RM 34,500.00",
-      status: "Menunggu Kelulusan",
-      department: "Jabatan Kewangan"
-    },
-    {
-      id: 3,
-      title: "Proses Bayaran",
-      count: 12,
-      amount: "RM 56,700.00",
-      status: "Menunggu Pembayaran",
-      department: "Jabatan Kewangan"
-    }
-  ];
+  const fetchDashboardData = async () => {
+    try {
+      const [stats, pending, recent] = await Promise.all([
+        axiosClient.get('/billing/stats'),
+        axiosClient.get('/billing/pending'),
+        axiosClient.get('/billing/recent-activities')
+      ]);
 
-  const recentActivities = [
-    {
-      id: 1,
-      type: "payment",
-      description: "Permohonan bayaran projek",
-      amount: "RM 45,000.00",
-      status: "Perlu Semakan",
-      timestamp: "10 minit yang lalu"
-    },
-    {
-      id: 2,
-      type: "payment",
-      description: "Bayaran utiliti",
-      amount: "RM 12,500.00",
-      status: "Dalam Proses Bayaran",
-      timestamp: "2 jam yang lalu"
+      // Update stats
+      setStatsData({
+        totalPayments: stats.totalAmount || "0",
+        pendingPayments: stats.pendingCount || "0",
+        totalUsers: stats.userCount || "0",
+        monthlyGrowth: stats.growthRate || "0"
+      });
+
+      // Update pending items
+      setPendingItems(pending.items?.map(item => ({
+        id: item.id,
+        title: item.status,
+        count: item.count,
+        amount: formatCurrency(item.amount),
+        status: item.statusDescription,
+        department: item.department
+      })) || []);
+
+      // Update recent activities
+      setRecentActivities(recent.activities?.map(activity => ({
+        id: activity.id,
+        type: activity.type,
+        description: activity.description,
+        amount: formatCurrency(activity.amount),
+        status: activity.status,
+        timestamp: formatTimestamp(activity.createdAt)
+      })) || []);
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setIsLoading(false);
+      // You might want to show an error message to the user here
     }
-  ];
+  };
+
+  // Helper function to format currency
+  const formatCurrency = (amount) => {
+    return `RM ${Number(amount).toLocaleString('en-MY', { 
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2 
+    })}`;
+  };
+
+  // Helper function to format timestamp
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / 1000 / 60);
+
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} minit yang lalu`;
+    } else if (diffInMinutes < 1440) {
+      const hours = Math.floor(diffInMinutes / 60);
+      return `${hours} jam yang lalu`;
+    } else {
+      return date.toLocaleDateString('ms-MY');
+    }
+  };
 
   useEffect(() => {
-    setTimeout(() => {
-      setStatsData({
-        totalPayments: "1,234,567",
-        pendingPayments: "45",
-        totalUsers: "890",
-        monthlyGrowth: "12.5"
-      });
-      setIsLoading(false);
-    }, 1000);
+    fetchDashboardData();
   }, []);
 
   return (

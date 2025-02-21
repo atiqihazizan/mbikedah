@@ -24,15 +24,19 @@ function Login() {
     setError({ __html: "" });
 
     axiosClient
-      .post("/login", { username, password })
-      .then(({ data }) => {
+      .post("/auth/login", { username, password })
+      .then(({ user, token }) => {
         setChecking(false);
-        setCurrentUser(data.user);
-        setUserToken(data.token);
+        setCurrentUser(user);
+        setUserToken(token);
       })
-      .catch(({ response }) => {
+      .catch((error) => {
         setChecking(false);
-        setError({ __html: response?.data?.error || "Login gagal." });
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.message || 
+                           (error.response?.status === 404 ? "API endpoint tidak ditemui" : "Login gagal. Sila cuba lagi.");
+        setError({ __html: errorMessage });
+        console.error('Login error:', error);
       });
   }, [username, password, setCurrentUser, setUserToken]);
 

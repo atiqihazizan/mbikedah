@@ -1,9 +1,9 @@
 import axios from "axios";
-import router from "./router";
+// import router from "./router";
 
 // Konfigurasi default
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
-const DEFAULT_BASE_URL = "http://localhost:8000"; // Fallback URL
+const DEFAULT_BASE_URL = "http://localhost:5001"; // Fallback URL
 const RETRY_COUNT = 3;
 
 const axiosClient = axios.create({
@@ -38,7 +38,7 @@ axiosClient.interceptors.response.use(
     // Handle token expiration
     if (error.response?.status === 401) {
       localStorage.removeItem("MBI_TOKEN");
-      router.navigate("/login");
+      // router.navigate("/login");
       return Promise.reject(error);
     }
 
@@ -61,9 +61,9 @@ axiosClient.interceptors.response.use(
 
     // Handle other errors
     if (error.response?.status === 404) {
-      router.navigate("/404");
+      // router.navigate("/404");
     } else if (error.response?.status >= 500) {
-      router.navigate("/error");
+      // router.navigate("/error");
     } else if (error.code === "ECONNABORTED") {
       // Handle timeout
       console.error("Request timeout");
@@ -87,6 +87,70 @@ axiosClient.setToken = (token) => {
 
 axiosClient.clearToken = () => {
   localStorage.removeItem("MBI_TOKEN");
+};
+
+// HTTP Method Helpers
+axiosClient.get = async (endpoint, config = {}) => {
+  try {
+    const response = await axiosClient(endpoint, {
+      method: 'GET',
+      ...config,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+axiosClient.post = async (endpoint, data = {}, config = {}) => {
+  try {
+    const response = await axiosClient(endpoint, {
+      method: 'POST',
+      data,
+      ...config,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+axiosClient.put = async (endpoint, data = {}, config = {}) => {
+  try {
+    const response = await axiosClient(endpoint, {
+      method: 'PUT',
+      data,
+      ...config,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+axiosClient.patch = async (endpoint, data = {}, config = {}) => {
+  try {
+    const response = await axiosClient(endpoint, {
+      method: 'PATCH',
+      data,
+      ...config,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+axiosClient.delete = async (endpoint, config = {}) => {
+  try {
+    const response = await axiosClient(endpoint, {
+      method: 'DELETE',
+      ...config,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 export default axiosClient;
