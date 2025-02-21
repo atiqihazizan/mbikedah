@@ -84,18 +84,16 @@ api/public/build
 api/public/hot
 api/database/*.sqlite
 api/database/*.sqlite-journal
+api/composer.lock
 
 # PHPUnit
-billing-api/.phpunit.result.cache
-
-# Composer lock file (optional)
-billing-api/composer.lock
+api/.phpunit.result.cache
 
 # Laravel Telescope (jika digunakan)
-billing-api/storage/telescope/
+api/storage/telescope/
 
 # Laravel Debugbar (jika digunakan)
-billing-api/storage/debugbar/
+api/storage/debugbar/
 
 # Ignored IDE files
 *.iml
