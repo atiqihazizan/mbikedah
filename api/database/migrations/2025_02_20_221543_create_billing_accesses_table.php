@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('billing_accesses', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->integer('role_id')->default(3);
+            $table->integer('ability_id')->default(0);
             $table->timestamps();
         });
     }

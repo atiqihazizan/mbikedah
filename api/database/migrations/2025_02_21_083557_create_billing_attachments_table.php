@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('billing_histories', function (Blueprint $table) {
+        Schema::create('billing_attachments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('billing_id')->constrained('billings')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->integer('status_id');
-            $table->string('remark')->nullable();
+            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
+            $table->string('path');
+            $table->string('filename');
+            $table->string('description')->nullable();
             $table->timestamps();
         });
     }
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('billing_histories');
+        Schema::dropIfExists('billing_attachments');
     }
 };
