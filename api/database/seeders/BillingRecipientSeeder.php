@@ -139,7 +139,7 @@ class BillingRecipientSeeder extends Seeder
                     'tel' => $recipient['tel'],
                     'fax' => $recipient['fax'],
                     'addr' => $recipient['addr']
-                ] // Values to update or insert
+                ]
             );
         }
     }

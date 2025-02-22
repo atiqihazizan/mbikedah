@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Billing; // Tambahkan ini untuk menggunakan model Billing
 use App\Models\BillingHistory; // Tambahkan ini untuk menggunakan model BillingHistory
 use App\Models\BillingDetail; // Tambahkan ini untuk menggunakan model BillingDetail
 use App\Models\User; // Tambahkan ini untuk menggunakan model User
 use Exception; // Untuk menggunakan kelas Exception dari PHP
-
+use Maatwebsite\Excel\Facades\Excel;
+use PDF;
 
 class BillingController extends Controller
 {
@@ -53,73 +55,101 @@ class BillingController extends Controller
 	/**
 	 * Create a new billing.
 	 */
-	public function createBilling(Request $request)
+	public
+	function createBilling(Request $request)
 	{
 		try {
-			// Validate request data
 			$validatedData = $request->validate([
-				'title' => 'required|string',
-				'issue_desc' => 'required|string',
-				'issue_to' => 'required|string',
+				'description' => 'required|string',
 				'no_project' => 'required|string',
+				'recipient_id' => 'required|integer',
 				'total' => 'required|numeric',
-				'payment_type_id' => 'required|integer',
-				'status' => 'integer|nullable',
+				'payment_method' => 'nullable|string',
 				'department_id' => 'required|integer',
-				'running_no' => 'string|nullable',
-				'detail' => 'array|nullable'
+				'running_no' => 'nullable|string',
+				'detail' => 'required|array',
+				'detail.*.description' => 'required|string',
+				'detail.*.budget_code' => 'required|string',
+				'detail.*.budget_id' => 'required|integer',
+				'detail.*.price' => 'required|numeric',
+				'detail.*.quantity' => 'required|integer',
+				'detail.*.unit' => 'required|string'
 			]);
 
-			// Create billing with validated data
-			$billingData = [
-				'title' => $validatedData['title'],
-				'issue_desc' => $validatedData['issue_desc'],
-				'issue_to' => $validatedData['issue_to'],
-				'no_project' => $validatedData['no_project'],
-				'total' => $validatedData['total'],
-				'payment_type_id' => $validatedData['payment_type_id'],
-				'status' => $validatedData['status'] ?? 1,
-				'department_id' => $validatedData['department_id'],
-				'running_no' => $validatedData['running_no'],
-				'created_by' => $request->user()->id
-			];
+				// Buat billing
+				$billing = Billing::create([
+					'description' => $validatedData['description'],
+					'no_project' => $validatedData['no_project'],
+					'recipient_id' => $validatedData['recipient_id'],
+					'total_amount' => $validatedData['total'],
+					'payment_method' => $validatedData['payment_method'],
+					'status_id' => 1, // Default status
+					'department_id' => $validatedData['department_id'],
+					'running_no' => $validatedData['running_no'] ?? uniqid('BILL-'),
+					'created_by' => $request->user()->id,
+					'issued_at' => now(),
+					'payment_due' => now()->addDays(30)
+				]);
 
-			$billing = Billing::create($billingData);
-
-			// Handle billing details if provided
-			if (isset($validatedData['detail']) && count($validatedData['detail']) > 0) {
+				// Buat detail billing
 				foreach ($validatedData['detail'] as $detail) {
 					BillingDetail::create([
 						'billing_id' => $billing->id,
-						'detail' => $detail
+						'description' => $detail['description'],
+						'budget_code' => $detail['budget_code'],	
+						'budget_id' => $detail['budget_id'],
+						'price' => $detail['price'],
+						'quantity' => $detail['quantity'],
+						'unit' => $detail['unit'],
+						'total' => bcmul($detail['price'], $detail['quantity'], 2) // Pastikan akurasi desimal
 					]);
 				}
-			}
 
-			return response()->json([
-				'success' => true,
-				'message' => 'Billing created successfully',
-				'data' => ['id' => $billing->id, 'running_no' => $billing->running_no]
-			]);
-		} catch (Exception $error) {
-			return response()->json([
-				'success' => false,
-				'message' => 'Error creating billing',
-				'error' => $error->getMessage()
-			], 500);
+				return response()->json(['message' => 'Billing created successfully', 'billing' => $billing], 201);
+		} catch (\Exception $e) {
+			return response()->json(['error' => 'Failed to create billing', 'message' => $e->getMessage()], 500);
 		}
 	}
 
+
 	/**
-	 * Get all billings.
+	 * Get billings with filters and pagination
 	 */
 	public function getBillings(Request $request)
 	{
 		try {
+			$query = Billing::query();
+			
+			// Filter by archive status
 			$archived = $request->query('archived', false);
-			$billings = Billing::where('department_id', $request->user()->department_id)
-				->where('is_archived', $archived)
-				->get();
+			$query->where('is_archived', $archived);
+			
+			// Filter by department if not admin
+			if (!$request->user()->isAdmin()) {
+				$query->where('department_id', $request->user()->department_id);
+			}
+			
+			// Filter by status
+			if ($request->has('status_id')) {
+				$query->where('status_id', $request->status_id);
+			}
+			
+			// Filter by date range
+			if ($request->has('start_date') && $request->has('end_date')) {
+				$query->whereBetween('issued_at', [$request->start_date, $request->end_date]);
+			}
+			
+			// Sort
+			$sortField = $request->query('sort_by', 'created_at');
+			$sortOrder = $request->query('sort_order', 'desc');
+			$query->orderBy($sortField, $sortOrder);
+			
+			// Eager load relationships
+			$query->with(['department', 'creator', 'recipient', 'details']);
+			
+			// Paginate
+			$perPage = $request->query('per_page', 10);
+			$billings = $query->paginate($perPage);
 
 			return response()->json([
 				'success' => true,
@@ -129,6 +159,56 @@ class BillingController extends Controller
 			return response()->json([
 				'success' => false,
 				'message' => 'Error fetching billings',
+				'error' => $error->getMessage()
+			], 500);
+		}
+	}
+
+	/**
+	 * Export billings to Excel/PDF
+	 */
+	public function exportBillings(Request $request)
+	{
+		try {
+			$format = $request->query('format', 'pdf');
+			$billings = Billing::with(['department', 'creator', 'recipient', 'details'])
+				->where('department_id', $request->user()->department_id)
+				->get();
+
+			if ($format === 'excel') {
+				return Excel::download(new BillingsExport($billings), 'billings.xlsx');
+			} else {
+				$pdf = PDF::loadView('exports.billings', ['billings' => $billings]);
+				return $pdf->download('billings.pdf');
+			}
+		} catch (Exception $error) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Error exporting billings',
+				'error' => $error->getMessage()
+			], 500);
+		}
+	}
+
+	/**
+	 * Get billing statistics by status
+	 */
+	public function getStats()
+	{
+		try {
+			$stats = Billing::where('department_id', request()->user()->department_id)
+				->selectRaw('status_id, COUNT(*) as count, SUM(total_amount) as total')
+				->groupBy('status_id')
+				->get();
+
+			return response()->json([
+				'success' => true,
+				'data' => $stats
+			]);
+		} catch (Exception $error) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Error fetching statistics',
 				'error' => $error->getMessage()
 			], 500);
 		}
@@ -308,117 +388,6 @@ class BillingController extends Controller
 	}
 
 	/**
-	 * Get statistics of billing.
-	 */
-	public function getStats()
-	{
-		try {
-			// Get total amount of all bills
-			$totalAmount = Billing::sum('amount');
-
-			// Get count of pending bills
-			$pendingCount = Billing::whereIn('status', ['PENDING', 'REVIEW', 'APPROVAL'])->count();
-
-			// Get total number of users
-			$userCount = User::count();
-
-			// Calculate monthly growth
-			$today = now();
-			$thisMonth = $today->copy()->startOfMonth();
-			$lastMonth = $today->copy()->subMonth()->startOfMonth();
-
-			$thisMonthTotal = Billing::where('created_at', '>=', $thisMonth)->sum('amount');
-			$lastMonthTotal = Billing::where('created_at', '>=', $lastMonth)->where('created_at', '<', $thisMonth)->sum('amount');
-
-			$growthRate = $lastMonthTotal ?
-				(($thisMonthTotal - $lastMonthTotal) / $lastMonthTotal * 100) :
-				0;
-
-			return response()->json([
-				'totalAmount' => $totalAmount,
-				'pendingCount' => $pendingCount,
-				'userCount' => $userCount,
-				'growthRate' => round($growthRate, 1)
-			]);
-		} catch (Exception $error) {
-			return response()->json([
-				'status' => 'error',
-				'error' => $error->getMessage()
-			], 500);
-		}
-	}
-
-	/**
-	 * Get pending bills.
-	 */
-	public function getPendingItems()
-	{
-		try {
-			$pendingItems = Billing::select('status')
-				->selectRaw('COUNT(id) as count')
-				->selectRaw('SUM(amount) as totalAmount')
-				->whereIn('status', ['PENDING', 'REVIEW', 'APPROVAL'])
-				->groupBy('status')
-				->get();
-
-			$statusDescriptions = [
-				'PENDING' => 'Perlu Semakan',
-				'REVIEW' => 'Dalam Semakan',
-				'APPROVAL' => 'Perlu Kelulusan'
-			];
-
-			$items = $pendingItems->map(function ($item, $index) use ($statusDescriptions) {
-				return [
-					'id' => $index + 1,
-					'status' => $statusDescriptions[$item->status] ?? $item->status,
-					'count' => $item->count,
-					'amount' => $item->totalAmount,
-					'statusDescription' => $statusDescriptions[$item->status] ?? $item->status,
-					'department' => 'Jabatan Kewangan'
-				];
-			});
-
-			return response()->json(['items' => $items]);
-		} catch (Exception $error) {
-			return response()->json([
-				'status' => 'error',
-				'error' => $error->getMessage()
-			], 500);
-		}
-	}
-
-	/**
-	 * Get recent activities.
-	 */
-	public function getRecentActivities()
-	{
-		try {
-			$recentBills = Billing::with('user')
-				->orderBy('created_at', 'DESC')
-				->limit(10)
-				->get();
-
-			$activities = $recentBills->map(function ($bill) {
-				return [
-					'id' => $bill->id,
-					'type' => 'payment',
-					'description' => 'Permohonan bayaran: ' . ($bill->description ?? 'Tiada keterangan'),
-					'amount' => $bill->amount,
-					'status' => $bill->status,
-					'createdAt' => $bill->created_at
-				];
-			});
-
-			return response()->json(['activities' => $activities]);
-		} catch (Exception $error) {
-			return response()->json([
-				'status' => 'error',
-				'error' => $error->getMessage()
-			], 500);
-		}
-	}
-
-	/**
 	 * Toggle archive billing.
 	 */
 	public function toggleArchive($id)
@@ -438,4 +407,184 @@ class BillingController extends Controller
 			], 500);
 		}
 	}
+
+    /**
+     * Get recent activities with pagination and filtering
+     */
+    public function getRecentActivities(Request $request)
+    {
+        try {
+            $query = Billing::with(['creator', 'department'])
+                ->select('billings.*')
+                ->join('billing_histories', 'billings.id', '=', 'billing_histories.billing_id')
+                ->where('billings.department_id', $request->user()->department_id)
+                ->orderBy('billing_histories.created_at', 'DESC');
+
+            // Filter by date range
+            if ($request->has('start_date') && $request->has('end_date')) {
+                $query->whereBetween('billing_histories.created_at', [
+                    $request->start_date,
+                    $request->end_date
+                ]);
+            }
+
+            // Filter by status
+            if ($request->has('status_id')) {
+                $query->where('billings.status_id', $request->status_id);
+            }
+
+            $activities = $query->paginate($request->query('per_page', 10));
+
+            return response()->json([
+                'success' => true,
+                'data' => $activities->map(function ($billing) {
+                    return [
+                        'id' => $billing->id,
+                        'description' => $billing->description,
+                        'amount' => $billing->total_amount,
+                        'status' => $billing->status_id,
+                        'department' => $billing->department->name,
+                        'created_by' => $billing->creator->name,
+                        'created_at' => $billing->created_at
+                    ];
+                })
+            ]);
+        } catch (Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching activities',
+                'error' => $error->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get pending items with detailed information
+     */
+    public function getPendingItems(Request $request)
+    {
+        try {
+            $query = Billing::with(['creator', 'department', 'recipient'])
+                ->whereIn('status_id', [1, 2, 3]) // Pending, Review, Approval
+                ->where('department_id', $request->user()->department_id);
+
+            // Filter by status if specified
+            if ($request->has('status_id')) {
+                $query->where('status_id', $request->status_id);
+            }
+
+            $items = $query->get()->groupBy('status_id');
+
+            $summary = [];
+            foreach ($items as $status => $billings) {
+                $summary[] = [
+                    'status_id' => $status,
+                    'status_name' => $this->getStatusName($status),
+                    'count' => $billings->count(),
+                    'total_amount' => $billings->sum('total_amount'),
+                    'items' => $billings->map(function ($billing) {
+                        return [
+                            'id' => $billing->id,
+                            'running_no' => $billing->running_no,
+                            'description' => $billing->description,
+                            'amount' => $billing->total_amount,
+                            'created_by' => $billing->creator->name,
+                            'recipient' => $billing->recipient->name,
+                            'department' => $billing->department->name,
+                            'created_at' => $billing->created_at
+                        ];
+                    })
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $summary
+            ]);
+        } catch (Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching pending items',
+                'error' => $error->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get billing dashboard statistics
+     */
+    public function getDashboardStats(Request $request)
+    {
+        try {
+            $department_id = $request->user()->department_id;
+            
+            // Get total amount for current month
+            $currentMonth = now()->startOfMonth();
+            $lastMonth = now()->subMonth()->startOfMonth();
+            
+            $currentMonthTotal = Billing::where('department_id', $department_id)
+                ->where('created_at', '>=', $currentMonth)
+                ->sum('total_amount');
+                
+            $lastMonthTotal = Billing::where('department_id', $department_id)
+                ->whereBetween('created_at', [$lastMonth, $currentMonth])
+                ->sum('total_amount');
+            
+            // Calculate growth
+            $growth = $lastMonthTotal > 0 
+                ? (($currentMonthTotal - $lastMonthTotal) / $lastMonthTotal) * 100 
+                : 100;
+            
+            // Get counts by status
+            $statusCounts = Billing::where('department_id', $department_id)
+                ->selectRaw('status_id, COUNT(*) as count, SUM(total_amount) as total')
+                ->groupBy('status_id')
+                ->get()
+                ->mapWithKeys(function ($item) {
+                    return [$item->status_id => [
+                        'count' => $item->count,
+                        'total' => $item->total
+                    ]];
+                });
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'current_month' => [
+                        'total' => $currentMonthTotal,
+                        'growth' => round($growth, 2)
+                    ],
+                    'status_summary' => $statusCounts,
+                    'pending_count' => $statusCounts[1]['count'] ?? 0,
+                    'approved_count' => $statusCounts[6]['count'] ?? 0,
+                    'rejected_count' => $statusCounts[8]['count'] ?? 0
+                ]
+            ]);
+        } catch (Exception $error) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching dashboard statistics',
+                'error' => $error->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper function to get status name
+     */
+    private function getStatusName($status_id)
+    {
+        $statuses = [
+            1 => 'Dalam Proses',
+            2 => 'Perlu Semakan',
+            3 => 'Perlu Kelulusan',
+            4 => 'Diluluskan',
+            5 => 'Dalam Proses Bayaran',
+            6 => 'Selesai',
+            7 => 'Dibatalkan',
+            8 => 'Ditolak'
+        ];
+
+        return $statuses[$status_id] ?? 'Unknown Status';
+    }
 }

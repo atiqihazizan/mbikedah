@@ -72,4 +72,9 @@ class User extends Authenticatable
 		$roles = Config::get('constants.roles');
 		return array_search($this->role_id, $roles) ?: 'unknown';
 	}
+
+	public function isAdmin()
+	{
+		return $this->role_id === 1; // Assuming role_id 1 is for admin
+	}
 }

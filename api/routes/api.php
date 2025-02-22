@@ -29,18 +29,30 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-// Route::apiResource('billings', BillingController::class);
-
-// Route::post('/billings', [BillingController::class, 'createBilling'])
-//     ->middleware(ValidateRequest::class)
-//     ->middleware(CreateBillingRequest::class);
-    
-// Route::get('/billings', [BillingController::class, 'getBillings']);
-//     ->middleware(ValidateRequest::class)
-//     ->middleware(GetBillingsRequest::class);
-
-// Route::get('/billings/{id}', [BillingController::class, 'getBillingById']);
-
-//     ->middleware(ValidateRequest::class);
-// Route::middleware(['verifyToken', 'billing.access'])->group(function () {
-// });
+Route::middleware(['auth:sanctum'])->group(function () {
+    // Billing Routes
+    Route::prefix('billing')->group(function () {
+        // CRUD Operations
+        Route::post('/', [BillingController::class, 'createBilling']);
+        Route::get('/', [BillingController::class, 'getBillings']);
+        Route::get('/{id}', [BillingController::class, 'getBillingById']);
+        Route::put('/{id}', [BillingController::class, 'updateBilling']);
+        
+        // Status Management
+        Route::get('/status/{id}', [BillingController::class, 'getBillingStatus']);
+        Route::post('/status/{id}', [BillingController::class, 'updateStatus']);
+        Route::post('/approve/{id}', [BillingController::class, 'approveBilling']);
+        Route::post('/reject/{id}', [BillingController::class, 'rejectBilling']);
+        Route::post('/process/{id}', [BillingController::class, 'processBilling']);
+        
+        // Archive Management
+        Route::post('/toggle-archive/{id}', [BillingController::class, 'toggleArchive']);
+        
+        // Reports and Statistics
+        Route::get('/export', [BillingController::class, 'exportBillings']);
+        Route::get('/stats/dashboard', [BillingController::class, 'getDashboardStats']);
+        Route::get('/stats/general', [BillingController::class, 'getStats']);
+        Route::get('/activities', [BillingController::class, 'getRecentActivities']);
+        Route::get('/pending', [BillingController::class, 'getPendingItems']);
+    });
+});

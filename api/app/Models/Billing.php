@@ -10,7 +10,33 @@ class Billing extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['department_id', 'created_by', 'status_id', 'recipient_id', 'issued_at', 'approved_hod', 'review_by', 'verified_by', 'approved_by', 'paid_by', 'updated_by', 'is_archived'];
+    protected $fillable = [
+        'department_id',
+        'created_by',
+        'status_id',
+        'recipient_id',
+        'issued_at',
+        'approved_hod',
+        'review_by',
+        'verified_by',
+        'approved_by',
+        'paid_by',
+        'total_amount',
+        'payment_due',
+        'running_no',
+        'no_project',
+        'description',
+        'payment_method',
+        'is_archived',
+        'updated_by'
+    ];
+    
+    protected $casts = [
+        'issued_at' => 'date',
+        'payment_due' => 'date',
+        'total_amount' => 'decimal:2',
+        'is_archived' => 'boolean'
+    ];
     
     public function department()
     {

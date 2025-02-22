@@ -7,12 +7,16 @@ use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
-    public function run()
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
     {
         $this->call([
             DepartmentSeeder::class, // Tambah ini
+            UserSeeder::class,
+            BudgetSeeder::class,
             BillingRecipientSeeder::class,
-            // Tambah seeder lain jika perlu
         ]);
     }
 }
