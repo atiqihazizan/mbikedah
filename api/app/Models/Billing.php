@@ -98,36 +98,68 @@ class Billing extends Model
         return $this->belongsTo(User::class, 'paid_by');
     }
 
+    /**
+     * Check if the billing can transition to the given status.
+     *
+     * @param int $newStatus
+     * @return bool
+     */
     public function canTransitionTo($newStatus)
     {
-        $steps = config('constants.BILLING_STEPS');
-        $allowedTransitions = $steps[$this->status_id] ?? [];
-        return in_array($newStatus, $allowedTransitions);
+        // // Define allowed status transitions
+        // $allowedTransitions = [
+        //     1 => [2], // Draft -> Pending
+        //     2 => [3, 4], // Pending -> Approved or Rejected
+        //     3 => [5], // Approved -> Paid
+        //     4 => [], // Rejected -> No further transitions
+        //     5 => [] // Paid -> No further transitions
+        // ];
+
+        $allowedTransitions = config('constants.BILLING_STEPS');
+
+        // Check if current status exists in allowed transitions
+        if (!isset($allowedTransitions[$this->status_id])) {
+            return false;
+        }
+
+        // Check if new status is in allowed transitions for current status
+        return in_array($newStatus, $allowedTransitions[$this->status_id]);
     }
 
-    public function updateStatus($status_id, $updated_by, $remarks = null)
+    /**
+     * Update the billing status.
+     *
+     * @param int $newStatus
+     * @param int $userId
+     * @param string|null $remarks
+     * @return bool
+     */
+    public function updateStatus($newStatus, $userId, $remarks = null)
     {
-        $currentStatus = $this->status;
-
-        // Semak jika peralihan status dibenarkan
-        if (!$this->canTransitionTo($status_id)) {
+        if (!$this->canTransitionTo($newStatus)) {
             throw new \Exception('Invalid status transition');
         }
 
-        // Kemas kini status billing
-        $this->status = $status_id;
-        $this->updated_by = $updated_by;
-        $this->save();
+        $this->status_id = $newStatus;
+        $this->updated_by = $userId;
+        
+        // Update specific fields based on status
+        switch ($newStatus) {
+            case 2: // Pending
+                $this->review_by = $userId;
+                break;
+            case 3: // Approved
+                $this->approved_by = $userId;
+                break;
+            case 4: // Rejected
+                // No specific field to update
+                break;
+            case 5: // Paid
+                $this->paid_by = $userId;
+                break;
+        }
 
-        // Tambah sejarah status
-        BillingHistory::create([
-            'billing_id' => $this->id,
-            'status_id' => $status_id,
-            'remarks' => $remarks,
-            'created_by' => $updated_by
-        ]);
-
-        return $this;
+        return $this->save();
     }
 
     public function toggleArchive($id)

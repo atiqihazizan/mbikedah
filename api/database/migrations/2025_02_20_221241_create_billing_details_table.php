@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('description');
             $table->decimal('price', 12, 2);
             $table->integer('quantity');
+            $table->string('unit')->nullable(); 
             $table->decimal('total', 12, 2)->storedAs('price * quantity');
             $table->timestamps();
         });

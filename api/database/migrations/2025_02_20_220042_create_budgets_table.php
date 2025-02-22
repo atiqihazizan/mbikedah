@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('budgets', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('parent_id')->nullable()->constrained('budgets')->onDelete('cascade')->default(null);
+            $table->foreignId('parent_id')->nullable()->constrained('budgets')->onDelete('cascade')->default(0);
             $table->string('code');
             $table->string('name');
             $table->year('yearly')->default(0);

@@ -9,7 +9,16 @@ class BillingDetail extends Model
 {
     use HasFactory;
     
-    protected $fillable = ['billing_id', 'budget_id', 'description', 'quantity', 'unit_price', 'total_price'];
+    protected $fillable = [
+        'billing_id',
+        'budget_id',
+        'budget_code',
+        'reference',
+        'description',
+        'price',
+        'quantity',
+        'total'
+    ];
     
     public function billing()
     {

@@ -9,11 +9,12 @@ class BillingRecipient extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'name', 
-        'address', 
-        'phone', 
-        'email',
-        'company_name',
-        'company_registration_no',
+        'name',
+        'short',
+        'attn',
+        'hp',
+        'tel',
+        'fax',
+        'addr'
     ];
 }

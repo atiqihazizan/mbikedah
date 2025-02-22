@@ -32,6 +32,12 @@ return [
     'ceo' => 6,
   ],
 
+  'payment_methods' => [
+    'cheque',
+    'online',
+    'cash'
+  ],
+
   'ABILITIES' => [
     1 => 'Create',
     2 => 'View',
