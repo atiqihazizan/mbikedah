@@ -239,7 +239,7 @@ button,
 input:where([type='button']),
 input:where([type='reset']),
 input:where([type='submit']) {
-  -webkit-appearance: button;
+  /* -webkit-appearance: button; */
   /* 1 */
   background-color: transparent;
   /* 2 */
@@ -286,7 +286,7 @@ Correct the cursor style of increment and decrement buttons in Safari.
 */
 
 [type='search'] {
-  -webkit-appearance: textfield;
+  /* -webkit-appearance: textfield; */
   /* 1 */
   outline-offset: -2px;
   /* 2 */
@@ -426,7 +426,7 @@ embed,
 object {
   display: block;
   /* 1 */
-  vertical-align: middle;
+  /* vertical-align: middle; */
   /* 2 */
 }
 
@@ -576,7 +576,7 @@ video {
     overflow: hidden;
   }
 
-   {
+   /* {
     width: var(--tw-sidebar-width) !important;
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
     height: var(--tw-header-height) !important;
@@ -584,14 +584,14 @@ video {
     display: none !important;
     padding-left: var(--tw-sidebar-width) !important;
     transition: padding-left var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
-  }
+  } */
 
   .demo1.sidebar-fixed.header-fixed .\!header {
     left: var(--tw-sidebar-width) !important;
     transition: left var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
   }
 
-   {
+   /* {
     width: var(--tw-sidebar-defualt-width) !important;
     display: none !important;
     display: flex !important;
@@ -623,7 +623,7 @@ video {
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
     display: none !important;
     display: flex !important;
-  }
+  } */
 
   .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-badge, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-badge {
     display: none !important;
@@ -651,7 +651,7 @@ video {
     transform: translateX(100%) !important;
   }
 
-   {
+   /* {
     overflow: hidden !important;
     width: var(--tw-sidebar-width) !important;
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
@@ -667,7 +667,7 @@ video {
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
     display: none !important;
     display: flex !important;
-  }
+  } */
 
   .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-badge, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-badge {
     display: none !important;
@@ -695,7 +695,7 @@ video {
     transform: translateX(100%) !important;
   }
 
-   {
+   /* {
     overflow: hidden !important;
     width: var(--tw-sidebar-width) !important;
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
@@ -711,7 +711,7 @@ video {
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
     display: none !important;
     display: flex !important;
-  }
+  } */
 
   .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-badge, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-badge {
     display: none !important;
@@ -739,7 +739,7 @@ video {
     transform: translateX(100%) !important;
   }
 
-   {
+   /* {
     overflow: hidden !important;
     width: var(--tw-sidebar-width) !important;
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
@@ -755,7 +755,7 @@ video {
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
     display: none !important;
     display: flex !important;
-  }
+  } */
 
   .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-badge, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-badge {
     display: none !important;
@@ -783,7 +783,7 @@ video {
     transform: translateX(100%) !important;
   }
 
-   {
+   /* {
     overflow: hidden !important;
     width: var(--tw-sidebar-width) !important;
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
@@ -799,7 +799,7 @@ video {
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
     display: none !important;
     display: flex !important;
-  }
+  } */
 
   .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-badge, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-badge {
     display: none !important;
@@ -827,7 +827,7 @@ video {
     transform: translateX(100%) !important;
   }
 
-   {
+   /* {
     overflow: hidden !important;
     width: var(--tw-sidebar-width) !important;
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
@@ -843,7 +843,7 @@ video {
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
     display: none !important;
     display: flex !important;
-  }
+  } */
 
   .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-badge, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-badge {
     display: none !important;
@@ -871,7 +871,7 @@ video {
     transform: translateX(100%) !important;
   }
 
-   {
+   /* {
     overflow: hidden !important;
     width: var(--tw-sidebar-width) !important;
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
@@ -887,7 +887,7 @@ video {
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
     display: none !important;
     display: flex !important;
-  }
+  } */
 
   .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-badge, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-badge {
     display: none !important;
@@ -915,7 +915,7 @@ video {
     transform: translateX(100%) !important;
   }
 
-   {
+   /* {
     overflow: hidden !important;
     width: var(--tw-sidebar-width) !important;
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
@@ -931,7 +931,7 @@ video {
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
     display: none !important;
     display: flex !important;
-  }
+  } */
 
   .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-badge, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-badge {
     display: none !important;
@@ -959,7 +959,7 @@ video {
     transform: translateX(100%) !important;
   }
 
-   {
+   /* {
     overflow: hidden !important;
     width: var(--tw-sidebar-width) !important;
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
@@ -975,7 +975,7 @@ video {
     transition: width var(--tw-sidebar-transition-duration) var(--tw-sidebar-transition-timing) !important;
     display: none !important;
     display: flex !important;
-  }
+  } */
 
   .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item > .menu-link .menu-badge, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-title, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-arrow, .demo1.sidebar-collapse .sidebar:not(:hover) .\!menu > .menu-item .menu-label .menu-badge {
     display: none !important;
@@ -1003,9 +1003,9 @@ video {
     transform: translateX(100%) !important;
   }
 
-   {
+   /* {
     overflow: hidden !important;
-  }
+  } */
 }
 
 :root {
@@ -1579,9 +1579,6 @@ video {
   padding-bottom: 0.625rem;
 }
 
-.menu-default .menu-item {
-}
-
 .menu-default .menu-link {
   margin-left: 0.625rem;
   margin-right: 0.625rem;
@@ -1702,9 +1699,6 @@ video {
 
 .dropdown {
   display: flex;
-}
-
-.dropdown-toggle {
 }
 
 .dropdown-content {
@@ -2618,9 +2612,9 @@ video {
   outline: 0;
 }
 
-.range:focus::-webkit-slider-thumb, .range:focus::-webkit-slider-thumb {
+/* .range:focus::-webkit-slider-thumb, .range:focus::-webkit-slider-thumb {
   box-shadow: ;
-}
+} */
 
 .range::-moz-focus-outer {
   border: 0;
