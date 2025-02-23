@@ -28,12 +28,13 @@ class BillingHistoryTest extends TestCase
             'code' => 'TEST'
         ]);
 
-        // Create user
+        // Create and authenticate user
         $this->user = User::factory()->create([
-            'department_id' => $this->department->id
+            'department_id' => $this->department->id,
+            'role_id' => 1 // Admin role
         ]);
 
-        $this->actingAs($this->user);
+        Auth::login($this->user);
     }
 
     public function test_create_history_when_status_updated()
