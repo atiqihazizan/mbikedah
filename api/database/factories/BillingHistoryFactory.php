@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\BillingHistory;
 use App\Models\Billing;
 use App\Models\User;
+use App\Constants\BillingStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class BillingHistoryFactory extends Factory
@@ -24,26 +25,26 @@ class BillingHistoryFactory extends Factory
     public function definition(): array
     {
         $statuses = [
-            Billing::STATUS_DRAFT,
-            Billing::STATUS_RETURNED,
-            Billing::STATUS_CHECKED,
-            Billing::STATUS_VERIFIED,
-            Billing::STATUS_APPROVED,
-            Billing::STATUS_PROCESS_PAYMENT,
-            Billing::STATUS_PAID,
-            Billing::STATUS_REJECTED,
-            Billing::STATUS_CANCELLED
+            BillingStatus::DRAFT,
+            BillingStatus::HOD_APPROVAL,
+            BillingStatus::FINANCE_REVIEW,
+            BillingStatus::FINANCE_VERIFY,
+            BillingStatus::FINANCE_APPROVAL,
+            BillingStatus::PROCESSING_PAYMENT,
+            BillingStatus::PAID,
+            BillingStatus::COMPLETED,
+            BillingStatus::REJECTED
         ];
 
-        $oldStatus = fake()->randomElement($statuses);
-        $newStatus = fake()->randomElement(array_diff($statuses, [$oldStatus]));
+        $oldStatus = $this->faker->randomElement($statuses);
+        $newStatus = $this->faker->randomElement(array_diff($statuses, [$oldStatus]));
 
         return [
             'billing_id' => Billing::factory(),
             'old_status' => $oldStatus,
             'new_status' => $newStatus,
-            'created_by' => User::factory(),
-            'remarks' => fake()->sentence(),
+            'remarks' => $this->faker->sentence,
+            'created_by' => User::factory()
         ];
     }
 }

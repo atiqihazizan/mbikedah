@@ -27,7 +27,8 @@ trait HasStatus
       7 => 'Paid',
       8 => 'Rejected',
       9 => 'Cancelled',
-      10 => 'Returned'
+      10 => 'Returned',
+      11 => 'Complete'
     ];
   }
 
@@ -56,15 +57,16 @@ trait HasStatus
     // ];
     $allowedTransitions = [
       1 => [2, 9],           // Draft -> Approval HOD
-      2 => [3, 8, 9, 10],        // Approval HOD -> Checking Finance, Rejected
+      2 => [3, 8, 10],        // Approval HOD -> Checking Finance, Rejected
       3 => [4, 9],           // Checking Finance -> Approval Finance
       4 => [5, 8, 9, 10],        // Verify Finance -> Verified, Rejected
       5 => [6, 8, 9],        // Approval Finance -> Approved, Rejected
       6 => [7, 9],           // Approved -> Paid
-      7 => [],               // Paid -> (no further transitions)
+      7 => [11, 9],               // Paid -> Complete or Cancel
       8 => [],               // Rejected -> (no further transitions)
       9 => [],               // Cancelled -> (no further transitions)
-      10 => [1]                // Returned -> (no further transitions)
+      10 => [1],             // Returned -> (no further transitions)
+      11 => []                // Complete -> (no further transitions)
     ];
 
     return in_array($newStatus, $allowedTransitions[$this->status_id] ?? []);

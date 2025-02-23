@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Billing;
 use App\Models\User;
 use App\Models\Department;
+use App\Constants\BillingStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -34,7 +35,7 @@ class BillingFactory extends Factory
             'total_amount' => fake()->randomFloat(2, 100, 10000),
             'department_id' => $department->id,
             'created_by' => $user->id,
-            'status_id' => Billing::STATUS_DRAFT,
+            'status_id' => Billing::STATUS_FINANCE_REVIEW,
             'payment_method' => fake()->randomElement(['cash', 'cheque', 'online']),
             'no_project' => fake()->word() ?? 'N/A',
             'running_no' => 'BILL-' . fake()->unique()->randomNumber(6),
@@ -51,67 +52,67 @@ class BillingFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status_id' => Billing::STATUS_DRAFT
+                'status_id' => BillingStatus::DRAFT
             ];
         });
     }
 
     /**
-     * Indicate that the billing is returned.
+     * Indicate that the billing is hod approved.
      */
-    public function returned(): Factory
+    public function hodApproved(): Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status_id' => Billing::STATUS_RETURNED
+                'status_id' => BillingStatus::HOD_APPROVAL
             ];
         });
     }
 
     /**
-     * Indicate that the billing is checked.
+     * Indicate that the billing is in finance review state.
      */
-    public function checked(): Factory
+    public function financeReview(): Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status_id' => Billing::STATUS_CHECKED
+                'status_id' => BillingStatus::FINANCE_REVIEW
             ];
         });
     }
 
     /**
-     * Indicate that the billing is verified.
+     * Indicate that the billing is finance verified.
      */
-    public function verified(): Factory
+    public function financeVerified(): Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status_id' => Billing::STATUS_VERIFIED
+                'status_id' => BillingStatus::FINANCE_VERIFY
             ];
         });
     }
 
     /**
-     * Indicate that the billing is approved.
+     * Indicate that the billing is finance approved.
      */
-    public function approved(): Factory
+    public function financeApproved(): Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status_id' => Billing::STATUS_APPROVED
+                'status_id' => BillingStatus::FINANCE_APPROVAL
             ];
         });
     }
 
     /**
-     * Indicate that the billing is in process payment.
+     * Indicate that the billing is processing payment.
      */
-    public function processPayment(): Factory
+    public function processingPayment(): Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status_id' => Billing::STATUS_PROCESS_PAYMENT
+                'status_id' => BillingStatus::PROCESSING_PAYMENT
             ];
         });
     }
@@ -123,7 +124,19 @@ class BillingFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status_id' => Billing::STATUS_PAID
+                'status_id' => BillingStatus::PAID
+            ];
+        });
+    }
+
+    /**
+     * Indicate that the billing is completed.
+     */
+    public function completed(): Factory
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'status_id' => BillingStatus::COMPLETED
             ];
         });
     }
@@ -135,19 +148,7 @@ class BillingFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'status_id' => Billing::STATUS_REJECTED
-            ];
-        });
-    }
-
-    /**
-     * Indicate that the billing is cancelled.
-     */
-    public function cancelled(): Factory
-    {
-        return $this->state(function (array $attributes) {
-            return [
-                'status_id' => Billing::STATUS_CANCELLED
+                'status_id' => BillingStatus::REJECTED
             ];
         });
     }

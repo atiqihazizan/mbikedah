@@ -74,7 +74,8 @@ class AuthController extends Controller
 				'email' => $user->email,
 				'role_id' => $user->role_id,
 				'department_id' => $user->department_id,
-				'department' => $user->department
+				'department' => $user->department ? $user->department->name : null,
+				'role' => $user->role_name
 			]
 		]);
 	}
@@ -95,13 +96,14 @@ class AuthController extends Controller
     $user = $request->user()->load('department');
 		return response()->json([
 			'success' => true,
-			'data' => [
+			'user' => [
 				'id' => $user->id,
 				'name' => $user->name,
 				'username' => $user->username,
 				'department_id' => $user->department_id,
 				'department' => $user->department ? $user->department->name : null,
-				'role_id' => $user->role_id
+				'role_id' => $user->role_id,
+				'role' => $user->role_name
 			]
 		]);
 	}

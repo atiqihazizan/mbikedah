@@ -11,7 +11,7 @@ const SidebarContext = createContext();
 export default function Sidebar({ children ,logout}) {
   const [expanded, setExpanded] = useState(true)
   const {
-    currentUser: { name, role },
+    currentUser: { name, username },
   } = useStateContext();
   
   return (
@@ -53,7 +53,7 @@ export default function Sidebar({ children ,logout}) {
               }`}
             >
               <div className="leading-4">
-                <h4 className="font-semibold">{role}</h4>
+                <h4 className="font-semibold">{username}</h4>
                 <span className="text-xs text-gray-600 text-nowrap">
                   {name}
                 </span>

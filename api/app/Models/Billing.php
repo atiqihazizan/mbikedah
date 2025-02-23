@@ -13,6 +13,7 @@ use App\Models\BillingRecipient;
 use App\Models\User;
 use App\Models\Department;
 use App\Models\BillingDetail;
+use App\Constants\BillingStatus;
 
 class Billing extends Model
 {
@@ -44,15 +45,17 @@ class Billing extends Model
     ];
 
     // Status constants
-    const STATUS_DRAFT = 1;
-    const STATUS_RETURNED = 2;
-    const STATUS_CHECKED = 3;
-    const STATUS_VERIFIED = 4;
-    const STATUS_APPROVED = 5;
-    const STATUS_PROCESS_PAYMENT = 6;
-    const STATUS_PAID = 7;
-    const STATUS_REJECTED = 8;
-    const STATUS_CANCELLED = 9;
+    const STATUS_DRAFT = BillingStatus::DRAFT;
+    const STATUS_HOD_APPROVAL = BillingStatus::HOD_APPROVAL;
+    const STATUS_FINANCE_REVIEW = BillingStatus::FINANCE_REVIEW;
+    const STATUS_FINANCE_VERIFY = BillingStatus::FINANCE_VERIFY;
+    const STATUS_FINANCE_APPROVAL = BillingStatus::FINANCE_APPROVAL;
+    const STATUS_PROCESSING_PAYMENT = BillingStatus::PROCESSING_PAYMENT;
+    const STATUS_PAID = BillingStatus::PAID;
+    const STATUS_COMPLETED = BillingStatus::COMPLETED;
+    const STATUS_REJECTED = BillingStatus::REJECTED;
+    const STATUS_RETURNED = BillingStatus::RETURNED;
+    const STATUS_CANCELLED = BillingStatus::CANCELLED;
 
     // Payment method constants 
     const PAYMENT_CASH = 'cash';
@@ -97,5 +100,10 @@ class Billing extends Model
     public function history(): HasMany
     {
         return $this->hasMany(BillingHistory::class);
+    }
+
+    public function getStatusName()
+    {
+        return BillingStatus::getStatusName($this->status_id);
     }
 }

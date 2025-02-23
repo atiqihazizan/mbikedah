@@ -25,20 +25,29 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
     Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::get('/auth/user', [AuthController::class, 'user']);
+    Route::get('/auth/me', [AuthController::class, 'getMe']);
 
     // Billing routes
     Route::get('/billings', [BillingController::class, 'getBillings']);
     Route::post('/billings', [BillingController::class, 'createBilling']);
     Route::get('/billings/{id}', [BillingController::class, 'getBillingById']);
     Route::post('/billings/{id}/status', [BillingController::class, 'updateStatus']);
-    Route::post('/billings/{id}/approve', [BillingController::class, 'approve']);
+    
+    // Billing Status Routes
+    Route::post('/billings/{id}/hod-approve', [BillingController::class, 'hodApprove']);
+    Route::post('/billings/{id}/finance-review', [BillingController::class, 'financeReview']);
+    Route::post('/billings/{id}/finance-verify', [BillingController::class, 'financeVerify']);
+    Route::post('/billings/{id}/finance-approve', [BillingController::class, 'financeApprove']);
+    Route::post('/billings/{id}/process-payment', [BillingController::class, 'processPayment']);
+    Route::post('/billings/{id}/paid', [BillingController::class, 'paid']);
+    Route::post('/billings/{id}/complete', [BillingController::class, 'complete']);
+    
+    // Action Routes
     Route::post('/billings/{id}/reject', [BillingController::class, 'reject']);
     Route::post('/billings/{id}/return', [BillingController::class, 'return']);
-    Route::post('/billings/{id}/check', [BillingController::class, 'check']);
-    Route::post('/billings/{id}/verify', [BillingController::class, 'verify']);
-    Route::post('/billings/{id}/paid', [BillingController::class, 'paid']);
     Route::post('/billings/{id}/cancel', [BillingController::class, 'cancel']);
+    
+    // Reporting Routes
     Route::get('/billings/stats', [BillingController::class, 'getStats']);
     Route::get('/billings/activities', [BillingController::class, 'getRecentActivities']);
     Route::get('/billings/pending', [BillingController::class, 'getPendingItems']);
