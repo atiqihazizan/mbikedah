@@ -15,8 +15,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             DepartmentSeeder::class, // Tambah ini
             UserSeeder::class,
-            BudgetSeeder::class,
             BillingRecipientSeeder::class,
+            BudgetSeeder::class,
         ]);
     }
 }

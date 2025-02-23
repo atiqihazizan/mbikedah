@@ -1,28 +1,6 @@
 <?php
 
 return [
-  'BILLING_STEPS' => [
-    1 => [2],
-    2 => [3, 8, 9],
-    3 => [4],
-    4 => [5],
-    5 => [6, 8, 9],
-    6 => [7],
-    7 => [],
-  ],
-  'BILLING_STATUS' => [
-    1 => 'Draft',
-    2 => 'HOD Approval',
-    3 => 'Finance Review',
-    4 => 'Finance Verification',
-    5 => 'Finance Approval',
-    6 => 'Process Payment',
-    7 => 'Paid',
-    8 => 'Rejected',
-    9 => 'Cancelled',
-    10 => 'Returned',
-  ],
-
   'roles' => [
     'admin' => 1,
     'user' => 2,

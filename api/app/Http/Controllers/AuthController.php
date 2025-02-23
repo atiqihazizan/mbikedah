@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 use Illuminate\Support\Facades\Config;
+use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -26,7 +27,7 @@ class AuthController extends Controller
 			'username' => $request->username,
 			'email' => $request->email,
 			'password' => Hash::make($request->password),
-			'dept_id' => $request->dept_id,
+			'department_id' => $request->dept_id,
 			'role_id' => $request->role_id ?? Config::get('constants.roles.user'), // Gunakan role default jika tidak ada
 		]);
 
@@ -37,14 +38,15 @@ class AuthController extends Controller
 			'status' => 'success',
 			'token' => $token,
 			'user' => [
-				...$user->only(['id', 'name', 'email', 'username', 'dept_id']),
+				...$user->only(['id', 'name', 'email', 'username', 'department_id', 'role_id']),
 				'department' => $user->department ? $user->department->name : null,
 			],
 		], 201);
 	}
 
-
-	// Login
+    /**
+     * Handle user login
+     */
 	public function login(Request $request)
 	{
 		$request->validate([
@@ -55,19 +57,24 @@ class AuthController extends Controller
 		$user = User::where('username', $request->username)->first();
 
 		if (!$user || !Hash::check($request->password, $user->password)) {
-			return response()->json(['error' => 'Invalid credentials'], 401);
+			throw ValidationException::withMessages([
+                'username' => ['The provided credentials are incorrect.'],
+            ]);
 		}
 
-		$token = $user->createToken('auth_token')->plainTextToken;
-    $user->load('department');
+		$token = $user->createToken('auth-token')->plainTextToken;
 
 		return response()->json([
-			'status' => 'success',
+			'success' => true,
 			'token' => $token,
 			'user' => [
-				...$user->only(['id', 'name', 'email', 'username', 'dept_id','role_id']),
-				'department' => $user->department ? $user->department->name : null,
-				'role' => $user->role,
+				'id' => $user->id,
+				'name' => $user->name,
+				'username' => $user->username,
+				'email' => $user->email,
+				'role_id' => $user->role_id,
+				'department_id' => $user->department_id,
+				'department' => $user->department
 			]
 		]);
 	}
@@ -75,23 +82,26 @@ class AuthController extends Controller
 	// Logout
 	public function logout(Request $request)
 	{
-		$request->user()->tokens()->delete();
+		$request->user()->currentAccessToken()->delete();
 		return response()->json([
-			'status' => 'success',
-			'message' => 'Logged out successfully'
+			'success' => true,
+			'message' => 'Successfully logged out'
 		]);
 	}
 
 	// Get user profile
 	public function getMe(Request $request)
 	{
-    $user = $request->user();
+    $user = $request->user()->load('department');
 		return response()->json([
-			'status' => 'success',
-			'user' => [
-				...$user->only(['id', 'name', 'email', 'username', 'dept_id', 'role_id']),
+			'success' => true,
+			'data' => [
+				'id' => $user->id,
+				'name' => $user->name,
+				'username' => $user->username,
+				'department_id' => $user->department_id,
 				'department' => $user->department ? $user->department->name : null,
-				'role' => $user->role,
+				'role_id' => $user->role_id
 			]
 		]);
 	}

@@ -6,6 +6,7 @@
 yarn.lock
 
 billing-api/
+api_ver1/
 
 # Optional build and deployment files
 **/deploy.sh

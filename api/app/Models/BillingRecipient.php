@@ -3,11 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory; 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Billing;
 
 class BillingRecipient extends Model
 {
-    use HasFactory;
     protected $fillable = [
         'name',
         'short',
@@ -17,4 +17,12 @@ class BillingRecipient extends Model
         'fax',
         'addr'
     ];
+
+    /**
+     * Get the billings for the recipient.
+     */
+    public function billings(): HasMany
+    {
+        return $this->hasMany(Billing::class);
+    }
 }

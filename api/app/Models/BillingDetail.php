@@ -2,31 +2,32 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BillingDetail extends Model
 {
-    use HasFactory;
-    
     protected $fillable = [
         'billing_id',
-        'budget_id',
-        'budget_code',
-        'reference',
         'description',
+        'budget_code',
+        'budget_id',
         'price',
         'quantity',
-        'total'
+        'reference'
     ];
-    
-    public function billing()
+
+    protected $casts = [
+        'price' => 'decimal:2',
+        'quantity' => 'integer',
+        'budget_id' => 'integer'
+    ];
+
+    /**
+     * Get the billing that owns the detail.
+     */
+    public function billing(): BelongsTo
     {
         return $this->belongsTo(Billing::class);
-    }
-    
-    public function budget()
-    {
-        return $this->belongsTo(Budget::class);
     }
 }

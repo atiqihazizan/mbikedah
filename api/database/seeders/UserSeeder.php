@@ -64,16 +64,20 @@ class UserSeeder extends Seeder
 			['username' => 'nabil', 'name' => 'MOHD NABIL BIN MOHD AZIZ', 'department_id' => 12]
 		];
 
-		foreach ($users as $userData) {
+		$lastUserId = User::max('id') ?? 0;
+		
+		for ($i = 0; $i < count($users); $i++) {
+			$userData = $users[$i];
 			// Check if the department exists
 			if (Department::where('id', $userData['department_id'])->exists()) {
 				// Check if the user already exists
 				if (!User::where('username', $userData['username'])->exists()) {
 					User::create([
+						'id' => $lastUserId + $i + 1,
 						'name' => $userData['name'],
 						'username' => $userData['username'],
 						'email' => $userData['username'] . '@mbikedah.com.my', // Assuming email format
-						'password' => Hash::make('password'),
+						'password' => Hash::make('123456'),
 						'department_id' => $userData['department_id']
 					]);
 				}

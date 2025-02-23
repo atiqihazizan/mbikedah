@@ -4,168 +4,98 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use App\Traits\HasStatus;
+use App\Models\BillingRecipient;
 use App\Models\User;
+use App\Models\Department;
+use App\Models\BillingDetail;
 
 class Billing extends Model
 {
-    use HasFactory;
+    use HasFactory, HasStatus;
 
     protected $fillable = [
+        'description',
+        'total_amount',
         'department_id',
         'created_by',
         'status_id',
-        'recipient_id',
-        'issued_at',
-        'approved_hod',
-        'review_by',
-        'verified_by',
-        'approved_by',
-        'paid_by',
-        'total_amount',
-        'payment_due',
-        'running_no',
-        'no_project',
-        'description',
         'payment_method',
+        'issued_at',
+        'payment_due',
+        'no_project',
+        'running_no',
         'is_archived',
-        'updated_by'
+        'recipient_id'
     ];
-    
+
+    protected $appends = ['status_name', 'is_active'];
+
     protected $casts = [
-        'issued_at' => 'date',
-        'payment_due' => 'date',
         'total_amount' => 'decimal:2',
+        'issued_at' => 'datetime',
+        'payment_due' => 'datetime',
+        'status_id' => 'integer',
         'is_archived' => 'boolean'
     ];
-    
-    public function department()
-    {
-        return $this->belongsTo(Department::class);
-    }
-    
-    public function creator()
+
+    // Status constants
+    const STATUS_DRAFT = 1;
+    const STATUS_RETURNED = 2;
+    const STATUS_CHECKED = 3;
+    const STATUS_VERIFIED = 4;
+    const STATUS_APPROVED = 5;
+    const STATUS_PROCESS_PAYMENT = 6;
+    const STATUS_PAID = 7;
+    const STATUS_REJECTED = 8;
+    const STATUS_CANCELLED = 9;
+
+    // Payment method constants 
+    const PAYMENT_CASH = 'cash';
+    const PAYMENT_CHEQUE = 'cheque';
+    const PAYMENT_ONLINE = 'online';
+
+    /**
+     * Get the creator of the billing.
+     */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-    
-    public function recipient()
+
+    /**
+     * Get the department that owns the billing.
+     */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    /**
+     * Get the recipient of the billing.
+     */
+    public function recipient(): BelongsTo
     {
         return $this->belongsTo(BillingRecipient::class);
     }
-    
-    public function details()
+
+    /**
+     * Get the billing details.
+     */
+    public function details(): HasMany
     {
         return $this->hasMany(BillingDetail::class);
     }
-    
-    public function histories()
+
+    /**
+     * Get the billing history.
+     */
+    public function history(): HasMany
     {
         return $this->hasMany(BillingHistory::class);
-    }
-    
-    public function attachments()
-    {
-        return $this->hasMany(BillingAttachment::class);
-    }
-    
-    public function recipients()
-    {
-        return $this->hasMany(BillingRecipient::class);
-    }
-    
-    public function approvedHod()
-    {
-        return $this->belongsTo(User::class, 'approved_hod');
-    }
-    
-    public function reviewer()
-    {
-        return $this->belongsTo(User::class, 'review_by');
-    }
-    
-    public function verifier()
-    {
-        return $this->belongsTo(User::class, 'verified_by');
-    }
-    
-    public function approver()
-    {
-        return $this->belongsTo(User::class, 'approved_by');
-    }
-    
-    public function payer()
-    {
-        return $this->belongsTo(User::class, 'paid_by');
-    }
-
-    /**
-     * Check if the billing can transition to the given status.
-     *
-     * @param int $newStatus
-     * @return bool
-     */
-    public function canTransitionTo($newStatus)
-    {
-        // // Define allowed status transitions
-        // $allowedTransitions = [
-        //     1 => [2], // Draft -> Pending
-        //     2 => [3, 4], // Pending -> Approved or Rejected
-        //     3 => [5], // Approved -> Paid
-        //     4 => [], // Rejected -> No further transitions
-        //     5 => [] // Paid -> No further transitions
-        // ];
-
-        $allowedTransitions = config('constants.BILLING_STEPS');
-
-        // Check if current status exists in allowed transitions
-        if (!isset($allowedTransitions[$this->status_id])) {
-            return false;
-        }
-
-        // Check if new status is in allowed transitions for current status
-        return in_array($newStatus, $allowedTransitions[$this->status_id]);
-    }
-
-    /**
-     * Update the billing status.
-     *
-     * @param int $newStatus
-     * @param int $userId
-     * @param string|null $remarks
-     * @return bool
-     */
-    public function updateStatus($newStatus, $userId, $remarks = null)
-    {
-        if (!$this->canTransitionTo($newStatus)) {
-            throw new \Exception('Invalid status transition');
-        }
-
-        $this->status_id = $newStatus;
-        $this->updated_by = $userId;
-        
-        // Update specific fields based on status
-        switch ($newStatus) {
-            case 2: // Pending
-                $this->review_by = $userId;
-                break;
-            case 3: // Approved
-                $this->approved_by = $userId;
-                break;
-            case 4: // Rejected
-                // No specific field to update
-                break;
-            case 5: // Paid
-                $this->paid_by = $userId;
-                break;
-        }
-
-        return $this->save();
-    }
-
-    public function toggleArchive($id)
-    {
-        $billing = self::findOrFail($id);
-        $billing->is_archived = !$billing->is_archived; // Toggle the archive status
-        $billing->save();
     }
 }

@@ -25,10 +25,13 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
+            'username' => fake()->unique()->userName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'department_id' => 1, // Default department
+            'role_id' => 2, // Default to user role
         ];
     }
 
@@ -40,5 +43,14 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    public function withRoleId(int $roleId): static
+    {
+        return $this->state(function (array $attributes) use ($roleId) {
+            return [
+                'role_id' => $roleId,
+            ];
+        });
     }
 }

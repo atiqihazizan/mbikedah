@@ -14,9 +14,10 @@ return new class extends Migration
         Schema::create('billing_histories', function (Blueprint $table) {
             $table->id();
             $table->foreignId('billing_id')->constrained('billings')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->integer('status_id');
-            $table->string('remark')->nullable();
+            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
+            $table->unsignedTinyInteger('old_status');
+            $table->unsignedTinyInteger('new_status');
+            $table->string('remarks')->nullable();
             $table->timestamps();
         });
     }

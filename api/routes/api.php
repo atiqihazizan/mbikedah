@@ -2,57 +2,58 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
-use Laravel\Sanctum\Http\Middleware\VerifyCsrfToken;
-
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DepartmentController;
-use App\Http\Controllers\AuthController;
-use App\Http\Requests\CreateBillingRequest;
-use App\Http\Requests\GetBillingsRequest;
-use Illuminate\Support\Facades\Validator;
-use App\Http\Middleware\ValidateRequest;
+use App\Http\Controllers\UserController;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "api" middleware group. Make something great!
+|
+*/
 
-Route::prefix('auth')->group(function () {
-    // Route API untuk autentikasi
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
+// Public routes
+Route::post('/auth/login', [AuthController::class, 'login']);
 
-    // Gunakan Sanctum untuk proteksi route
-    Route::middleware([EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {
-        Route::post('/logout', [AuthController::class, 'logout']);
-        Route::get('/me', [AuthController::class, 'getMe']);
-    });
-});
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth routes
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/user', [AuthController::class, 'user']);
 
-Route::middleware(['auth:sanctum'])->group(function () {
-    // Billing Routes
-    Route::prefix('billing')->group(function () {
-        // CRUD Operations
-        Route::post('/', [BillingController::class, 'createBilling']);
-        Route::get('/', [BillingController::class, 'getBillings']);
-        Route::get('/{id}', [BillingController::class, 'getBillingById']);
-        Route::put('/{id}', [BillingController::class, 'updateBilling']);
-        
-        // Status Management
-        Route::get('/status/{id}', [BillingController::class, 'getBillingStatus']);
-        Route::post('/status/{id}', [BillingController::class, 'updateStatus']);
-        Route::post('/approve/{id}', [BillingController::class, 'approveBilling']);
-        Route::post('/reject/{id}', [BillingController::class, 'rejectBilling']);
-        Route::post('/process/{id}', [BillingController::class, 'processBilling']);
-        
-        // Archive Management
-        Route::post('/toggle-archive/{id}', [BillingController::class, 'toggleArchive']);
-        
-        // Reports and Statistics
-        Route::get('/export', [BillingController::class, 'exportBillings']);
-        Route::get('/stats/dashboard', [BillingController::class, 'getDashboardStats']);
-        Route::get('/stats/general', [BillingController::class, 'getStats']);
-        Route::get('/activities', [BillingController::class, 'getRecentActivities']);
-        Route::get('/pending', [BillingController::class, 'getPendingItems']);
-    });
+    // Billing routes
+    Route::get('/billings', [BillingController::class, 'getBillings']);
+    Route::post('/billings', [BillingController::class, 'createBilling']);
+    Route::get('/billings/{id}', [BillingController::class, 'getBillingById']);
+    Route::post('/billings/{id}/status', [BillingController::class, 'updateStatus']);
+    Route::post('/billings/{id}/approve', [BillingController::class, 'approve']);
+    Route::post('/billings/{id}/reject', [BillingController::class, 'reject']);
+    Route::post('/billings/{id}/return', [BillingController::class, 'return']);
+    Route::post('/billings/{id}/check', [BillingController::class, 'check']);
+    Route::post('/billings/{id}/verify', [BillingController::class, 'verify']);
+    Route::post('/billings/{id}/paid', [BillingController::class, 'paid']);
+    Route::post('/billings/{id}/cancel', [BillingController::class, 'cancel']);
+    Route::get('/billings/stats', [BillingController::class, 'getStats']);
+    Route::get('/billings/activities', [BillingController::class, 'getRecentActivities']);
+    Route::get('/billings/pending', [BillingController::class, 'getPendingItems']);
+
+    // Department routes
+    Route::get('/departments', [DepartmentController::class, 'index']);
+    Route::post('/departments', [DepartmentController::class, 'store']);
+    Route::get('/departments/{id}', [DepartmentController::class, 'show']);
+    Route::put('/departments/{id}', [DepartmentController::class, 'update']);
+    Route::delete('/departments/{id}', [DepartmentController::class, 'destroy']);
+
+    // User routes
+    Route::get('/users', [UserController::class, 'index']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
 });
