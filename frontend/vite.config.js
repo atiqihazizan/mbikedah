@@ -18,8 +18,9 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: '../api/public/dist',
     assetsDir: 'assets',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -38,7 +39,28 @@ export default defineConfig({
         },
         chunkFileNames: "assets/js/[name]-[hash].js",
         entryFileNames: "assets/js/[name]-[hash].js",
-        assetFileNames: "assets/[ext]/[name]-[hash].[ext]",
+        // assetFileNames: "assets/[ext]/[name]-[hash].[ext]",
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          
+          if (ext === 'svg') {
+            if (assetInfo.name.includes('keenicons')) {
+              return 'assets/icons/[name]-[hash][extname]';
+            }
+            return 'assets/svg/[name]-[hash][extname]';
+          }
+          if (ext === 'css') {
+            return 'assets/css/[name]-[hash][extname]';
+          }
+          if (/\.(png|jpe?g|gif|ico)$/.test(assetInfo.name)) {
+            return 'assets/images/[name]-[hash][extname]';
+          }
+          if (/\.(woff2?|eot|ttf|otf)$/.test(assetInfo.name)) {
+            return 'assets/fonts/[name]-[hash][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        }
       },
     },
     // Enable chunk size warnings at 500kb
@@ -46,5 +68,11 @@ export default defineConfig({
     // Enable gzip compression
     minify: "esbuild",
     sourcemap: false,
+  },
+  server: {
+    proxy: {
+      '/api': '/api', // Sesuaikan dengan URL Laravel
+      // '/api': 'http://mbiclicks.mbikedah.com.my/api', // Sesuaikan dengan URL Laravel
+    },
   },
 });
