@@ -18,51 +18,106 @@ use App\Http\Controllers\UserController;
 |
 */
 
-// Public routes
-Route::post('/auth/login', [AuthController::class, 'login']);
+/*
+|--------------------------------------------------------------------------
+| Authentication Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('auth')->group(function () {
+    // Public routes
+    Route::post('/login', [AuthController::class, 'login']);
 
-// Protected routes
+    // Protected routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/me', [AuthController::class, 'getMe']);
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Protected Routes
+|--------------------------------------------------------------------------
+*/
 Route::middleware('auth:sanctum')->group(function () {
-    // Auth routes
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::get('/auth/me', [AuthController::class, 'getMe']);
-
-    // Billing routes
-    Route::get('/billings', [BillingController::class, 'getBillings']);
-    Route::post('/billings', [BillingController::class, 'createBilling']);
-    Route::get('/billings/{id}', [BillingController::class, 'getBillingById']);
-    Route::post('/billings/{id}/status', [BillingController::class, 'updateStatus']);
     
-    // Billing Status Routes
-    Route::post('/billings/{id}/hod-approve', [BillingController::class, 'hodApprove']);
-    Route::post('/billings/{id}/finance-review', [BillingController::class, 'financeReview']);
-    Route::post('/billings/{id}/finance-verify', [BillingController::class, 'financeVerify']);
-    Route::post('/billings/{id}/finance-approve', [BillingController::class, 'financeApprove']);
-    Route::post('/billings/{id}/process-payment', [BillingController::class, 'processPayment']);
-    Route::post('/billings/{id}/paid', [BillingController::class, 'paid']);
-    Route::post('/billings/{id}/complete', [BillingController::class, 'complete']);
-    
-    // Action Routes
-    Route::post('/billings/{id}/reject', [BillingController::class, 'reject']);
-    Route::post('/billings/{id}/return', [BillingController::class, 'return']);
-    Route::post('/billings/{id}/cancel', [BillingController::class, 'cancel']);
-    
-    // Reporting Routes
-    Route::get('/billings/stats', [BillingController::class, 'getStats']);
-    Route::get('/billings/activities', [BillingController::class, 'getRecentActivities']);
-    Route::get('/billings/pending', [BillingController::class, 'getPendingItems']);
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('dashboard')->group(function () {
+        // User Dashboard
+        Route::get('/user-stats', [BillingController::class, 'getUserDashboardStats']);
+        Route::get('/user-tables', [BillingController::class, 'getUserDashboardTables']);
+        
+        // Officer Dashboard
+        Route::get('/officer-stats', [BillingController::class, 'getOfficerDashboardStats']);
+        Route::get('/officer-tables', [BillingController::class, 'getOfficerDashboardTables']);
+    });
 
-    // Department routes
-    Route::get('/departments', [DepartmentController::class, 'index']);
-    Route::post('/departments', [DepartmentController::class, 'store']);
-    Route::get('/departments/{id}', [DepartmentController::class, 'show']);
-    Route::put('/departments/{id}', [DepartmentController::class, 'update']);
-    Route::delete('/departments/{id}', [DepartmentController::class, 'destroy']);
+    /*
+    |--------------------------------------------------------------------------
+    | Billing Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('billings')->group(function () {
+        // Basic CRUD
+        Route::get('/', [BillingController::class, 'getBillings']);
+        Route::post('/', [BillingController::class, 'createBilling']);
+        Route::get('/{id}', [BillingController::class, 'getBillingById']);
+        Route::post('/{id}/status', [BillingController::class, 'updateStatus']);
+        
+        // Approval Flow
+        Route::prefix('{id}')->group(function () {
+            // HOD Level
+            Route::post('/hod-approve', [BillingController::class, 'hodApprove']);
+            
+            // Finance Level
+            Route::post('/finance-review', [BillingController::class, 'financeReview']);
+            Route::post('/finance-verify', [BillingController::class, 'financeVerify']);
+            Route::post('/finance-approve', [BillingController::class, 'financeApprove']);
+            
+            // Payment Level
+            Route::post('/process-payment', [BillingController::class, 'processPayment']);
+            Route::post('/paid', [BillingController::class, 'paid']);
+            Route::post('/complete', [BillingController::class, 'complete']);
+            
+            // Action Routes
+            Route::post('/reject', [BillingController::class, 'reject']);
+            Route::post('/return', [BillingController::class, 'return']);
+            Route::post('/cancel', [BillingController::class, 'cancel']);
+        });
+        
+        // Reporting Routes
+        Route::get('/stats', [BillingController::class, 'getStats']);
+        Route::get('/activities', [BillingController::class, 'getRecentActivities']);
+        Route::get('/pending', [BillingController::class, 'getPendingItems']);
+    });
 
-    // User routes
-    Route::get('/users', [UserController::class, 'index']);
-    Route::post('/users', [UserController::class, 'store']);
-    Route::get('/users/{id}', [UserController::class, 'show']);
-    Route::put('/users/{id}', [UserController::class, 'update']);
-    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    /*
+    |--------------------------------------------------------------------------
+    | Department Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('departments')->group(function () {
+        Route::get('/', [DepartmentController::class, 'index']);
+        Route::post('/', [DepartmentController::class, 'store']);
+        Route::get('/{id}', [DepartmentController::class, 'show']);
+        Route::put('/{id}', [DepartmentController::class, 'update']);
+        Route::delete('/{id}', [DepartmentController::class, 'destroy']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | User Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('users')->group(function () {
+        Route::get('/', [UserController::class, 'index']);
+        Route::post('/', [UserController::class, 'store']);
+        Route::get('/{id}', [UserController::class, 'show']);
+        Route::put('/{id}', [UserController::class, 'update']);
+        Route::delete('/{id}', [UserController::class, 'destroy']);
+    });
 });

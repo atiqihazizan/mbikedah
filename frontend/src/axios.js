@@ -7,7 +7,8 @@ const DEFAULT_BASE_URL = "/api"; // Fallback URL
 const RETRY_COUNT = 3;
 
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL,
+  // baseURL: import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL,
+  baseURL: DEFAULT_BASE_URL,
   timeout: DEFAULT_TIMEOUT,
   headers: {
     "Content-Type": "application/json",
@@ -25,6 +26,7 @@ axiosClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.log(error)
     return Promise.reject(error);
   }
 );

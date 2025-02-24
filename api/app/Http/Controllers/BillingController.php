@@ -298,20 +298,89 @@ class BillingController extends Controller
   }
 
   /**
-   * Get billing statistics by status
+   * Get comprehensive billing statistics for dashboard
    */
   public function getStats()
   {
     try {
-      $stats = Billing::where('department_id', request()->user()->department_id)
-        ->selectRaw('status_id, COUNT(*) as count, SUM(total_amount) as total')
-        ->groupBy('status_id')
+      $user = request()->user();
+      $query = Billing::query();
+
+      // Filter by department if user is not admin/finance
+      if (!$user->hasRole(['admin', 'finance'])) {
+        $query->where('department_id', $user->department_id);
+      }
+
+      // Get overall statistics
+      $overallStats = $query->selectRaw('
+        COUNT(*) as total_billings,
+        SUM(total_amount) as total_amount,
+        COUNT(CASE WHEN status_id IN (?, ?, ?) THEN 1 END) as pending_count,
+        SUM(CASE WHEN status_id IN (?, ?, ?) THEN total_amount END) as pending_amount,
+        COUNT(CASE WHEN status_id = ? THEN 1 END) as completed_count,
+        SUM(CASE WHEN status_id = ? THEN total_amount END) as completed_amount
+      ', [
+        BillingStatus::HOD_APPROVAL,
+        BillingStatus::FINANCE_REVIEW,
+        BillingStatus::FINANCE_VERIFY,
+        BillingStatus::HOD_APPROVAL,
+        BillingStatus::FINANCE_REVIEW,
+        BillingStatus::FINANCE_VERIFY,
+        BillingStatus::COMPLETED,
+        BillingStatus::COMPLETED
+      ])->first();
+
+      // Get statistics by status
+      $statusStats = $query->selectRaw('
+        status_id,
+        COUNT(*) as count,
+        SUM(total_amount) as total_amount
+      ')
+      ->groupBy('status_id')
+      ->get()
+      ->map(function ($stat) {
+        return [
+          'status_id' => $stat->status_id,
+          'status_name' => BillingStatus::getStatusName($stat->status_id),
+          'count' => $stat->count,
+          'total_amount' => $stat->total_amount
+        ];
+      });
+
+      // Get monthly trend (last 6 months)
+      $monthlyTrend = $query->selectRaw('
+        DATE_FORMAT(created_at, "%Y-%m") as month,
+        COUNT(*) as count,
+        SUM(total_amount) as total_amount
+      ')
+      ->where('created_at', '>=', now()->subMonths(6))
+      ->groupBy('month')
+      ->orderBy('month')
+      ->get();
+
+      // Get department statistics if user is admin/finance
+      $departmentStats = [];
+      if ($user->hasRole(['admin', 'finance'])) {
+        $departmentStats = $query->selectRaw('
+          departments.name as department_name,
+          COUNT(*) as count,
+          SUM(total_amount) as total_amount
+        ')
+        ->join('departments', 'billings.department_id', '=', 'departments.id')
+        ->groupBy('departments.id', 'departments.name')
         ->get();
+      }
 
       return response()->json([
         'success' => true,
-        'data' => $stats
+        'data' => [
+          'overall' => $overallStats,
+          'by_status' => $statusStats,
+          'monthly_trend' => $monthlyTrend,
+          'by_department' => $departmentStats
+        ]
       ]);
+
     } catch (Exception $error) {
       return response()->json([
         'success' => false,
@@ -628,7 +697,7 @@ class BillingController extends Controller
   }
 
   /**
-   * Get billing dashboard statistics
+   * Get dashboard statistics
    */
   public function getDashboardStats(Request $request)
   {
@@ -687,25 +756,214 @@ class BillingController extends Controller
   }
 
   /**
-   * Helper function to get status name
+   * Get dashboard statistics for normal users
    */
-  private function getStatusName($status_id)
+  public function getUserDashboardStats()
   {
-    $statuses = [
-      BillingStatus::DRAFT => 'Dalam Proses',
-      BillingStatus::HOD_APPROVAL => 'HOD Approval',
-      BillingStatus::FINANCE_REVIEW => 'Finance Review',
-      BillingStatus::FINANCE_VERIFY => 'Finance Verify',
-      BillingStatus::FINANCE_APPROVAL => 'Finance Approval',
-      BillingStatus::PROCESSING_PAYMENT => 'Proses Pembayaran',
-      BillingStatus::PAID => 'Dibayar',
-      BillingStatus::REJECTED => 'Ditolak',
-      BillingStatus::CANCELLED => 'Dibatalkan',
-      BillingStatus::RETURNED => 'Dikembalikan',
-      BillingStatus::COMPLETED => 'Selesai'
-    ];
+    try {
+      $user = request()->user();
+      $query = Billing::where('user_id', $user->id);
 
-    return $statuses[$status_id] ?? 'Unknown Status';
+      // Get counts by status
+      $statusCounts = $query->selectRaw('
+        COUNT(CASE WHEN status_id = ? THEN 1 END) as draft_count,
+        COUNT(CASE WHEN status_id IN (?, ?, ?, ?, ?) THEN 1 END) as pending_count,
+        COUNT(CASE WHEN status_id = ? THEN 1 END) as approved_count,
+        COUNT(CASE WHEN status_id = ? THEN 1 END) as rejected_count
+      ', [
+        BillingStatus::DRAFT,
+        BillingStatus::HOD_APPROVAL,
+        BillingStatus::FINANCE_REVIEW,
+        BillingStatus::FINANCE_VERIFY,
+        BillingStatus::FINANCE_APPROVAL,
+        BillingStatus::PROCESSING_PAYMENT,
+        BillingStatus::COMPLETED,
+        BillingStatus::REJECTED
+      ])->first();
+
+      // Get time-based statistics
+      $now = now();
+      $timeStats = [
+        'weekly' => $query->whereBetween('created_at', [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()])->count(),
+        'monthly' => $query->whereBetween('created_at', [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()])->count(),
+        'yearly' => $query->whereBetween('created_at', [$now->copy()->startOfYear(), $now->copy()->endOfYear()])->count()
+      ];
+
+      return response()->json([
+        'success' => true,
+        'data' => [
+          'status_counts' => $statusCounts,
+          'time_stats' => $timeStats
+        ]
+      ]);
+    } catch (Exception $error) {
+      return response()->json(['success' => false, 'message' => $error->getMessage()], 500);
+    }
+  }
+
+  /**
+   * Get dashboard tables data for normal users
+   */
+  public function getUserDashboardTables()
+  {
+    try {
+      $user = request()->user();
+      $query = Billing::with(['department', 'user'])
+        ->where('user_id', $user->id)
+        ->select('id', 'reference_no', 'total_amount', 'status_id', 'created_at', 'department_id', 'user_id');
+
+      // Draft and pending items
+      $activeItems = $query->clone()
+        ->whereIn('status_id', [
+          BillingStatus::DRAFT,
+          BillingStatus::HOD_APPROVAL,
+          BillingStatus::FINANCE_REVIEW,
+          BillingStatus::FINANCE_VERIFY,
+          BillingStatus::FINANCE_APPROVAL,
+          BillingStatus::PROCESSING_PAYMENT,
+          BillingStatus::RETURNED
+        ])
+        ->latest()
+        ->get()
+        ->map(function ($item) {
+          return [
+            'id' => $item->id,
+            'reference_no' => $item->reference_no,
+            'total_amount' => $item->total_amount,
+            'status' => BillingStatus::getStatusName($item->status_id),
+            'created_at' => $item->created_at,
+            'department' => $item->department->name,
+            'applicant' => $item->user->name
+          ];
+        });
+
+      // Completed, rejected, cancelled items
+      $completedItems = $query->clone()
+        ->whereIn('status_id', [
+          BillingStatus::COMPLETED,
+          BillingStatus::REJECTED,
+          BillingStatus::CANCELLED
+        ])
+        ->latest()
+        ->get()
+        ->map(function ($item) {
+          return [
+            'id' => $item->id,
+            'reference_no' => $item->reference_no,
+            'total_amount' => $item->total_amount,
+            'status' => BillingStatus::getStatusName($item->status_id),
+            'created_at' => $item->created_at,
+            'department' => $item->department->name,
+            'applicant' => $item->user->name
+          ];
+        });
+
+      return response()->json([
+        'success' => true,
+        'data' => [
+          'active_items' => $activeItems,
+          'completed_items' => $completedItems
+        ]
+      ]);
+    } catch (Exception $error) {
+      return response()->json(['success' => false, 'message' => $error->getMessage()], 500);
+    }
+  }
+
+  /**
+   * Get dashboard statistics for officers (HOD, Finance, etc)
+   */
+  public function getOfficerDashboardStats()
+  {
+    try {
+      $user = request()->user();
+      $query = Billing::query();
+
+      // Filter based on role
+      if ($user->hasRole('hod')) {
+        $query->where('department_id', $user->department_id)
+              ->where('status_id', BillingStatus::HOD_APPROVAL);
+      } elseif ($user->hasRole('finance_checker')) {
+        $query->where('status_id', BillingStatus::FINANCE_REVIEW);
+      } elseif ($user->hasRole('finance_verifier')) {
+        $query->where('status_id', BillingStatus::FINANCE_VERIFY);
+      } elseif ($user->hasRole('finance_approver')) {
+        $query->where('status_id', BillingStatus::FINANCE_APPROVAL);
+      } elseif ($user->hasRole('finance_payment')) {
+        $query->whereIn('status_id', [BillingStatus::PROCESSING_PAYMENT, BillingStatus::PAID]);
+      }
+
+      // Get counts
+      $stats = $query->selectRaw('
+        COUNT(CASE WHEN status_id IN (?, ?, ?, ?, ?) THEN 1 END) as pending_count,
+        COUNT(CASE WHEN status_id = ? THEN 1 END) as approved_count,
+        COUNT(CASE WHEN status_id = ? THEN 1 END) as rejected_count,
+        COUNT(CASE WHEN status_id = ? THEN 1 END) as returned_count
+      ', [
+        BillingStatus::HOD_APPROVAL,
+        BillingStatus::FINANCE_REVIEW,
+        BillingStatus::FINANCE_VERIFY,
+        BillingStatus::FINANCE_APPROVAL,
+        BillingStatus::PROCESSING_PAYMENT,
+        BillingStatus::COMPLETED,
+        BillingStatus::REJECTED,
+        BillingStatus::RETURNED
+      ])->first();
+
+      return response()->json([
+        'success' => true,
+        'data' => $stats
+      ]);
+    } catch (Exception $error) {
+      return response()->json(['success' => false, 'message' => $error->getMessage()], 500);
+    }
+  }
+
+  /**
+   * Get dashboard tables data for officers
+   */
+  public function getOfficerDashboardTables()
+  {
+    try {
+      $user = request()->user();
+      $query = Billing::with(['department', 'user'])
+        ->select('id', 'reference_no', 'total_amount', 'status_id', 'created_at', 'department_id', 'user_id');
+
+      // Filter based on role
+      if ($user->hasRole('hod')) {
+        $query->where('department_id', $user->department_id)
+              ->where('status_id', BillingStatus::HOD_APPROVAL);
+      } elseif ($user->hasRole('finance_checker')) {
+        $query->where('status_id', BillingStatus::FINANCE_REVIEW);
+      } elseif ($user->hasRole('finance_verifier')) {
+        $query->where('status_id', BillingStatus::FINANCE_VERIFY);
+      } elseif ($user->hasRole('finance_approver')) {
+        $query->where('status_id', BillingStatus::FINANCE_APPROVAL);
+      } elseif ($user->hasRole('finance_payment')) {
+        $query->whereIn('status_id', [BillingStatus::PROCESSING_PAYMENT, BillingStatus::PAID]);
+      }
+
+      $items = $query->latest()
+        ->get()
+        ->map(function ($item) {
+          return [
+            'id' => $item->id,
+            'reference_no' => $item->reference_no,
+            'total_amount' => $item->total_amount,
+            'status' => BillingStatus::getStatusName($item->status_id),
+            'created_at' => $item->created_at,
+            'department' => $item->department->name,
+            'applicant' => $item->user->name
+          ];
+        });
+
+      return response()->json([
+        'success' => true,
+        'data' => $items
+      ]);
+    } catch (Exception $error) {
+      return response()->json(['success' => false, 'message' => $error->getMessage()], 500);
+    }
   }
 
   /**
@@ -807,5 +1065,27 @@ class BillingController extends Controller
     $billing->updateStatus(BillingStatus::CANCELLED, Auth::id(), $request->input('remarks', 'Billing cancelled'));
     
     return response()->json(['message' => 'Billing cancelled']);
+  }
+
+  /**
+   * Helper function to get status name
+   */
+  private function getStatusName($status_id)
+  {
+    $statuses = [
+      BillingStatus::DRAFT => 'Dalam Proses',
+      BillingStatus::HOD_APPROVAL => 'HOD Approval',
+      BillingStatus::FINANCE_REVIEW => 'Finance Review',
+      BillingStatus::FINANCE_VERIFY => 'Finance Verify',
+      BillingStatus::FINANCE_APPROVAL => 'Finance Approval',
+      BillingStatus::PROCESSING_PAYMENT => 'Proses Pembayaran',
+      BillingStatus::PAID => 'Dibayar',
+      BillingStatus::REJECTED => 'Ditolak',
+      BillingStatus::CANCELLED => 'Dibatalkan',
+      BillingStatus::RETURNED => 'Dikembalikan',
+      BillingStatus::COMPLETED => 'Selesai'
+    ];
+
+    return $statuses[$status_id] ?? 'Unknown Status';
   }
 }

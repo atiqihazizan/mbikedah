@@ -7,20 +7,20 @@ import HrDashboard from "./dashboard/HrDashboard";
 function Dashboard() {
   const { currentUser } = useStateContext();
 
-  const getDashboardByRole = () => {
-    switch (currentUser?.role) {
-      case 'hod':
-        return <HodDashboard />;
-      case 'finance':
-        return <FinanceDashboard />;
-      case 'hr':
-        return <HrDashboard />;
-      default:
-        return <ApplicantDashboard />;
-    }
-  };
+  // const getDashboardByRole = () => {
+  //   switch (currentUser?.role) {
+  //     case 'hod':
+  //       return <HodDashboard />;
+  //     case 'finance':
+  //       return <FinanceDashboard />;
+  //     case 'hr':
+  //       return <HrDashboard />;
+  //     default:
+  //       return <ApplicantDashboard />;
+  //   }
+  // };
 
-  return getDashboardByRole();
+  return <ApplicantDashboard />
 }
 
 export default Dashboard;

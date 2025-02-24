@@ -5,6 +5,7 @@ import DashboardStats from "./components/DashboardStats";
 import DashboardChart from "./components/DashboardChart";
 import PendingItems from "./components/PendingItems";
 import RecentActivities from "./components/RecentActivities";
+import axiosClient from "../../axios";
 
 function ApplicantDashboard() {
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +54,21 @@ function ApplicantDashboard() {
     }
   ];
 
+  const fetchDashboardData = async () => {
+    console.log("fetching dashboard data...")
+    try {
+      const [stats] = await Promise.all([
+        axiosClient.get('/dashboard/officer-stats'),
+        // axiosClient.get('/billing/stats'),
+        // axiosClient.get('/billing/pending'),
+        // axiosClient.get('/billing/recent-activities')
+      ]);
+      console.log(stats)
+    } catch (error) {
+      console.log(error)
+    }
+  };
+
   useEffect(() => {
     setTimeout(() => {
       setStatsData({
@@ -63,6 +79,7 @@ function ApplicantDashboard() {
       });
       setIsLoading(false);
     }, 1000);
+    fetchDashboardData()
   }, []);
 
   return (
