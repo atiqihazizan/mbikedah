@@ -3,7 +3,7 @@ import axios from "axios";
 
 // Konfigurasi default
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
-const DEFAULT_BASE_URL = "http://localhost:5001"; // Fallback URL
+const DEFAULT_BASE_URL = "/api"; // Fallback URL
 const RETRY_COUNT = 3;
 
 const axiosClient = axios.create({

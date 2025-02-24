@@ -6,7 +6,7 @@ import autoprefixer from 'autoprefixer'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/dist/',
+  base: process.env.VITE_BASE_PATH || '/',
   css: {
     preprocessorOptions: {
       css: {
@@ -35,7 +35,6 @@ export default defineConfig({
           ],
           query: ["axios"],
           "components": ["recharts"],
-          // Add more vendor chunks as needed
         },
         chunkFileNames: "assets/js/[name]-[hash].js",
         entryFileNames: "assets/js/[name]-[hash].js",
