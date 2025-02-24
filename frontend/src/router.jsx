@@ -16,10 +16,9 @@ const router = createBrowserRouter([
 		children: [
 			{ path: "/dashboard", element: <Navigate to="/" /> },
 			{ path: "/", element: <Dashboard /> },
-			{ path: "/billing/icomplete", element: <Payments /> },
 			{ path: "/billing/archive", element: <Payments /> },
 			{ path: "/billing/form", element: <PaymentsForm /> },
-			{ path: "/billing/icomplete/:idform", element: <PaymentsForm /> },
+			{ path: "/billing/:idform/edit", element: <PaymentsForm /> },
 		],
 	},
 	{

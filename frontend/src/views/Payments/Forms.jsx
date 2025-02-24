@@ -29,7 +29,7 @@ export default function PaymentsForm() {
 
   const fetchData = () => {
     if (flagNew) return;
-    setPetition(dataJson.filter((item) => item.id == idform)[0]);
+    // setPetition(dataJson.filter((item) => item.id == idform)[0]);
     setLoading(false);
   };
 
