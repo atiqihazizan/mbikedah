@@ -6,7 +6,7 @@ import axiosClient from "../../axios";
 import { useStateContext } from "../../contexts/ContextProvider";
 
 function ApplicantDashboard() {
-  const { countActive, setCountActive } = useStateContext();
+  const { countActive, setCountActive, showToast } = useStateContext();
   const [isLoading, setIsLoading] = useState(true);
   const [statsData, setStatsData] = useState({
     draft_count: 0,
@@ -36,32 +36,55 @@ function ApplicantDashboard() {
     }
   ];
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      try {
-        const {
-          success,
-          data: { stats, tables },
-        } = await axiosClient.get("/dashboard");
-        if (success) {
-          setStatsData(stats.status_counts);
-          setActiveItems(tables.active_items);
-          setCountActive(tables.active_items.length);
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.log(error)
+  const fetchDashboardData = async () => {
+    setIsLoading(true);
+    try {
+      const { success, data } = await axiosClient.get("/dashboard");
+      if (success) {
+        const { stats, tables } = data;
+        setStatsData(stats.status_counts);
+        setActiveItems(tables.active_items);
+        setCountActive(tables.active_items.length);
+        setIsLoading(false);
       }
-    };
-    fetchDashboardData()
+    } catch (error) {
+      console.log(error);
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
   }, []);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Adakah anda pasti untuk padam permohonan ini?")) {
+      return;
+    }
+
+    try {
+      const { data } = await axiosClient.delete(`/billing/${id}`);
+      if (data.success) {
+        showToast("success", "Permohonan berjaya dipadam");
+        fetchDashboardData(); // Refresh data
+      } else {
+        showToast("error", data.message || "Gagal memadam permohonan");
+      }
+    } catch (error) {
+      console.error("Error deleting billing:", error);
+      showToast("error", "Gagal memadam permohonan");
+    }
+  };
 
   return (
     <PageComponent title="Dashboard Pemohon">
       <div className="container mx-auto px-4 py-6 h-[calc(100vh-120px)] scrollable-y-hover overflow-auto">
         <DashboardStats statsData={statsData} />
-        <ActiveItemsTable items={activeItems} isLoading={isLoading} />
+        <ActiveItemsTable 
+          items={activeItems} 
+          isLoading={isLoading} 
+          onDelete={handleDelete}
+        />
       </div>
     </PageComponent>
   );

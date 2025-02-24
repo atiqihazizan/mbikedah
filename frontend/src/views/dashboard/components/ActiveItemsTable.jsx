@@ -1,6 +1,8 @@
 import { format, parseISO } from "date-fns";
+import { Link } from "react-router-dom";
+import { Pencil, Trash2 } from "lucide-react";
 
-function ActiveItemsTable({ items = [], isLoading }) {
+function ActiveItemsTable({ items = [], isLoading, onDelete }) {
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
@@ -41,12 +43,9 @@ function ActiveItemsTable({ items = [], isLoading }) {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Tarikh Dibuat
               </th>
-              {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Jabatan
-              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Pemohon
-              </th> */}
+                Tindakan
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -83,22 +82,31 @@ function ActiveItemsTable({ items = [], isLoading }) {
                     {item.status}
                   </span>
                 </td>
-
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {format(parseISO(item.created_at), "dd/MM/yyyy HH:mm")}
                 </td>
-                {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {item.department}
-                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {item.applicant}
-                </td> */}
+                  <div className="flex space-x-2">
+                    <Link
+                      to={`/billing/${item.id}/edit`}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      <Pencil size={18} />
+                    </Link>
+                    <button
+                      onClick={() => onDelete(item.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
             {items.length === 0 && (
               <tr>
                 <td
-                  colSpan="6"
+                  colSpan="7"
                   className="px-6 py-4 text-center text-sm text-gray-500"
                 >
                   Tiada permohonan aktif
