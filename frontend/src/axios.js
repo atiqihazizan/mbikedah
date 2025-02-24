@@ -21,7 +21,8 @@ axiosClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("MBI_TOKEN");
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      const _token = token.split("|")[1];
+      config.headers.Authorization = `Bearer ${_token}`;
     }
     return config;
   },

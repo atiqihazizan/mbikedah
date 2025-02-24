@@ -16,10 +16,10 @@ class AuthController extends Controller
 		$request->validate([
 			'name' => 'required|string|max:255',
 			'username' => 'required|string|max:255|unique:users',
-			'email' => 'required|email|unique:users',
-			'password' => 'required|min:6',
+			'email' => 'required|string|email|unique:users',
+			'password' => 'required|string|min:8',
 			'dept_id' => 'nullable|exists:departments,id',
-			'role_id' => 'required|integer|in:' . implode(',', array_values(Config::get('constants.roles')))
+			'ability_id' => 'required|integer|in:' . implode(',', array_values(Config::get('constants.abilities')))
 		]);
 
 		$user = User::create([
@@ -28,7 +28,7 @@ class AuthController extends Controller
 			'email' => $request->email,
 			'password' => Hash::make($request->password),
 			'department_id' => $request->dept_id,
-			'role_id' => $request->role_id ?? Config::get('constants.roles.user'), // Gunakan role default jika tidak ada
+			'ability_id' => $request->ability_id ?? Config::get('constants.abilities.user'), // Use default ability if not provided
 		]);
 
     $user->load('department');
@@ -38,7 +38,7 @@ class AuthController extends Controller
 			'status' => 'success',
 			'token' => $token,
 			'user' => [
-				...$user->only(['id', 'name', 'email', 'username', 'department_id', 'role_id']),
+				...$user->only(['id', 'name', 'email', 'username', 'department_id', 'ability_id']),
 				'department' => $user->department ? $user->department->name : null,
 			],
 		], 201);
@@ -72,10 +72,10 @@ class AuthController extends Controller
 				'name' => $user->name,
 				'username' => $user->username,
 				'email' => $user->email,
-				'role_id' => $user->role_id,
+				'ability_id' => $user->ability_id,
 				'department_id' => $user->department_id,
 				'department' => $user->department ? $user->department->name : null,
-				'role' => $user->role_name
+				'ability' => $user->ability_name
 			]
 		]);
 	}
@@ -102,8 +102,8 @@ class AuthController extends Controller
 				'username' => $user->username,
 				'department_id' => $user->department_id,
 				'department' => $user->department ? $user->department->name : null,
-				'role_id' => $user->role_id,
-				'role' => $user->role_name
+				'ability_id' => $user->ability_id,
+				'ability' => $user->ability_name
 			]
 		]);
 	}

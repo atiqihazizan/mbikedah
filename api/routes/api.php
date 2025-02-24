@@ -47,13 +47,15 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('dashboard')->group(function () {
-        // User Dashboard
-        Route::get('/user-stats', [BillingController::class, 'getUserDashboardStats']);
-        Route::get('/user-tables', [BillingController::class, 'getUserDashboardTables']);
+        Route::get('/', [BillingController::class, 'getDashboardData']);
+
+        // // User Dashboard
+        // Route::get('/user-stats', [BillingController::class, 'getUserDashboardStats']);
+        // Route::get('/user-tables', [BillingController::class, 'getUserDashboardTables']);
         
-        // Officer Dashboard
-        Route::get('/officer-stats', [BillingController::class, 'getOfficerDashboardStats']);
-        Route::get('/officer-tables', [BillingController::class, 'getOfficerDashboardTables']);
+        // // Officer Dashboard
+        // Route::get('/officer-stats', [BillingController::class, 'getOfficerDashboardStats']);
+        // Route::get('/officer-tables', [BillingController::class, 'getOfficerDashboardTables']);
     });
 
     /*
@@ -65,7 +67,6 @@ Route::middleware('auth:sanctum')->group(function () {
         // Basic CRUD
         Route::get('/', [BillingController::class, 'getBillings']);
         Route::post('/', [BillingController::class, 'createBilling']);
-        Route::get('/{id}', [BillingController::class, 'getBillingById']);
         Route::post('/{id}/status', [BillingController::class, 'updateStatus']);
         
         // Approval Flow
@@ -93,6 +94,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/stats', [BillingController::class, 'getStats']);
         Route::get('/activities', [BillingController::class, 'getRecentActivities']);
         Route::get('/pending', [BillingController::class, 'getPendingItems']);
+        Route::get('/export', [BillingController::class, 'exportBillings']);
+        Route::get('/{id}', [BillingController::class, 'getBillingById']);
     });
 
     /*

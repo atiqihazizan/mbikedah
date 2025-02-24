@@ -18,7 +18,7 @@ class UserSeeder extends Seeder
 				'username' => 'admin',
 				'email' => 'admin@mbikedah.com.my',
 				'password' => Hash::make('123456'),
-				'role_id' => 1	
+				'ability_id' => 1	
 			]);
 		}
 

@@ -56,15 +56,18 @@ class Auth
 		}
 	}
 
-	public function authorize(...$roles)
+	/**
+	 * Authorize specific abilities
+	 */
+	public function authorize(...$abilities)
 	{
-		return function (Request $request, Closure $next) use ($roles) {
+		return function (Request $request, Closure $next) use ($abilities) {
 			$user = $request->attributes->get('user');
 
-			if (!$user || !in_array($user->role, $roles)) {
+			if (!$user || !in_array($user->ability, $abilities)) {
 				return response()->json([
 					'status' => 'error',
-					'error' => 'User role ' . ($user->role ?? 'unknown') . ' is not authorized to access this route'
+					'error' => 'User ability ' . ($user->ability ?? 'unknown') . ' is not authorized to access this route'
 				], 403);
 			}
 

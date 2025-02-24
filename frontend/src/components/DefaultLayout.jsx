@@ -19,7 +19,13 @@ import Spinner from "./Spinner";
 import Sidebar, { SidebarItem } from "./Sidebar";
 
 const navigation = [
-  { text: "Dashboard", to: "/", icon: <LayoutDashboard size={20} />, type: 1 },
+  {
+    text: "Dashboard",
+    to: "/",
+    icon: <LayoutDashboard size={20} />,
+    type: 1,
+    badgeCount: 0,
+  },
   { text: "Permohonan Bayaran", to: "", type: 0 },
   {
     text: "Permohonan Baru",
@@ -27,13 +33,12 @@ const navigation = [
     icon: <FilePlus size={20} />,
     type: 1,
   },
-  {
-    text: "Masih Aktif",
-    to: "/billing/icomplete",
-    icon: <FolderOpen size={20} />,
-    type: 1,
-    badgeCount: 3,
-  },
+  // {
+  //   text: "Masih Aktif",
+  //   to: "/billing/icomplete",
+  //   icon: <FolderOpen size={20} />,
+  //   type: 1,
+  // },
   {
     text: "Sudah Selesai",
     to: "/billing/archive",
@@ -113,7 +118,8 @@ const navigation = [
 ];
 
 export default function DefaultLayout() {
-  const { currentUser, setCurrentUser, userToken, setUserToken } = useStateContext();
+  const { currentUser, setCurrentUser, userToken, setUserToken, countActive } =
+    useStateContext();
   if (!userToken) return <Navigate to="/login" />;
 
   const logout = (ev) => {
@@ -127,7 +133,7 @@ export default function DefaultLayout() {
   useEffect(() => {
     axiosClient
       .get("/auth/me")
-      .then(({user}) => {
+      .then(({ user }) => {
         setCurrentUser(user);
       })
       .catch((e) => {
@@ -141,9 +147,12 @@ export default function DefaultLayout() {
       <>
         <div className="flex">
           <Sidebar logout={logout}>
-            {navigation.map((n, i) => (
-              <SidebarItem key={i} {...n} />
-            ))}
+            {navigation.map((n, i) => {
+              if (i === 0) {
+                n.badgeCount = countActive;
+              }
+              return <SidebarItem key={i} {...n} />;
+            })}
           </Sidebar>
           <div className="w-full h-screen flex flex-col overflow-hidden">
             <Outlet />

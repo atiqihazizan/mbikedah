@@ -1,13 +1,14 @@
 <?php
 
 return [
-  'roles' => [
+  'abilities' => [
     'admin' => 1,
-    'user' => 2,
+    'applicant' => 2,
     'hod' => 3,
-    'finance' => 4,
-    'hr' => 5,
-    'ceo' => 6,
+    'checker' => 4,
+    'verifier' => 5,
+    'approver' => 6,
+    'payment' => 7,
   ],
 
   'payment_methods' => [

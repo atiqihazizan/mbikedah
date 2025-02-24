@@ -9,16 +9,19 @@ class BillingAccess extends Model
 {
     use HasFactory;
     
-    protected $fillable = ['user_id', 'type_role_id', 'billing_id', 'permissions'];
+    protected $fillable = ['user_id', 'type_ability_id', 'billing_id', 'permissions'];
     
     public function user()
     {
         return $this->belongsTo(User::class);
     }
     
-    public function typeRole()
+    /**
+     * Get the type ability that owns the billing access.
+     */
+    public function typeAbility()
     {
-        return $this->belongsTo(TypeRole::class);
+        return $this->belongsTo(TypeAbility::class);
     }
     
     public function billing()

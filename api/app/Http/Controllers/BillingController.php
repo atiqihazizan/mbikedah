@@ -21,6 +21,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Requests\UpdateBillingStatusRequest;
 use App\Exports\BillingsExport;
 use App\Constants\BillingStatus;
+use App\Constants\UserAbilities;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Cache;
 
@@ -97,6 +98,15 @@ class BillingController extends Controller
 
       DB::beginTransaction();
 
+      if (!$request->user()->hasAbility([UserAbilities::ADMIN, UserAbilities::APPLICANT])) {
+        return response()->json(['message' => 'You do not have permission to create billing'], 403);
+      }
+
+      $departmentId = $request->user()->department_id;
+      if ($request->user()->hasAbility(UserAbilities::ADMIN)) {
+        $departmentId = $validatedData['department_id'];
+      }
+
       // Create billing
       $billing = Billing::create([
         'description' => $validatedData['description'],
@@ -104,14 +114,14 @@ class BillingController extends Controller
         'recipient_id' => $validatedData['recipient_id'],
         'total_amount' => $validatedData['total_amount'],
         'payment_method' => $validatedData['payment_method'] ?? 'online',
-        'department_id' => $validatedData['department_id'],
+        'department_id' => $departmentId,
         'running_no' => $validatedData['running_no'] ?? uniqid('BILL-'),
         'created_by' => $request->user()->id,
         'issued_at' => $validatedData['issued_at'],
         'payment_due' => $validatedData['payment_due'],
         'is_archived' => false
       ]);
-      
+
       // Create billing details
       foreach ($validatedData['detail'] as $detail) {
         BillingDetail::create([
@@ -162,13 +172,13 @@ class BillingController extends Controller
       }
 
       // Validate and set limits for pagination
-      $perPage = min($request->query('per_page', 10), 100); 
+      $perPage = min($request->query('per_page', 10), 100);
       $page = max($request->query('page', 1), 1);
 
       // Select specific columns only
       $query = Billing::select([
         'id',
-        'running_no', 
+        'running_no',
         'description',
         'no_project',
         'total_amount',
@@ -180,18 +190,18 @@ class BillingController extends Controller
         'created_at',
         'is_archived'
       ])
-      ->with([
-        'department:id,name',
-        'creator:id,name', 
-        'recipient:id,name'
-      ]);
+        ->with([
+          'department:id,name',
+          'creator:id,name',
+          'recipient:id,name'
+        ]);
 
       // Filter archived
       $archived = $request->query('archived', false);
       if ($archived) {
         $query->whereIn('status_id', [
           BillingStatus::PAID,
-          BillingStatus::REJECTED, 
+          BillingStatus::REJECTED,
           BillingStatus::CANCELLED
         ]);
       } else {
@@ -234,7 +244,7 @@ class BillingController extends Controller
       $query->from('billings')->useIndex('billings_created_at_index');
 
       $billings = $query->orderBy('created_at', 'desc')
-                      ->paginate($perPage);
+        ->paginate($perPage);
 
       $response = BillingTableResource::collection($billings);
 
@@ -244,8 +254,7 @@ class BillingController extends Controller
       }
 
       return $response->response()
-             ->header('Cache-Control', 'public, max-age=300');
-
+        ->header('Cache-Control', 'public, max-age=300');
     } catch (Exception $error) {
       return response()->json([
         'success' => false,
@@ -307,7 +316,7 @@ class BillingController extends Controller
       $query = Billing::query();
 
       // Filter by department if user is not admin/finance
-      if (!$user->hasRole(['admin', 'finance'])) {
+      if (!$user->hasAbility([config('constants.abilities.admin'), config('constants.abilities.finance')])) {
         $query->where('department_id', $user->department_id);
       }
 
@@ -336,16 +345,16 @@ class BillingController extends Controller
         COUNT(*) as count,
         SUM(total_amount) as total_amount
       ')
-      ->groupBy('status_id')
-      ->get()
-      ->map(function ($stat) {
-        return [
-          'status_id' => $stat->status_id,
-          'status_name' => BillingStatus::getStatusName($stat->status_id),
-          'count' => $stat->count,
-          'total_amount' => $stat->total_amount
-        ];
-      });
+        ->groupBy('status_id')
+        ->get()
+        ->map(function ($stat) {
+          return [
+            'status_id' => $stat->status_id,
+            'status_name' => BillingStatus::getStatusName($stat->status_id),
+            'count' => $stat->count,
+            'total_amount' => $stat->total_amount
+          ];
+        });
 
       // Get monthly trend (last 6 months)
       $monthlyTrend = $query->selectRaw('
@@ -353,22 +362,22 @@ class BillingController extends Controller
         COUNT(*) as count,
         SUM(total_amount) as total_amount
       ')
-      ->where('created_at', '>=', now()->subMonths(6))
-      ->groupBy('month')
-      ->orderBy('month')
-      ->get();
+        ->where('created_at', '>=', now()->subMonths(6))
+        ->groupBy('month')
+        ->orderBy('month')
+        ->get();
 
       // Get department statistics if user is admin/finance
       $departmentStats = [];
-      if ($user->hasRole(['admin', 'finance'])) {
+      if ($user->hasAbility([config('constants.abilities.admin'), config('constants.abilities.finance')])) {
         $departmentStats = $query->selectRaw('
           departments.name as department_name,
           COUNT(*) as count,
           SUM(total_amount) as total_amount
         ')
-        ->join('departments', 'billings.department_id', '=', 'departments.id')
-        ->groupBy('departments.id', 'departments.name')
-        ->get();
+          ->join('departments', 'billings.department_id', '=', 'departments.id')
+          ->groupBy('departments.id', 'departments.name')
+          ->get();
       }
 
       return response()->json([
@@ -380,7 +389,6 @@ class BillingController extends Controller
           'by_department' => $departmentStats
         ]
       ]);
-
     } catch (Exception $error) {
       return response()->json([
         'success' => false,
@@ -401,14 +409,14 @@ class BillingController extends Controller
       $cached = Cache::get($cacheKey);
       if ($cached) {
         return response()->json($cached)
-               ->header('Cache-Control', 'public, max-age=300');
+          ->header('Cache-Control', 'public, max-age=300');
       }
 
       // Select specific columns
       $billing = Billing::select([
         'id',
         'running_no',
-        'description', 
+        'description',
         'no_project',
         'total_amount',
         'payment_method',
@@ -421,38 +429,38 @@ class BillingController extends Controller
         'payment_due',
         'is_archived'
       ])
-      ->with([
-        'department:id,name',
-        'creator:id,name',
-        'recipient:id,name',
-        'details' => function($query) {
-          $query->select([
-            'id', 
-            'billing_id',
-            'description',
-            'budget_code',
-            'budget_id', 
-            'price',
-            'quantity',
-            'reference',
-            'total'
-          ]);
-        },
-        'details.budget:id,name,code',
-        'history' => function($query) {
-          $query->select([
-            'id',
-            'billing_id', 
-            'old_status',
-            'new_status',
-            'remarks',
-            'created_by',
-            'created_at'
-          ])->orderBy('created_at', 'desc');
-        },
-        'history.creator:id,name'
-      ])
-      ->findOrFail($id);
+        ->with([
+          'department:id,name',
+          'creator:id,name',
+          'recipient:id,name',
+          'details' => function ($query) {
+            $query->select([
+              'id',
+              'billing_id',
+              'description',
+              'budget_code',
+              'budget_id',
+              'price',
+              'quantity',
+              'reference',
+              'total'
+            ]);
+          },
+          'details.budget:id,name,code',
+          'history' => function ($query) {
+            $query->select([
+              'id',
+              'billing_id',
+              'old_status',
+              'new_status',
+              'remarks',
+              'created_by',
+              'created_at'
+            ])->orderBy('created_at', 'desc');
+          },
+          'history.creator:id,name'
+        ])
+        ->findOrFail($id);
 
       $response = new BillingDetailResource($billing);
 
@@ -460,8 +468,7 @@ class BillingController extends Controller
       Cache::put($cacheKey, $response->response()->getData(), now()->addMinutes(5));
 
       return $response->response()
-             ->header('Cache-Control', 'public, max-age=300');
-
+        ->header('Cache-Control', 'public, max-age=300');
     } catch (Exception $error) {
       return response()->json([
         'success' => false,
@@ -554,7 +561,6 @@ class BillingController extends Controller
         'message' => 'Status updated successfully',
         'data' => new BillingResource($billing->fresh())
       ]);
-
     } catch (Exception $error) {
       return response()->json([
         'success' => false,
@@ -697,60 +703,51 @@ class BillingController extends Controller
   }
 
   /**
-   * Get dashboard statistics
+   * Get dashboard and table data
    */
-  public function getDashboardStats(Request $request)
+  public function getDashboardData(Billing $billing)
   {
     try {
-      $department_id = $request->user()->department_id;
+      $user = request()->user();
 
-      // Get total amount for current month
-      $currentMonth = now()->startOfMonth();
-      $lastMonth = now()->subMonth()->startOfMonth();
+      // Jika user adalah admin atau applicant, dapatkan stats untuk user biasa
+      if ($user->hasAbility([UserAbilities::ADMIN, UserAbilities::APPLICANT])) {
+        $stats = $this->getUserDashboardStats();
+        $tables = $this->getUserDashboardTables();
+        
+        if (!$stats['success'] || !$tables['success']) {
+          throw new Exception($stats['message'] ?? $tables['message'] ?? 'Failed to get dashboard data');
+        }
 
-      $currentMonthTotal = Billing::where('department_id', $department_id)
-        ->where('created_at', '>=', $currentMonth)
-        ->sum('total_amount');
+        return response()->json([
+          'success' => true,
+          'data' => [
+            'stats' => $stats['data'],
+            'tables' => $tables['data']
+          ]
+        ]);
+      } 
+      // Selain applicant (admin, hod, finance dll), dapatkan stats untuk officer
+      else {
+        $stats = $this->getOfficerDashboardStats();
+        $tables = $this->getOfficerDashboardTables();
+        
+        if (!$stats['success'] || !$tables['success']) {
+          throw new Exception($stats['message'] ?? $tables['message'] ?? 'Failed to get dashboard data');
+        }
 
-      $lastMonthTotal = Billing::where('department_id', $department_id)
-        ->whereBetween('created_at', [$lastMonth, $currentMonth])
-        ->sum('total_amount');
-
-      // Calculate growth
-      $growth = $lastMonthTotal > 0
-        ? (($currentMonthTotal - $lastMonthTotal) / $lastMonthTotal) * 100
-        : 100;
-
-      // Get counts by status
-      $statusCounts = Billing::where('department_id', $department_id)
-        ->selectRaw('status_id, COUNT(*) as count, SUM(total_amount) as total')
-        ->groupBy('status_id')
-        ->get()
-        ->mapWithKeys(function ($item) {
-          return [$item->status_id => [
-            'count' => $item->count,
-            'total' => $item->total
-          ]];
-        });
-
-      return response()->json([
-        'success' => true,
-        'data' => [
-          'current_month' => [
-            'total' => $currentMonthTotal,
-            'growth' => round($growth, 2)
-          ],
-          'status_summary' => $statusCounts,
-          'pending_count' => $statusCounts[BillingStatus::DRAFT]['count'] ?? 0,
-          'approved_count' => $statusCounts[BillingStatus::FINANCE_APPROVAL]['count'] ?? 0,
-          'rejected_count' => $statusCounts[BillingStatus::REJECTED]['count'] ?? 0
-        ]
-      ]);
+        return response()->json([
+          'success' => true,
+          'data' => [
+            'stats' => $stats['data'],
+            'tables' => $tables['data']
+          ]
+        ]);
+      }
     } catch (Exception $error) {
       return response()->json([
         'success' => false,
-        'message' => 'Error fetching dashboard statistics',
-        'error' => $error->getMessage()
+        'message' => $error->getMessage()
       ], 500);
     }
   }
@@ -762,42 +759,62 @@ class BillingController extends Controller
   {
     try {
       $user = request()->user();
-      $query = Billing::where('user_id', $user->id);
 
-      // Get counts by status
-      $statusCounts = $query->selectRaw('
-        COUNT(CASE WHEN status_id = ? THEN 1 END) as draft_count,
-        COUNT(CASE WHEN status_id IN (?, ?, ?, ?, ?) THEN 1 END) as pending_count,
-        COUNT(CASE WHEN status_id = ? THEN 1 END) as approved_count,
-        COUNT(CASE WHEN status_id = ? THEN 1 END) as rejected_count
-      ', [
-        BillingStatus::DRAFT,
-        BillingStatus::HOD_APPROVAL,
-        BillingStatus::FINANCE_REVIEW,
-        BillingStatus::FINANCE_VERIFY,
-        BillingStatus::FINANCE_APPROVAL,
-        BillingStatus::PROCESSING_PAYMENT,
-        BillingStatus::COMPLETED,
-        BillingStatus::REJECTED
-      ])->first();
+      // Get counts by status using raw query to avoid model appends
+      $statusCounts = DB::table('billings')
+        ->where('created_by', $user->id)
+        ->selectRaw('
+          COUNT(CASE WHEN status_id = ? THEN 1 END) as draft_count,
+          COUNT(CASE WHEN status_id IN (?, ?, ?, ?, ?) THEN 1 END) as pending_count,
+          COUNT(CASE WHEN status_id = ? THEN 1 END) as approved_count,
+          COUNT(CASE WHEN status_id = ? THEN 1 END) as rejected_count
+        ', [
+          BillingStatus::DRAFT,
+          BillingStatus::HOD_APPROVAL,
+          BillingStatus::FINANCE_REVIEW,
+          BillingStatus::FINANCE_VERIFY,
+          BillingStatus::FINANCE_APPROVAL,
+          BillingStatus::PROCESSING_PAYMENT,
+          BillingStatus::PAID,
+          BillingStatus::REJECTED
+        ])->first();
 
       // Get time-based statistics
       $now = now();
-      $timeStats = [
-        'weekly' => $query->whereBetween('created_at', [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()])->count(),
-        'monthly' => $query->whereBetween('created_at', [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()])->count(),
-        'yearly' => $query->whereBetween('created_at', [$now->copy()->startOfYear(), $now->copy()->endOfYear()])->count()
-      ];
+      $startOfWeek = $now->copy()->startOfWeek()->format('Y-m-d H:i:s');
+      $endOfWeek = $now->copy()->endOfWeek()->format('Y-m-d H:i:s');
+      $startOfMonth = $now->copy()->startOfMonth()->format('Y-m-d H:i:s');
+      $endOfMonth = $now->copy()->endOfMonth()->format('Y-m-d H:i:s');
+      $startOfYear = $now->copy()->startOfYear()->format('Y-m-d H:i:s');
+      $endOfYear = $now->copy()->endOfYear()->format('Y-m-d H:i:s');
 
-      return response()->json([
+      $timeStats = DB::table('billings')
+        ->where('created_by', $user->id)
+        ->selectRaw("
+          COUNT(CASE WHEN created_at BETWEEN '{$startOfWeek}' AND '{$endOfWeek}' THEN 1 END) as weekly,
+          COUNT(CASE WHEN created_at BETWEEN '{$startOfMonth}' AND '{$endOfMonth}' THEN 1 END) as monthly,
+          COUNT(CASE WHEN created_at BETWEEN '{$startOfYear}' AND '{$endOfYear}' THEN 1 END) as yearly
+        ")
+        ->first();
+
+      return [
         'success' => true,
         'data' => [
-          'status_counts' => $statusCounts,
-          'time_stats' => $timeStats
+          'status_counts' => [
+            'draft_count' => $statusCounts->draft_count ?? 0,
+            'pending_count' => $statusCounts->pending_count ?? 0,
+            'approved_count' => $statusCounts->approved_count ?? 0,
+            'rejected_count' => $statusCounts->rejected_count ?? 0
+          ],
+          'time_stats' => [
+            'weekly' => $timeStats->weekly ?? 0,
+            'monthly' => $timeStats->monthly ?? 0,
+            'yearly' => $timeStats->yearly ?? 0
+          ]
         ]
-      ]);
+      ];
     } catch (Exception $error) {
-      return response()->json(['success' => false, 'message' => $error->getMessage()], 500);
+      return ['success' => false, 'message' => $error->getMessage()];
     }
   }
 
@@ -808,9 +825,9 @@ class BillingController extends Controller
   {
     try {
       $user = request()->user();
-      $query = Billing::with(['department', 'user'])
-        ->where('user_id', $user->id)
-        ->select('id', 'reference_no', 'total_amount', 'status_id', 'created_at', 'department_id', 'user_id');
+      // $query = Billing::with(['department', 'creator'])
+      $query = Billing::where('created_by', $user->id)
+        ->select('id', 'issued_at', 'no_project', 'running_no', 'description', 'total_amount', 'status_id', 'created_at');
 
       // Draft and pending items
       $activeItems = $query->clone()
@@ -823,50 +840,58 @@ class BillingController extends Controller
           BillingStatus::PROCESSING_PAYMENT,
           BillingStatus::RETURNED
         ])
-        ->latest()
+        ->orderBy('created_at', 'desc')
+        ->limit(5)
         ->get()
         ->map(function ($item) {
           return [
             'id' => $item->id,
-            'reference_no' => $item->reference_no,
+            'issued_at' => $item->issued_at,
+            'no_project' => $item->no_project,
+            'running_no' => $item->running_no,
+            'description' => $item->description,
             'total_amount' => $item->total_amount,
             'status' => BillingStatus::getStatusName($item->status_id),
             'created_at' => $item->created_at,
-            'department' => $item->department->name,
-            'applicant' => $item->user->name
+            // 'department' => $item->department->name,
+            // 'applicant' => $item->creator->name
           ];
         });
 
-      // Completed, rejected, cancelled items
+      // Completed items
       $completedItems = $query->clone()
         ->whereIn('status_id', [
-          BillingStatus::COMPLETED,
+          BillingStatus::PAID,
           BillingStatus::REJECTED,
           BillingStatus::CANCELLED
         ])
-        ->latest()
+        ->orderBy('created_at', 'desc')
+        ->limit(5)
         ->get()
         ->map(function ($item) {
           return [
             'id' => $item->id,
-            'reference_no' => $item->reference_no,
+            'issued_at' => $item->issued_at,
+            'no_project' => $item->no_project,
+            'running_no' => $item->running_no,
+            'description' => $item->description,
             'total_amount' => $item->total_amount,
             'status' => BillingStatus::getStatusName($item->status_id),
             'created_at' => $item->created_at,
-            'department' => $item->department->name,
-            'applicant' => $item->user->name
+            // 'department' => $item->department->name,
+            // 'applicant' => $item->creator->name
           ];
         });
 
-      return response()->json([
+      return [
         'success' => true,
         'data' => [
           'active_items' => $activeItems,
           'completed_items' => $completedItems
         ]
-      ]);
+      ];
     } catch (Exception $error) {
-      return response()->json(['success' => false, 'message' => $error->getMessage()], 500);
+      return  ['success' => false, 'message' => $error->getMessage()];
     }
   }
 
@@ -878,19 +903,25 @@ class BillingController extends Controller
     try {
       $user = request()->user();
       $query = Billing::query();
+      $finance = [
+        UserAbilities::FINANCE_CHECKER,
+        UserAbilities::FINANCE_VERIFIER,
+        UserAbilities::FINANCE_APPROVER,
+        UserAbilities::FINANCE_PAYMENT
+      ];
 
-      // Filter based on role
-      if ($user->hasRole('hod')) {
+      // Filter based on ability
+      if ($user->hasAbility(UserAbilities::HOD)) {
         $query->where('department_id', $user->department_id)
-              ->where('status_id', BillingStatus::HOD_APPROVAL);
-      } elseif ($user->hasRole('finance_checker')) {
-        $query->where('status_id', BillingStatus::FINANCE_REVIEW);
-      } elseif ($user->hasRole('finance_verifier')) {
-        $query->where('status_id', BillingStatus::FINANCE_VERIFY);
-      } elseif ($user->hasRole('finance_approver')) {
-        $query->where('status_id', BillingStatus::FINANCE_APPROVAL);
-      } elseif ($user->hasRole('finance_payment')) {
-        $query->whereIn('status_id', [BillingStatus::PROCESSING_PAYMENT, BillingStatus::PAID]);
+          ->where('status_id', BillingStatus::HOD_APPROVAL);
+      } elseif ($user->hasAbility($finance)) {
+        $query->whereIn('status_id', [
+          BillingStatus::FINANCE_REVIEW,
+          BillingStatus::FINANCE_VERIFY,
+          BillingStatus::FINANCE_APPROVAL,
+          BillingStatus::PROCESSING_PAYMENT,
+          BillingStatus::PAID
+        ]);
       }
 
       // Get counts
@@ -910,12 +941,12 @@ class BillingController extends Controller
         BillingStatus::RETURNED
       ])->first();
 
-      return response()->json([
+      return [
         'success' => true,
         'data' => $stats
-      ]);
+      ];
     } catch (Exception $error) {
-      return response()->json(['success' => false, 'message' => $error->getMessage()], 500);
+      return ['success' => false, 'message' => $error->getMessage()];
     }
   }
 
@@ -927,20 +958,27 @@ class BillingController extends Controller
     try {
       $user = request()->user();
       $query = Billing::with(['department', 'user'])
-        ->select('id', 'reference_no', 'total_amount', 'status_id', 'created_at', 'department_id', 'user_id');
+        ->select('id', 'reference_no', 'total_amount', 'status_id', 'created_at', 'department_id', 'created_by');
 
-      // Filter based on role
-      if ($user->hasRole('hod')) {
+      $finance = [
+        UserAbilities::FINANCE_CHECKER,
+        UserAbilities::FINANCE_VERIFIER,
+        UserAbilities::FINANCE_APPROVER,
+        UserAbilities::FINANCE_PAYMENT
+      ];
+
+      // Filter based on ability
+      if ($user->hasAbility(UserAbilities::HOD)) {
         $query->where('department_id', $user->department_id)
-              ->where('status_id', BillingStatus::HOD_APPROVAL);
-      } elseif ($user->hasRole('finance_checker')) {
-        $query->where('status_id', BillingStatus::FINANCE_REVIEW);
-      } elseif ($user->hasRole('finance_verifier')) {
-        $query->where('status_id', BillingStatus::FINANCE_VERIFY);
-      } elseif ($user->hasRole('finance_approver')) {
-        $query->where('status_id', BillingStatus::FINANCE_APPROVAL);
-      } elseif ($user->hasRole('finance_payment')) {
-        $query->whereIn('status_id', [BillingStatus::PROCESSING_PAYMENT, BillingStatus::PAID]);
+          ->where('status_id', BillingStatus::HOD_APPROVAL);
+      } elseif ($user->hasAbility($finance)) {
+        $query->whereIn('status_id', [
+          BillingStatus::FINANCE_REVIEW,
+          BillingStatus::FINANCE_VERIFY,
+          BillingStatus::FINANCE_APPROVAL,
+          BillingStatus::PROCESSING_PAYMENT,
+          BillingStatus::PAID
+        ]);
       }
 
       $items = $query->latest()
@@ -962,7 +1000,7 @@ class BillingController extends Controller
         'data' => $items
       ]);
     } catch (Exception $error) {
-      return response()->json(['success' => false, 'message' => $error->getMessage()], 500);
+      return ['success' => false, 'message' => $error->getMessage()];
     }
   }
 
@@ -971,7 +1009,7 @@ class BillingController extends Controller
    */
   public function hodApprove(Billing $billing)
   {
-    $this->authorize('update', $billing);
+    $this->authorize('process', $billing);
     $billing->updateStatus(BillingStatus::HOD_APPROVAL, Auth::id(), 'Approved by HOD');
     return response()->json(['message' => 'Billing approved by HOD']);
   }
@@ -981,7 +1019,7 @@ class BillingController extends Controller
    */
   public function financeReview(Billing $billing)
   {
-    $this->authorize('update', $billing);
+    $this->authorize('process', $billing);
     $billing->updateStatus(BillingStatus::FINANCE_REVIEW, Auth::id(), 'Under finance review');
     return response()->json(['message' => 'Billing sent for finance review']);
   }
@@ -991,7 +1029,7 @@ class BillingController extends Controller
    */
   public function financeVerify(Billing $billing)
   {
-    $this->authorize('update', $billing);
+    $this->authorize('process', $billing);
     $billing->updateStatus(BillingStatus::FINANCE_VERIFY, Auth::id(), 'Verified by finance');
     return response()->json(['message' => 'Billing verified by finance']);
   }
@@ -1001,7 +1039,7 @@ class BillingController extends Controller
    */
   public function financeApprove(Billing $billing)
   {
-    $this->authorize('update', $billing);
+    $this->authorize('process', $billing);
     $billing->updateStatus(BillingStatus::FINANCE_APPROVAL, Auth::id(), 'Approved by finance');
     return response()->json(['message' => 'Billing approved by finance']);
   }
@@ -1011,7 +1049,7 @@ class BillingController extends Controller
    */
   public function processPayment(Billing $billing)
   {
-    $this->authorize('update', $billing);
+    $this->authorize('process', $billing);
     $billing->updateStatus(BillingStatus::PROCESSING_PAYMENT, Auth::id(), 'Payment is being processed');
     return response()->json(['message' => 'Payment is being processed']);
   }
@@ -1021,7 +1059,7 @@ class BillingController extends Controller
    */
   public function paid(Billing $billing)
   {
-    $this->authorize('update', $billing);
+    $this->authorize('process', $billing);
     $billing->updateStatus(BillingStatus::PAID, Auth::id(), 'Payment completed');
     return response()->json(['message' => 'Billing marked as paid']);
   }
@@ -1031,7 +1069,7 @@ class BillingController extends Controller
    */
   public function complete(Billing $billing)
   {
-    $this->authorize('update', $billing);
+    $this->authorize('process', $billing);
     $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), 'Billing completed');
     return response()->json(['message' => 'Billing marked as completed']);
   }
@@ -1041,7 +1079,7 @@ class BillingController extends Controller
    */
   public function reject(Billing $billing, Request $request)
   {
-    $this->authorize('update', $billing);
+    $this->authorize('process', $billing);
     $billing->updateStatus(BillingStatus::REJECTED, Auth::id(), $request->input('remarks', 'Billing rejected'));
     return response()->json(['message' => 'Billing rejected']);
   }
@@ -1051,7 +1089,7 @@ class BillingController extends Controller
    */
   public function return(Billing $billing, Request $request)
   {
-    $this->authorize('update', $billing);
+    $this->authorize('process', $billing);
     $billing->updateStatus(BillingStatus::RETURNED, Auth::id(), $request->input('remarks', 'Billing returned for revision'));
     return response()->json(['message' => 'Billing returned for revision']);
   }
@@ -1061,9 +1099,9 @@ class BillingController extends Controller
    */
   public function cancel(Billing $billing, Request $request)
   {
-    $this->authorize('update', $billing);
+    $this->authorize('process', $billing);
     $billing->updateStatus(BillingStatus::CANCELLED, Auth::id(), $request->input('remarks', 'Billing cancelled'));
-    
+
     return response()->json(['message' => 'Billing cancelled']);
   }
 

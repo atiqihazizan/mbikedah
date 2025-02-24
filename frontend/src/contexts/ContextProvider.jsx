@@ -7,9 +7,12 @@ const StateContext = createContext({
 	spinner: { message: null, show: false },
 	setCurrentUser: () => {},
 	setUserToken: () => {},
+  countActive: 0,
+  setCountActive: () => {},
 });
 
 export const ContextProvider = ({ children }) => {
+  const [countActive, setCountActive] = useState(0)
 	const [currentUser, setCurrentUser] = useState({
 		role: "",
 	});
@@ -52,6 +55,8 @@ export const ContextProvider = ({ children }) => {
 				showToast,
 				spinner,
 				showSpinner,
+        countActive,
+        setCountActive
 			}}
 		>
 			{children}

@@ -65,9 +65,17 @@ class Billing extends Model
     /**
      * Get the creator of the billing.
      */
-    public function creator(): BelongsTo
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Alias for creator relationship
+     */
+    public function user()
+    {
+        return $this->creator();
     }
 
     /**

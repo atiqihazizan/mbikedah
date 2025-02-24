@@ -1,20 +1,21 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import PageComponent from "../../components/PageComponent";
 import DashboardStats from "./components/DashboardStats";
-import DashboardChart from "./components/DashboardChart";
-import PendingItems from "./components/PendingItems";
-import RecentActivities from "./components/RecentActivities";
+import ActiveItemsTable from "./components/ActiveItemsTable";
 import axiosClient from "../../axios";
+import { useStateContext } from "../../contexts/ContextProvider";
 
 function ApplicantDashboard() {
+  const { countActive, setCountActive } = useStateContext();
   const [isLoading, setIsLoading] = useState(true);
   const [statsData, setStatsData] = useState({
-    totalPayments: "0",
-    pendingPayments: "0",
-    totalUsers: "0",
-    monthlyGrowth: "0"
+    draft_count: 0,
+    pending_count: 0,
+    approved_count: 0,
+    rejected_count: 0,
   });
+  const [activeItems, setActiveItems] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
 
   const pendingItems = [
     {
@@ -35,50 +36,24 @@ function ApplicantDashboard() {
     }
   ];
 
-  const recentActivities = [
-    {
-      id: 1,
-      type: "payment",
-      description: "Permohonan bayaran telah diluluskan",
-      amount: "RM 1,200.00",
-      status: "Diluluskan oleh HOD",
-      timestamp: "2 minit yang lalu"
-    },
-    {
-      id: 2,
-      type: "document",
-      description: "Permohonan baru dibuat",
-      amount: "RM 850.00",
-      status: "Menunggu HOD",
-      timestamp: "30 minit yang lalu"
-    }
-  ];
-
-  const fetchDashboardData = async () => {
-    console.log("fetching dashboard data...")
-    try {
-      const [stats] = await Promise.all([
-        axiosClient.get('/dashboard/officer-stats'),
-        // axiosClient.get('/billing/stats'),
-        // axiosClient.get('/billing/pending'),
-        // axiosClient.get('/billing/recent-activities')
-      ]);
-      console.log(stats)
-    } catch (error) {
-      console.log(error)
-    }
-  };
-
   useEffect(() => {
-    setTimeout(() => {
-      setStatsData({
-        totalPayments: "1,234,567",
-        pendingPayments: "45",
-        totalUsers: "890",
-        monthlyGrowth: "12.5"
-      });
-      setIsLoading(false);
-    }, 1000);
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        const {
+          success,
+          data: { stats, tables },
+        } = await axiosClient.get("/dashboard");
+        if (success) {
+          setStatsData(stats.status_counts);
+          setActiveItems(tables.active_items);
+          setCountActive(tables.active_items.length);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    };
     fetchDashboardData()
   }, []);
 
@@ -86,13 +61,7 @@ function ApplicantDashboard() {
     <PageComponent title="Dashboard Pemohon">
       <div className="container mx-auto px-4 py-6 h-[calc(100vh-120px)] scrollable-y-hover overflow-auto">
         <DashboardStats statsData={statsData} />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <DashboardChart />
-          <PendingItems isLoading={isLoading} items={pendingItems} />
-        </div>
-
-        <RecentActivities isLoading={isLoading} activities={recentActivities} />
+        <ActiveItemsTable items={activeItems} isLoading={isLoading} />
       </div>
     </PageComponent>
   );

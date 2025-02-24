@@ -26,7 +26,7 @@ class UserController extends Controller
                     'name' => $user->name,
                     'username' => $user->username,
                     'email' => $user->email,
-                    'role_id' => $user->role_id,
+                    'ability_id' => $user->ability_id,
                     'department_id' => $user->department_id,
                     'department' => $user->department ? $user->department->name : null
                 ];
@@ -45,7 +45,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
             'department_id' => 'nullable|exists:departments,id',
-            'role_id' => 'required|integer|in:' . implode(',', array_values(Config::get('constants.roles')))
+            'ability_id' => 'required|integer|in:' . implode(',', array_values(Config::get('constants.abilities')))
         ]);
 
         $user = User::create([
@@ -54,7 +54,7 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'department_id' => $request->department_id,
-            'role_id' => $request->role_id
+            'ability_id' => $request->ability_id
         ]);
 
         $user->load('department');
@@ -67,7 +67,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'username' => $user->username,
                 'email' => $user->email,
-                'role_id' => $user->role_id,
+                'ability_id' => $user->ability_id,
                 'department_id' => $user->department_id,
                 'department' => $user->department ? $user->department->name : null
             ]
@@ -88,7 +88,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'username' => $user->username,
                 'email' => $user->email,
-                'role_id' => $user->role_id,
+                'ability_id' => $user->ability_id,
                 'department_id' => $user->department_id,
                 'department' => $user->department ? $user->department->name : null
             ]
@@ -107,7 +107,7 @@ class UserController extends Controller
             'username' => 'required|string|max:255|unique:users,username,' . $id,
             'email' => 'required|email|unique:users,email,' . $id,
             'department_id' => 'nullable|exists:departments,id',
-            'role_id' => 'required|integer|in:' . implode(',', array_values(Config::get('constants.roles'))),
+            'ability_id' => 'required|integer|in:' . implode(',', array_values(Config::get('constants.abilities'))),
             'password' => 'nullable|min:6'
         ]);
 
@@ -116,7 +116,7 @@ class UserController extends Controller
             'username' => $request->username,
             'email' => $request->email,
             'department_id' => $request->department_id,
-            'role_id' => $request->role_id
+            'ability_id' => $request->ability_id
         ];
 
         if ($request->filled('password')) {
@@ -134,7 +134,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'username' => $user->username,
                 'email' => $user->email,
-                'role_id' => $user->role_id,
+                'ability_id' => $user->ability_id,
                 'department_id' => $user->department_id,
                 'department' => $user->department ? $user->department->name : null
             ]
