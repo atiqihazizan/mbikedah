@@ -6,7 +6,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite --port=3000",
-        "build": "cross-env VITE_BASE_PATH=/dist/ vite build",
+        "build": "vite build --mode production",
         "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
         "preview": "vite preview"
     },
