@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BillingRecipient;
 use App\Http\Requests\BillingRecipientRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class BillingRecipientController extends Controller
 {
@@ -13,7 +14,9 @@ class BillingRecipientController extends Controller
      */
     public function index()
     {
-        $recipients = BillingRecipient::with('billings')->get();
+        $recipients = Cache::tags(['penerima_bil'])->remember('senarai_penerima_bil', now()->addMinutes(30), function () {
+            return BillingRecipient::with('billings')->get();
+        });
         return response()->json(['data' => $recipients]);
     }
 
@@ -23,6 +26,7 @@ class BillingRecipientController extends Controller
     public function store(BillingRecipientRequest $request)
     {
         $recipient = BillingRecipient::create($request->validated());
+        Cache::tags(['penerima_bil'])->forget('senarai_penerima_bil');
         return response()->json(['data' => $recipient], 201);
     }
 
@@ -52,6 +56,7 @@ class BillingRecipientController extends Controller
         }
 
         $recipient->update($request->validated());
+        Cache::tags(['penerima_bil'])->forget('senarai_penerima_bil');
         return response()->json(['data' => $recipient]);
     }
 
@@ -67,6 +72,7 @@ class BillingRecipientController extends Controller
         }
 
         $recipient->delete();
+        Cache::tags(['penerima_bil'])->forget('senarai_penerima_bil');
         return response()->json(['message' => 'Billing recipient berjaya dipadam']);
     }
 }

@@ -33,12 +33,12 @@ const navigation = [
     icon: <FilePlus size={20} />,
     type: 1,
   },
-  // {
-  //   text: "Masih Aktif",
-  //   to: "/billing/icomplete",
-  //   icon: <FolderOpen size={20} />,
-  //   type: 1,
-  // },
+  {
+    text: "Masih Aktif",
+    to: "/billing/icomplete",
+    icon: <FolderOpen size={20} />,
+    type: 1,
+  },
   {
     text: "Sudah Selesai",
     to: "/billing/archive",

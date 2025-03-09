@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\BillingRecipientController;
@@ -42,6 +43,22 @@ Route::prefix('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
+    /*
+    |--------------------------------------------------------------------------
+    | Redis Test Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('redis-test')->group(function () {
+        Route::get('/set', function () {
+            Cache::put('test_key', 'Redis berjaya dipasang!', now()->addMinutes(5));
+            return response()->json(['message' => 'Data telah disimpan dalam Redis']);
+        });
+
+        Route::get('/get', function () {
+            $value = Cache::get('test_key', 'Tiada data dalam Redis');
+            return response()->json(['message' => $value]);
+        });
+    });
     
     /*
     |--------------------------------------------------------------------------

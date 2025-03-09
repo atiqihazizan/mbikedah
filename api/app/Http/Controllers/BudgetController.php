@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Budget;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class BudgetController extends Controller
 {
@@ -14,8 +15,16 @@ class BudgetController extends Controller
     public function index()
     {
         try {
-            $budgets = Budget::all();
-            return response()->json(['data' => $budgets]);
+            // Cuba dapatkan data dari Redis cache
+            $budgets = Cache::remember('senarai_bajet', now()->addMinutes(30), function () {
+                return Budget::all();
+            });
+
+            return response()->json([
+                'data' => $budgets,
+                'source' => Cache::has('senarai_bajet') ? 'cache' : 'database'
+            ]);
+
         } catch (\Exception $e) {
             Log::error('Ralat mendapatkan senarai bajet: ' . $e->getMessage());
             return response()->json([

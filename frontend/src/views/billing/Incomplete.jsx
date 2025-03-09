@@ -1,16 +1,16 @@
 // import { useStateContext } from "../contexts/ContextProvider";
 import { useEffect, useState } from "react";
 // import { useSearchParams } from "react-router-dom";
-import TButton from "../components/Core/TButton";
-import PageComponent from "../components/PageComponent";
-import Card from "../components/Card";
+import TButton from "../../components/Core/TButton";
+import PageComponent from "../../components/PageComponent";
+import Card from "../../components/Card";
 // import apiClient from "../axios";
-import Table from "../components/TableRow";
+import Table from "../../components/TableRow";
 // import PaginationLinks from "../components/PaginationLinks";
 
-import dataJson from "../data/bills.json";
-import dataStatus from "../data/status.json";
-import dataPayment from "../data/payment.json";
+import dataJson from "../../data/bills.json";
+import dataStatus from "../../data/status.json";
+import dataPayment from "../../data/payment.json";
 
 function Payments() {
 	// const { showToast, showSpinner } = useStateContext();

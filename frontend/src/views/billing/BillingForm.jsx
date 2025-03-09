@@ -12,7 +12,7 @@ import RecipientModal from "./RecipientModal";
 import { FaPlus, FaEdit } from "react-icons/fa";
 import apiClient from "../../axios";
 
-export default function PaymentsForm() {
+export default function BillingForm() {
   const { idform } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useStateContext();
@@ -114,20 +114,6 @@ export default function PaymentsForm() {
 
       // Dapatkan senarai penerima bil
       await fetchRecipients();
-
-      // Jika update, dapatkan data bil
-      if (idform) {
-        const {data:billingResponse} = await apiClient.get(`/billings/${idform}`);
-        if (billingResponse) {
-          // Format data untuk form
-          setPetition({
-            ...billingResponse,
-            // Pastikan tarikh dalam format YYYY-MM-DD
-            issued_at: billingResponse.issued_at?.slice(0, 10),
-            payment_due: billingResponse.payment_due?.slice(0, 10)
-          });
-        }
-      }
     } catch (error) {
       console.error('Ralat mendapatkan data:', error);
       setError(error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.');
@@ -261,13 +247,36 @@ export default function PaymentsForm() {
     });
   }, [currentUser]);
 
+  useEffect(() => {
+    const initBilling = async () => {
+
+      // Jika update, dapatkan data bil
+      if (idform) {
+        const {data:billingResponse} = await apiClient.get(`/billings/${idform}`);
+        if (billingResponse) {
+          // Format data untuk form
+          setPetition({
+            ...billingResponse,
+            // Pastikan tarikh dalam format YYYY-MM-DD
+            issued_at: billingResponse.issued_at?.slice(0, 10),
+            payment_due: billingResponse.payment_due?.slice(0, 10)
+          });
+        }
+      } else {
+        setPetition(defaultPetition);
+      }
+    };
+
+    initBilling();
+  }, [idform]);
+
   return (
     <PageComponent
       title={flagNew ? "Permohonan Bayaran" : "Kemaskini Permohonan"}
       buttons={
         <div className="flex gap-2">
           {!flagNew && (
-            <TButton color="light" to={'/payments/incomplete'}>Kembali</TButton>
+            <TButton color="light" to={'/billing/icomplete'}>Kembali</TButton>
           )}
           <TButton 
             color="light" 
@@ -427,7 +436,7 @@ export default function PaymentsForm() {
     </PageComponent>
   );
 }
-PaymentsForm.propTypes = {
+BillingForm.propTypes = {
   data: PropTypes.object,
   index: PropTypes.number,
   onFocus: PropTypes.func,
