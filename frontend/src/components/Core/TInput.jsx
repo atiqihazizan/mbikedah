@@ -18,7 +18,7 @@ export default function TInput({
 	return (
 		<div className="flex flex-col w-full">
 			<input
-				className={newCss.join(' ')}
+				className={`${newCss.join(' ')} ${option?.disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
 				type={type}
 				placeholder={holder}
 				value={data?.[field] ?? ""}

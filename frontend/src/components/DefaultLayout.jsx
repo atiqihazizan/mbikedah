@@ -19,13 +19,13 @@ import Spinner from "./Spinner";
 import Sidebar, { SidebarItem } from "./Sidebar";
 
 const navigation = [
-  {
-    text: "Dashboard",
-    to: "/",
-    icon: <LayoutDashboard size={20} />,
-    type: 1,
-    badgeCount: 0,
-  },
+  // {
+  //   text: "Dashboard",
+  //   to: "/",
+  //   icon: <LayoutDashboard size={20} />,
+  //   type: 1,
+  //   badgeCount: 0,
+  // },
   { text: "Permohonan Bayaran", to: "", type: 0 },
   {
     text: "Permohonan Baru",
@@ -35,7 +35,7 @@ const navigation = [
   },
   {
     text: "Masih Aktif",
-    to: "/billing/icomplete",
+    to: "/billing/incomplete",
     icon: <FolderOpen size={20} />,
     type: 1,
   },
@@ -184,9 +184,9 @@ export default function DefaultLayout() {
         <div className="flex">
           <Sidebar logout={logout}>
             {navigation.map((n, i) => {
-              if (i === 0) {
-                n.badgeCount = countActive;
-              }
+              // if (i === 0) {
+              //   n.badgeCount = countActive;
+              // }
               return <SidebarItem key={i} {...n} />;
             })}
           </Sidebar>

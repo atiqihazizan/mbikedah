@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
+import { FormContext } from "../../components/FormContext";
 import { SaveIcon, XIcon } from "lucide-react";
 import PropTypes from "prop-types";
 
 export default function RowTR({ FormC, data, idx = false, setChange, budgets }) {
+  // Dapatkan disabled state dari FormContext
+  const { disabled } = useContext(FormContext);
   const def = {
     id: 0,
     budget_id: "",           // ID bajet
@@ -15,7 +18,6 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
     unit: ""                // Unit ukuran
   };
   const [detail, setDetail] = useState(def);
-
   function onFocus(ev) {
     ev.target.select();
   }
@@ -126,6 +128,7 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
           keyval="id,name"
           listArr={budgets}
           option={{
+            disabled,
             value: detail?.budget_id || '',
             onChange: (e) => {
               const selectedBudget = budgets.find(b => b.id === parseInt(e.target.value));
@@ -144,12 +147,14 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
         <FormC.text
           value={detail?.description || ''}
           onChange={(e) => inputChange(e, "description")}
+          option={{ disabled }}
         />
       </td>
       <td className="!px-2">
         <FormC.text
           value={detail?.reference || ''}
           onChange={(e) => inputChange(e, "reference")}
+          option={{ disabled }}
         />
       </td>
       <td className="!px-2">
@@ -157,6 +162,7 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
           value={detail?.unit || ''}
           onChange={(e) => inputChange(e, "unit")}
           option={{
+            disabled,
             placeholder: "Unit",
             className: "input input-sm"
           }}
@@ -166,14 +172,18 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
         <FormC.number
           value={detail?.quantity || '0'}
           onChange={(e) => currChange(e, "quantity", "price")}
-          option={{ onFocus: onFocus }}
+          option={{
+            disabled,
+            onFocus: onFocus
+          }}
         />
       </td>
       <td className="!px-2">
         <FormC.currency
           value={detail?.price || '0.00'}
           onChange={(e) => currChange(e, "price", "quantity")}
-          option={{ onFocus: onFocus }}
+          option={{
+            disabled, onFocus: onFocus }}
         />
       </td>
       <td className="!px-2">
@@ -189,7 +199,7 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
               <SaveIcon width={20} />
             </a>
           )}
-          {data && (
+          {data && !disabled && (
             <a
               className="btn btn-xs btn-icon btn-clear text-danger-700"
               onClick={onDelete}

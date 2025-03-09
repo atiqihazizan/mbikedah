@@ -185,8 +185,7 @@ export default function BillingForm() {
       }
 
       // URL dan method berdasarkan create/update
-      const url = !idform ? "/billings" : `/billings/${idform}`;
-      const method = !idform ? "post" : "put";
+      const url = !idform ? "/billings" : `/billings/${idform}/status`;
 
       // Set status untuk submit ke HOD
       const submitData = {
@@ -195,7 +194,7 @@ export default function BillingForm() {
       };
 
       // Hantar data ke backend
-      const {data} = await apiClient[method](url, submitData);
+      const {data} = await apiClient.post(url, submitData);
       const newId = data?.id || idform;
       
       setSuccessMessage("Permohonan bayaran berjaya dihantar kepada ketua jabatan");
@@ -210,11 +209,15 @@ export default function BillingForm() {
       }
       
       // Kembali ke halaman utama
-      navigate(`/`);
+      navigate(`/billing/incomplete`);
       
     } catch (error) {
       console.error('Ralat semasa hantar ke HOD:', error);
-      setError(error.message || "Ralat semasa menghantar permohonan. Sila cuba lagi.");
+      if(error?.response?.status === 403) {
+        setError("Anda tidak mempunyai kebenaran untuk menghantar permohonan ini");
+      } else {
+        setError("Ralat semasa menghantar permohonan. Sila cuba lagi.");
+      }
     } finally {
       setLoading(false);
     }
@@ -252,14 +255,14 @@ export default function BillingForm() {
 
       // Jika update, dapatkan data bil
       if (idform) {
-        const {data:billingResponse} = await apiClient.get(`/billings/${idform}`);
-        if (billingResponse) {
+        const {data} = await apiClient.get(`/billings/${idform}`);
+        if (data) {
           // Format data untuk form
           setPetition({
-            ...billingResponse,
+            ...data,
             // Pastikan tarikh dalam format YYYY-MM-DD
-            issued_at: billingResponse.issued_at?.slice(0, 10),
-            payment_due: billingResponse.payment_due?.slice(0, 10)
+            issued_at: data.issued_at?.slice(0, 10),
+            payment_due: data.payment_due?.slice(0, 10)
           });
         }
       } else {
@@ -270,28 +273,53 @@ export default function BillingForm() {
     initBilling();
   }, [idform]);
 
+  // Semak sama ada bil boleh diedit (hanya status draft sahaja)
+  const canEdit = petition.status_id === 1;
+
+  // Jika bukan draft, tunjuk mesej
+  const statusMessage = !canEdit ? (
+    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div className="ml-3">
+          <p className="text-sm text-yellow-700">
+            Bil ini tidak boleh dikemaskini kerana status bukan lagi dalam draft.
+          </p>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <PageComponent
       title={flagNew ? "Permohonan Bayaran" : "Kemaskini Permohonan"}
       buttons={
         <div className="flex gap-2">
           {!flagNew && (
-            <TButton color="light" to={'/billing/icomplete'}>Kembali</TButton>
+            <TButton color="light" to={'/billing/incomplete'}>Kembali</TButton>
           )}
-          <TButton 
-            color="light" 
-            onClick={saveDraft}
-            disabled={loading}
-          >
-            Simpan sebagai Draf
-          </TButton>
-          <TButton 
-            color="green" 
-            onClick={submitToHOD}
-            disabled={loading || !checkValid()}
-          >
-            Hantar ke Ketua Jabatan
-          </TButton>
+          {canEdit && (
+            <>
+              <TButton 
+                color="light" 
+                onClick={saveDraft}
+                disabled={loading}
+              >
+                Simpan sebagai Draf
+              </TButton>
+              <TButton 
+                color="green" 
+                onClick={submitToHOD}
+                disabled={loading || !checkValid()}
+              >
+                Hantar ke Ketua Jabatan
+              </TButton>
+            </>
+          )}
         </div>
       }
     >
@@ -313,7 +341,8 @@ export default function BillingForm() {
                       <strong>Berjaya:</strong> {successMessage}
                     </div>
                   )}
-                  <FormC data={petition} setValue={setPetition} error={error}>
+                  {statusMessage}
+                  <FormC data={petition} setValue={setPetition} error={error} disabled={!canEdit}>
                     <div className="grid gap-7 ">
                       <FormC.LDate 
                         field={"issued_at"} 
@@ -326,13 +355,15 @@ export default function BillingForm() {
                             payment_due: getPaymentDueDate(newDate)
                           }));
                         }}
+                        option={{ disabled: !canEdit }}
                       />
-                      <FormC.LText field={"no_project"} text={"No Pesanan"} />
+                      <FormC.LText field={"no_project"} text={"No Pesanan"} option={{ readOnly: !canEdit }} />
                       <FormC.LSelect 
                         text="Jabatan"
                         field={"department_id"}
                         keyval="id,name"
                         listArr={departments}
+                        option={{ disabled: !canEdit }}
                       />
                       <div className="flex items-center gap-2">
                         <div className="flex-grow">
@@ -341,33 +372,38 @@ export default function BillingForm() {
                             field={"recipient_id"}
                             keyval="id,name"
                             listArr={recipients}
+                            option={{ disabled: !canEdit }}
                           />
                         </div>
                         <div className="flex gap-1">
-                          <TButton 
-                            color="light" 
-                            onClick={handleAddRecipient}
-                            className="p-2"
-                            title="Tambah Penerima Baru"
-                          >
-                            <FaPlus className="w-4 h-4" />
-                          </TButton>
-                          {petition.recipient_id && (
-                            <TButton 
-                              color="light" 
-                              onClick={() => {
-                                const recipient = recipients.find(r => r.id === parseInt(petition.recipient_id));
-                                if (recipient) handleEditRecipient(recipient);
-                              }}
-                              className="p-2"
-                              title="Kemaskini Penerima"
-                            >
-                              <FaEdit className="w-4 h-4" />
-                            </TButton>
+                          {canEdit && (
+                            <>
+                              <TButton 
+                                color="light" 
+                                onClick={handleAddRecipient}
+                                className="p-2"
+                                title="Tambah Penerima Baru"
+                              >
+                                <FaPlus className="w-4 h-4" />
+                              </TButton>
+                              {petition.recipient_id && (
+                                <TButton 
+                                  color="light" 
+                                  onClick={() => {
+                                    const recipient = recipients.find(r => r.id === parseInt(petition.recipient_id));
+                                    if (recipient) handleEditRecipient(recipient);
+                                  }}
+                                  className="p-2"
+                                  title="Kemaskini Penerima"
+                                >
+                                  <FaEdit className="w-4 h-4" />
+                                </TButton>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
-                      <FormC.LText field={"description"} text={"Keterangan Bayaran"} />
+                      <FormC.LText field={"description"} text={"Keterangan Bayaran"} option={{ readOnly: !canEdit }} />
 
                       <RecipientModal 
                         show={showRecipientModal}
@@ -375,7 +411,7 @@ export default function BillingForm() {
                         onSave={handleSaveRecipient}
                         recipient={selectedRecipient}
                       />
-                      <FormC.LDate field={"payment_due"} text={"Bayaran Perlu Dibuat Pada"} />
+                      <FormC.LDate field={"payment_due"} text={"Bayaran Perlu Dibuat Pada"} option={{ disabled: !canEdit }} />
                       <FormC.LText
                         field={"total_amount"}
                         text={"Jumlah Bayaran"}
@@ -406,7 +442,9 @@ export default function BillingForm() {
                               budgets={budgets}
                             />
                           ))}
-                          <RowTR FormC={FormC} setChange={setPetition} budgets={budgets} />
+                          {canEdit && (
+                            <RowTR FormC={FormC} setChange={setPetition} budgets={budgets} />
+                          )}
                         </tbody>
                       </table>
                     </div>

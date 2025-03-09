@@ -20,7 +20,8 @@ function Dashboard() {
   //   }
   // };
 
-  return <ApplicantDashboard />
+  // return <ApplicantDashboard />
+  return<></>
 }
 
 export default Dashboard;

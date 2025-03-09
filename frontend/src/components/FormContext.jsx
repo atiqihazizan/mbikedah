@@ -2,11 +2,11 @@ import { createContext, useContext } from "react";
 import TInput from "./Core/TInput";
 import TSelect from "./Core/TSelect";
 
-const FormContext = createContext();
+export const FormContext = createContext();
 
-function FormC({ children, setValue, data, error }) {
+function FormC({ children, setValue, data, error, disabled }) {
 	return (
-		<FormContext.Provider value={{ setValue, data, error }}>
+		<FormContext.Provider value={{ setValue, data, error, disabled }}>
 			{children}
 		</FormContext.Provider>
 	);
@@ -25,7 +25,7 @@ function Text({
   css,
   option,
 }) {
-  const { setValue, data, error } = useContext(FormContext);
+  const { setValue, data, error, disabled } = useContext(FormContext);
   const newCss = ["input"];
   if (css) newCss.push(css);
   return (
@@ -36,6 +36,7 @@ function Text({
         placeholder={holder}
         value={value}
         onChange={onChange}
+        disabled={disabled}
         {...option}
       />
       {error?.[field] && (
@@ -52,7 +53,7 @@ function TxtDate({
   css,
   option,
 }) {
-  const { setValue, data, error } = useContext(FormContext);
+  const { setValue, data, error, disabled } = useContext(FormContext);
   return (
     <Text
       type="date"
@@ -73,7 +74,7 @@ function Decimal({
   css,
   option,
 }) {
-  const { setValue, data, error } = useContext(FormContext);
+  const { setValue, data, error, disabled } = useContext(FormContext);
   return (
     <Text
       type="number"
@@ -94,7 +95,7 @@ function TxtNumber({
   css,
   option,
 }) {
-  const { setValue, data, error } = useContext(FormContext);
+  const { setValue, data, error, disabled } = useContext(FormContext);
   return (
     <Text
       type="number"
@@ -115,7 +116,7 @@ function Password({
   css,
   option,
 }) {
-  const { setValue, data, error } = useContext(FormContext);
+  const { setValue, data, error, disabled } = useContext(FormContext);
   return (
     <Text
       type="password"
@@ -130,7 +131,7 @@ function Password({
 }
 
 function FInput({ field, holder = "", type = "text",option }) {
-	const { setValue, data, error } = useContext(FormContext);
+	const { setValue, data, error, disabled } = useContext(FormContext);
 	return (
 		<TInput
 			data={data}
@@ -144,7 +145,7 @@ function FInput({ field, holder = "", type = "text",option }) {
 	);
 }
 function FSelect({ field, keyval, listArr, option }) {
-	const { setValue, data, error } = useContext(FormContext);
+	const { setValue, data, error, disabled } = useContext(FormContext);
 	return (
 		<TSelect
 			data={data}
@@ -153,7 +154,7 @@ function FSelect({ field, keyval, listArr, option }) {
 			keyval={keyval}
 			error={error}
 			list={listArr}
-			option={option}
+			option={{ ...option, disabled: option?.disabled || disabled }}
 		/>
 	);
 }

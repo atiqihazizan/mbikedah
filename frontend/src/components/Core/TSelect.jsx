@@ -20,7 +20,7 @@ export default function TSelect({
 	return (
 		<div className="flex flex-col w-full">
 			<select 
-				className="select" 
+				className={`select ${option?.disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
 				onChange={onChange} 
 				value={data?.[field] || ''}
 				{...option}

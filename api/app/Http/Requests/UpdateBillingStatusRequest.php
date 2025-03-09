@@ -13,7 +13,14 @@ class UpdateBillingStatusRequest extends FormRequest
     public function authorize()
     {
         $billing = Billing::findOrFail($this->route('id'));
-        return $this->user()->can('updateStatus', $billing);
+        
+        // Jika status = 2 (HOD_APPROVAL), guna policy sendToHod
+        if ($this->input('status_id') === 2) {
+            return $this->user()->can('sendToHod', $billing);
+        }
+        
+        // Untuk status lain, guna policy process
+        return $this->user()->can('process', $billing);
     }
 
     /**
