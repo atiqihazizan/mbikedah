@@ -90,21 +90,40 @@ class AuthController extends Controller
 		]);
 	}
 
-	// Get user profile
+	// Dapatkan profil pengguna
 	public function getMe(Request $request)
 	{
-    $user = $request->user()->load('department');
-		return response()->json([
-			'success' => true,
-			'user' => [
-				'id' => $user->id,
-				'name' => $user->name,
-				'username' => $user->username,
-				'department_id' => $user->department_id,
-				'department' => $user->department ? $user->department->name : null,
-				'ability_id' => $user->ability_id,
-				'ability' => $user->ability_name
-			]
-		]);
+		try {
+			// Dapatkan user dengan department
+			$user = $request->user();
+			if (!$user) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Sesi anda telah tamat. Sila log masuk semula.',
+					'status' => 'token_expired'
+				], 401);
+			}
+
+			// Load department dan return maklumat pengguna
+			$user->load('department');
+			return response()->json([
+				'success' => true,
+				'user' => [
+					'id' => $user->id,
+					'name' => $user->name,
+					'username' => $user->username,
+					'department_id' => $user->department_id,
+					'department' => $user->department ? $user->department->name : null,
+					'ability_id' => $user->ability_id,
+					'ability' => $user->ability_name
+				]
+			]);
+		} catch (\Exception $e) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Ralat semasa mendapatkan maklumat pengguna',
+				'status' => 'error'
+			], 401);
+		}
 	}
 }

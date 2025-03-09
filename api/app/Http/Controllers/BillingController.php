@@ -13,17 +13,21 @@ use App\Models\User;
 use App\Http\Resources\BillingResource;
 use App\Http\Resources\BillingTableResource;
 use App\Http\Resources\BillingDetailResource;
+use App\Http\Requests\BillingRequest;
+use App\Http\Requests\UpdateBillingStatusRequest;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Http\Requests\UpdateBillingStatusRequest;
 use App\Exports\BillingsExport;
 use App\Constants\BillingStatus;
 use App\Constants\UserAbilities;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class BillingController extends Controller
 {
@@ -54,9 +58,74 @@ class BillingController extends Controller
   /**
    * Update the specified resource in storage.
    */
-  public function update(Request $request, string $id)
+  public function update(BillingRequest $request, string $id)
   {
-    //
+    try {
+      $billing = Billing::findOrFail($id);
+      $this->authorize('update', $billing);
+
+      $validatedData = $request->validated();
+
+      DB::beginTransaction();
+
+      // Update billing
+      $billing->update([
+        'description' => $validatedData['description'],
+        'no_project' => $validatedData['no_project'],
+        'recipient_id' => $validatedData['recipient_id'],
+        'total_amount' => $validatedData['total_amount'],
+        'payment_method' => $validatedData['payment_method'],
+        'department_id' => $validatedData['department_id'],
+        // running_no tidak boleh dikemaskini
+        'issued_at' => $validatedData['issued_at'],
+        'payment_due' => $validatedData['payment_due']
+      ]);
+
+      // Delete existing details
+      $billing->details()->delete();
+
+      // Create new details
+      foreach ($validatedData['details'] as $detail) {
+        $billing->details()->create([
+          'description' => $detail['description'],
+          'budget_code' => $detail['budget_code'],
+          'budget_id' => $detail['budget_id'],
+          'price' => $detail['price'],
+          'quantity' => $detail['quantity'],
+          'unit' => $detail['unit'] ?? null,
+          'reference' => $detail['reference'] ?? null
+        ]);
+      }
+
+      DB::commit();
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Billing berjaya dikemaskini',
+        'data' => new BillingResource($billing->fresh(['details', 'recipient', 'department']))
+      ]);
+
+    } catch (ModelNotFoundException $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Billing tidak dijumpai'
+      ], 404);
+
+    } catch (AuthorizationException $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Anda tidak mempunyai kebenaran untuk mengemaskini billing ini'
+      ], 403);
+
+    } catch (Exception $e) {
+      DB::rollBack();
+      
+      return response()->json([
+        'success' => false,
+        'message' => 'Ralat semasa mengemaskini billing',
+        'error' => $e->getMessage()
+      ], 500);
+    }
   }
 
   /**
@@ -72,29 +141,12 @@ class BillingController extends Controller
    * 
    * @param \Illuminate\Http\Request $request The request object
    */
-  public function createBilling(Request $request)
+  public function createBilling(BillingRequest $request)
   {
     try {
       $this->authorize('create', Billing::class);
 
-      $validatedData = $request->validate([
-        'description' => 'required|string',
-        'no_project' => 'required|string',
-        'recipient_id' => 'required|integer',
-        'total_amount' => 'required|numeric',
-        'payment_method' => 'nullable|string',
-        'department_id' => 'required|integer',
-        'running_no' => 'nullable|string',
-        'issued_at' => 'required|date',
-        'payment_due' => 'required|date',
-        'detail' => 'required|array',
-        'detail.*.description' => 'required|string',
-        'detail.*.budget_code' => 'required|string',
-        'detail.*.budget_id' => 'required|integer',
-        'detail.*.price' => 'required|numeric',
-        'detail.*.quantity' => 'required|integer',
-        'detail.*.reference' => 'nullable|string'
-      ]);
+      $validatedData = $request->validated();
 
       DB::beginTransaction();
 
@@ -115,7 +167,7 @@ class BillingController extends Controller
         'total_amount' => $validatedData['total_amount'],
         'payment_method' => $validatedData['payment_method'] ?? 'online',
         'department_id' => $departmentId,
-        'running_no' => $validatedData['running_no'] ?? uniqid('BILL-'),
+        // running_no akan auto-generate oleh model
         'created_by' => $request->user()->id,
         'issued_at' => $validatedData['issued_at'],
         'payment_due' => $validatedData['payment_due'],
@@ -123,7 +175,7 @@ class BillingController extends Controller
       ]);
 
       // Create billing details
-      foreach ($validatedData['detail'] as $detail) {
+      foreach ($validatedData['details'] as $detail) {
         BillingDetail::create([
           'billing_id' => $billing->id,
           'description' => $detail['description'],
@@ -533,9 +585,30 @@ class BillingController extends Controller
   /**
    * Update status billing.
    */
-  public function updateStatus($id, Request $request)
+  public function updateStatus($id, UpdateBillingStatusRequest $request)
   {
     try {
+      // Validasi input
+      $validator = Validator::make($request->all(), [
+        'status_id' => 'required|integer|min:1|max:10',
+        'remarks' => 'nullable|string|max:500'
+      ], [
+        'status_id.required' => 'Status bil diperlukan',
+        'status_id.integer' => 'Status bil mestilah nombor',
+        'status_id.min' => 'Status bil tidak sah',
+        'status_id.max' => 'Status bil tidak sah',
+        'remarks.string' => 'Catatan mestilah dalam bentuk teks',
+        'remarks.max' => 'Catatan tidak boleh melebihi 500 aksara'
+      ]);
+
+      if ($validator->fails()) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Ralat pengesahan',
+          'errors' => $validator->errors()
+        ], 422);
+      }
+
       $billing = Billing::findOrFail($id);
       $newStatus = $request->status_id;
       $remarks = $request->remarks;
@@ -543,7 +616,7 @@ class BillingController extends Controller
       if (!$billing->canTransitionTo($newStatus)) {
         return response()->json([
           'success' => false,
-          'message' => 'Invalid status transition'
+          'message' => 'Peralihan status tidak sah'
         ], 400);
       }
 
@@ -552,19 +625,19 @@ class BillingController extends Controller
       if (!$updated) {
         return response()->json([
           'success' => false,
-          'message' => 'Failed to update status'
+          'message' => 'Gagal mengemaskini status'
         ], 400);
       }
 
       return response()->json([
         'success' => true,
-        'message' => 'Status updated successfully',
+        'message' => 'Status berjaya dikemaskini',
         'data' => new BillingResource($billing->fresh())
       ]);
     } catch (Exception $error) {
       return response()->json([
         'success' => false,
-        'message' => 'Error updating status: ' . $error->getMessage()
+        'message' => 'Ralat mengemaskini status: ' . $error->getMessage()
       ], 500);
     }
   }

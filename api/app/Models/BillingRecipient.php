@@ -23,6 +23,6 @@ class BillingRecipient extends Model
      */
     public function billings(): HasMany
     {
-        return $this->hasMany(Billing::class);
+        return $this->hasMany(Billing::class, 'recipient_id');
     }
 }

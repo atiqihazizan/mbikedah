@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStateContext } from "../contexts/ContextProvider";
-import axiosClient from "../axios";
+import apiClient from "../axios";
 import TButton from "../components/Core/TButton";
 
 function Signup() {
@@ -16,29 +16,43 @@ function Signup() {
 	});
 	const [error, setError] = useState({ __html: "" });
 
-	const onSubmit = (ev) => {
+	const onSubmit = async (ev) => {
 		ev.preventDefault();
 		if(onChecking) return;
+		
 		setChecking(true);
 		setError({ __html: "" });
-		axiosClient
-			.post("/signup", postData)
-			.then(({ data }) => {
-				navigate('/login')
-				setChecking(false);
-			})
-			.catch((error) => {
-				setChecking(false);
-				if (error.response) {
-					const err = error.response.data.errors;
-					const finalErrors = Object.values(err).reduce(
-						(accum, next) => [...accum, ...next],
-						[]
-					);
-					console.log(err);
-					setError({ __html: finalErrors.join("<br>"), obj: err });
-				}
-			});
+		
+		try {
+			const { success, message } = await apiClient.post("/signup", postData);
+			
+			if (!success) {
+				throw new Error(message || 'Pendaftaran gagal. Sila cuba lagi.');
+			}
+			
+			// Redirect ke halaman login selepas berjaya daftar
+			navigate('/login');
+			
+		} catch (error) {
+			console.error('Ralat semasa pendaftaran:', error);
+			
+			if (error.response?.data?.errors) {
+				const err = error.response.data.errors;
+				const finalErrors = Object.values(err).reduce(
+					(accum, next) => [...accum, ...next],
+					[]
+				);
+				setError({ __html: finalErrors.join("<br>"), obj: err });
+			} else if (error.response?.status === 422) {
+				setError({ __html: "Sila semak semula maklumat yang dimasukkan" });
+			} else if (error.message === 'Tiada response dari server') {
+				setError({ __html: "Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi." });
+			} else {
+				setError({ __html: error.message || "Ralat semasa pendaftaran. Sila cuba sebentar lagi." });
+			}
+		} finally {
+			setChecking(false);
+		}
 	};
 
 	return (

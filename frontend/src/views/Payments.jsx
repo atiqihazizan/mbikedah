@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import TButton from "../components/Core/TButton";
 import PageComponent from "../components/PageComponent";
 import Card from "../components/Card";
-// import axiosClient from "../axios";
+// import apiClient from "../axios";
 import Table from "../components/TableRow";
 // import PaginationLinks from "../components/PaginationLinks";
 
@@ -85,7 +85,7 @@ function Payments() {
 		setPayments(dataJson);
 		setMeta({});
 		setLoading(false);
-		// axiosClient.get(`/payment`).then(({ data }) => {
+		// apiClient.get(`/payment`).then(({ data }) => {
 		// 	setPayments(data.data);
 		// 	setMeta(data.meta);
 		// 	setLoading(false);
@@ -94,7 +94,7 @@ function Payments() {
 
 	const fetchDelete = (id = 0) => {
 		return id;
-		// axiosClient.delete(`/address/${id}/delete`).then(() => {
+		// apiClient.delete(`/address/${id}/delete`).then(() => {
 		// 	getAddress();
 		// 	showToast("Rekod alamat ini telah dipadam");
     // })

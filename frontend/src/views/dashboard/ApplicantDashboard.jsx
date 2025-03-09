@@ -2,18 +2,23 @@ import { useState, useEffect } from "react";
 import PageComponent from "../../components/PageComponent";
 import DashboardStats from "./components/DashboardStats";
 import ActiveItemsTable from "./components/ActiveItemsTable";
-import axiosClient from "../../axios";
+import apiClient from "../../axios";
 import { useStateContext } from "../../contexts/ContextProvider";
 
 function ApplicantDashboard() {
   const { countActive, setCountActive, showToast } = useStateContext();
   const [isLoading, setIsLoading] = useState(true);
-  const [statsData, setStatsData] = useState({
-    draft_count: 0,
-    pending_count: 0,
-    approved_count: 0,
-    rejected_count: 0,
-  });
+  // Nilai awal untuk stats
+  const defaultStats = {
+    status_counts: {
+      draft_count: 0,
+      pending_count: 0,
+      approved_count: 0,
+      rejected_count: 0,
+    }
+  };
+  
+  const [statsData, setStatsData] = useState(defaultStats.status_counts);
   const [activeItems, setActiveItems] = useState([]);
   const [recentActivities, setRecentActivities] = useState([]);
 
@@ -39,23 +44,102 @@ function ApplicantDashboard() {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
-      const { success, data } = await axiosClient.get("/dashboard");
-      if (success) {
-        const { stats, tables } = data;
-        setStatsData(stats.status_counts);
-        setActiveItems(tables.active_items);
-        setCountActive(tables.active_items.length);
-        setIsLoading(false);
+      const {success, message, data} = await apiClient.get("/dashboard");
+      
+      if (!success) {
+        throw new Error(message || 'Gagal mendapatkan data dashboard');
       }
+
+      const { stats, tables } = data;
+      
+      // Pastikan data stats ada dan lengkap
+      if (!stats?.status_counts) {
+        // console.warn('Data stats tidak lengkap, menggunakan nilai default');
+        setStatsData(defaultStats.status_counts);
+      } else {
+        // Gabungkan dengan nilai default untuk elakkan undefined
+        setStatsData({
+          ...defaultStats.status_counts,
+          ...stats.status_counts
+        });
+      }
+
+      // Pastikan tables.active_items wujud
+      const activeItems = tables?.active_items || [];
+      setActiveItems(activeItems);
+      setCountActive(activeItems.length);
+      
     } catch (error) {
-      console.log(error);
+      console.error('Ralat mendapatkan data dashboard:', error);
+      showToast('error', error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.');
+    } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    let isSubscribed = true;
+
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const {success, message, data} = await apiClient.get("/dashboard");
+        
+        // Pastikan component masih mounted
+        if (!isSubscribed) return;
+
+        if (!success) {
+          throw new Error(message || 'Gagal mendapatkan data dashboard');
+        }
+
+        const { stats, tables } = data;
+        
+        // Pastikan data stats ada dan lengkap
+        if (!stats?.status_counts) {
+          setStatsData(defaultStats.status_counts);
+        } else {
+          // Gabungkan dengan nilai default untuk elakkan undefined
+          setStatsData({
+            ...defaultStats.status_counts,
+            ...stats.status_counts
+          });
+        }
+
+        // Pastikan tables.active_items wujud
+        const activeItems = tables?.active_items || [];
+        setActiveItems(activeItems);
+        setCountActive(activeItems.length);
+        
+      } catch (error) {
+        // Pastikan component masih mounted
+        if (!isSubscribed) return;
+
+        console.error('Ralat mendapatkan data dashboard:', error);
+        
+        let errorMessage;
+        if (error.message === 'Tiada response dari server') {
+          errorMessage = 'Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.';
+        } else if (error.response?.status === 401) {
+          errorMessage = 'Sesi anda telah tamat. Sila log masuk semula.';
+        } else {
+          errorMessage = error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.';
+        }
+        
+        showToast('error', errorMessage);
+      } finally {
+        // Pastikan component masih mounted
+        if (!isSubscribed) return;
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+
+    // Cleanup function
+    return () => {
+      isSubscribed = false;
+    };
+  }, []); // Dependency array kosong kerana hanya perlu load sekali
 
   const handleDelete = async (id) => {
     if (!window.confirm("Adakah anda pasti untuk padam permohonan ini?")) {
@@ -63,16 +147,25 @@ function ApplicantDashboard() {
     }
 
     try {
-      const { data } = await axiosClient.delete(`/billing/${id}`);
-      if (data.success) {
-        showToast("success", "Permohonan berjaya dipadam");
-        fetchDashboardData(); // Refresh data
-      } else {
-        showToast("error", data.message || "Gagal memadam permohonan");
+      const { success, message } = await apiClient.delete(`/billing/${id}`);
+      
+      if (!success) {
+        throw new Error(message || 'Gagal memadam permohonan');
       }
+
+      showToast("success", "Permohonan berjaya dipadam");
+      await fetchDashboardData(); // Refresh data
+      
     } catch (error) {
-      console.error("Error deleting billing:", error);
-      showToast("error", "Gagal memadam permohonan");
+      console.error('Ralat semasa memadam permohonan:', error);
+      
+      if (error.response?.status === 404) {
+        showToast("error", "Permohonan tidak dijumpai");
+      } else if (error.message === 'Tiada response dari server') {
+        showToast("error", "Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.");
+      } else {
+        showToast("error", error.message || "Ralat semasa memadam permohonan. Sila cuba lagi.");
+      }
     }
   };
 

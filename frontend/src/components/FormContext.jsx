@@ -143,7 +143,7 @@ function FInput({ field, holder = "", type = "text",option }) {
 		/>
 	);
 }
-function FSelect({ field, keyval, listArr }) {
+function FSelect({ field, keyval, listArr, option }) {
 	const { setValue, data, error } = useContext(FormContext);
 	return (
 		<TSelect
@@ -153,6 +153,7 @@ function FSelect({ field, keyval, listArr }) {
 			keyval={keyval}
 			error={error}
 			list={listArr}
+			option={option}
 		/>
 	);
 }

@@ -6,7 +6,7 @@ const DEFAULT_TIMEOUT = 30000; // 30 seconds
 const DEFAULT_BASE_URL = "/api"; // Fallback URL
 const RETRY_COUNT = 3;
 
-const axiosClient = axios.create({
+const apiClient = axios.create({
   // baseURL: import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL,
   baseURL: DEFAULT_BASE_URL,
   timeout: DEFAULT_TIMEOUT,
@@ -17,7 +17,7 @@ const axiosClient = axios.create({
 });
 
 // Request interceptor
-axiosClient.interceptors.request.use(
+apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("MBI_TOKEN");
     if (token) {
@@ -33,16 +33,22 @@ axiosClient.interceptors.request.use(
 );
 
 // Response interceptor
-axiosClient.interceptors.response.use(
-  (response) => response,
+apiClient.interceptors.response.use(
+  (response) => {
+    // Pastikan response ada data
+    if (!response?.data) {
+      return Promise.reject(new Error('Tiada data dari server'));
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
     // Handle token expiration
     if (error.response?.status === 401) {
       localStorage.removeItem("MBI_TOKEN");
-      // router.navigate("/login");
-      return Promise.reject(error);
+      window.location.href = '/login';
+      return Promise.reject(new Error('Sesi anda telah tamat. Sila log masuk semula.'));
     }
 
     // Retry logic for network errors or 5xx errors
@@ -59,7 +65,7 @@ axiosClient.interceptors.response.use(
       const delay = Math.pow(2, originalRequest._retryCount) * 1000;
       await new Promise((resolve) => setTimeout(resolve, delay));
 
-      return axiosClient(originalRequest);
+      return apiClient(originalRequest);
     }
 
     // Handle other errors
@@ -80,7 +86,7 @@ axiosClient.interceptors.response.use(
 );
 
 // Global methods
-axiosClient.setToken = (token) => {
+apiClient.setToken = (token) => {
   if (token) {
     localStorage.setItem("MBI_TOKEN", token);
   } else {
@@ -88,72 +94,57 @@ axiosClient.setToken = (token) => {
   }
 };
 
-axiosClient.clearToken = () => {
+apiClient.clearToken = () => {
   localStorage.removeItem("MBI_TOKEN");
 };
 
-// HTTP Method Helpers
-axiosClient.get = async (endpoint, config = {}) => {
+// HTTP Method Helpers dengan pengendalian ralat yang seragam
+const handleRequest = async (method, endpoint, data = null, config = {}) => {
   try {
-    const response = await axiosClient(endpoint, {
-      method: 'GET',
+    const response = await apiClient(endpoint, {
+      method,
+      ...(data && { data }),
       ...config,
     });
+
+    // Pastikan response ada dan ada data
+    if (!response?.data) {
+      throw new Error('Tiada data dari server');
+    }
+
     return response.data;
   } catch (error) {
+    console.error(`Error ${method} ${endpoint}:`, error);
+    if (error.response?.data?.message) {
+      console.log(error.response.data); 
+    }
     throw error;
   }
 };
 
-axiosClient.post = async (endpoint, data = {}, config = {}) => {
-  try {
-    const response = await axiosClient(endpoint, {
-      method: 'POST',
-      data,
-      ...config,
-    });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+// GET request
+apiClient.get = async (endpoint, config = {}) => {
+  return handleRequest('GET', endpoint, null, config);
 };
 
-axiosClient.put = async (endpoint, data = {}, config = {}) => {
-  try {
-    const response = await axiosClient(endpoint, {
-      method: 'PUT',
-      data,
-      ...config,
-    });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+// POST request
+apiClient.post = async (endpoint, data = {}, config = {}) => {
+  return handleRequest('POST', endpoint, data, config);
 };
 
-axiosClient.patch = async (endpoint, data = {}, config = {}) => {
-  try {
-    const response = await axiosClient(endpoint, {
-      method: 'PATCH',
-      data,
-      ...config,
-    });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+// PUT request
+apiClient.put = async (endpoint, data = {}, config = {}) => {
+  return handleRequest('PUT', endpoint, data, config);
 };
 
-axiosClient.delete = async (endpoint, config = {}) => {
-  try {
-    const response = await axiosClient(endpoint, {
-      method: 'DELETE',
-      ...config,
-    });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+// PATCH request
+apiClient.patch = async (endpoint, data = {}, config = {}) => {
+  return handleRequest('PATCH', endpoint, data, config);
 };
 
-export default axiosClient;
+// DELETE request
+apiClient.delete = async (endpoint, config = {}) => {
+  return handleRequest('DELETE', endpoint, null, config);
+};
+
+export default apiClient;

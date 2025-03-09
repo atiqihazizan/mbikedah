@@ -23,6 +23,8 @@ class BillingDetailResource extends JsonResource
       'payment_method' => $this->payment_method,
       'status_id' => $this->status_id,
       'status_name' => $this->status_name,
+      'department_id' => $this->department_id,
+      'recipient_id' => $this->recipient_id,
       'department' => [
         'id' => $this->department_id,
         'name' => $this->department ? $this->department->name : null

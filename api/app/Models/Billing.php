@@ -13,6 +13,7 @@ use App\Models\BillingRecipient;
 use App\Models\User;
 use App\Models\Department;
 use App\Models\BillingDetail;
+use App\Models\BillingSequence;
 use App\Constants\BillingStatus;
 
 class Billing extends Model
@@ -91,7 +92,7 @@ class Billing extends Model
      */
     public function recipient(): BelongsTo
     {
-        return $this->belongsTo(BillingRecipient::class);
+        return $this->belongsTo(BillingRecipient::class, 'recipient_id');
     }
 
     /**
@@ -113,5 +114,51 @@ class Billing extends Model
     public function getStatusName()
     {
         return BillingStatus::getStatusName($this->status_id);
+    }
+
+    /**
+     * Boot function untuk auto-generate running number
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($billing) {
+            if (empty($billing->running_no)) {
+                $billing->running_no = static::generateRunningNumber();
+            }
+        });
+    }
+
+    /**
+     * Generate running number untuk billing baru
+     */
+    public static function generateRunningNumber(string $prefix = 'INV'): string
+    {
+        return BillingSequence::getNextNumber($prefix, now()->year);
+    }
+
+    /**
+     * Set semula sequence untuk tahun tertentu
+     */
+    public static function resetRunningNumber(string $prefix = 'INV', int $year = null): void
+    {
+        BillingSequence::resetSequence($prefix, $year);
+    }
+
+    /**
+     * Tukar prefix untuk running number
+     */
+    public static function updateRunningNumberPrefix(string $oldPrefix, string $newPrefix, int $year = null): void
+    {
+        BillingSequence::updatePrefix($oldPrefix, $newPrefix, $year);
+    }
+
+    /**
+     * Tukar padding untuk running number
+     */
+    public static function updateRunningNumberPadding(string $prefix = 'INV', int $padding = 3, int $year = null): void
+    {
+        BillingSequence::updatePadding($prefix, $padding, $year);
     }
 }

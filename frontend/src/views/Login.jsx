@@ -1,6 +1,6 @@
 import { useStateContext } from "../contexts/ContextProvider";
 import { useState, useEffect, useRef, useCallback } from "react";
-import axiosClient from "../axios";
+import apiClient from "../axios";
 import TButton from "../components/Core/TButton";
 import { FaEye, FaEyeSlash, FaUser, FaLock } from "react-icons/fa";
 import Logo from "../assets/logo.png"; // Gantilah dengan path logo yang sesuai
@@ -18,26 +18,41 @@ function Login() {
     usernameRef.current?.focus();
   }, []);
 
-  const onSubmit = useCallback((ev) => {
+  const onSubmit = useCallback(async (ev) => {
     ev.preventDefault();
     setChecking(true);
     setError({ __html: "" });
 
-    axiosClient
-      .post("/auth/login", { username, password })
-      .then(({ user, token }) => {
-        setChecking(false);
-        setCurrentUser(user);
-        setUserToken(token);
-      })
-      .catch((error) => {
-        setChecking(false);
-        const errorMessage = error.response?.data?.error || 
-                           error.response?.data?.message || 
-                           (error.response?.status === 404 ? "API endpoint tidak ditemui" : "Login gagal. Sila cuba lagi.");
-        setError({ __html: errorMessage });
-        console.error('Login error:', error);
-      });
+    try {
+      const { success, user, token } = await apiClient.post("/auth/login", { username, password });
+
+      if (!success) {
+        throw new Error('Login gagal. Sila cuba lagi.');
+      }
+
+      setCurrentUser(user);
+      setUserToken(token);
+      
+    } catch (error) {
+      console.error('Ralat semasa log masuk:', error);
+      
+      let errorMessage;
+      if (error.response?.status === 404) {
+        errorMessage = "Sistem tidak dapat dihubungi. Sila cuba sebentar lagi.";
+      } else if (error.response?.status === 401) {
+        errorMessage = "Nama pengguna atau katalaluan tidak sah.";
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message === 'Tiada response dari server') {
+        errorMessage = "Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.";
+      } else {
+        errorMessage = "Ralat semasa log masuk. Sila cuba sebentar lagi.";
+      }
+      
+      setError({ __html: errorMessage });
+    } finally {
+      setChecking(false);
+    }
   }, [username, password, setCurrentUser, setUserToken]);
 
   return (

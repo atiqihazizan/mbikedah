@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\BillingRecipientController;
+use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\UserController;
 
@@ -43,6 +45,19 @@ Route::middleware('auth:sanctum')->group(function () {
     
     /*
     |--------------------------------------------------------------------------
+    | Budget Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('budgets')->group(function () {
+        Route::get('/', [BudgetController::class, 'index']);
+        Route::post('/', [BudgetController::class, 'store']);
+        Route::get('/{id}', [BudgetController::class, 'show']);
+        Route::put('/{id}', [BudgetController::class, 'update']);
+        Route::delete('/{id}', [BudgetController::class, 'destroy']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
     | Dashboard Routes
     |--------------------------------------------------------------------------
     */
@@ -67,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Basic CRUD
         Route::get('/', [BillingController::class, 'getBillings']);
         Route::post('/', [BillingController::class, 'createBilling']);
+        Route::put('/{id}', [BillingController::class, 'update']);
         Route::post('/{id}/status', [BillingController::class, 'updateStatus']);
         
         // Approval Flow
@@ -109,6 +125,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [DepartmentController::class, 'show']);
         Route::put('/{id}', [DepartmentController::class, 'update']);
         Route::delete('/{id}', [DepartmentController::class, 'destroy']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Billing Recipient Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('billing-recipients')->group(function () {
+        Route::get('/', [BillingRecipientController::class, 'index']);
+        Route::post('/', [BillingRecipientController::class, 'store']);
+        Route::get('/{id}', [BillingRecipientController::class, 'show']);
+        Route::put('/{id}', [BillingRecipientController::class, 'update']);
+        Route::delete('/{id}', [BillingRecipientController::class, 'destroy']);
     });
 
     /*

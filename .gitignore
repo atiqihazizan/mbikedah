@@ -52,6 +52,9 @@ jspm_packages/
 *.bak
 *.tmp
 
+# Backup folder
+backup/
+
 # Build directories
 build/
 dist/

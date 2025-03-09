@@ -5,7 +5,7 @@ import DashboardStats from "./components/DashboardStats";
 import DashboardChart from "./components/DashboardChart";
 import PendingItems from "./components/PendingItems";
 import RecentActivities from "./components/RecentActivities";
-import axiosClient from "../../axios";
+import apiClient from "../../axios";
 
 function FinanceDashboard() {
   const [isLoading, setIsLoading] = useState(true);
@@ -19,14 +19,28 @@ function FinanceDashboard() {
   const [recentActivities, setRecentActivities] = useState([]);
 
   const fetchDashboardData = async () => {
+    setIsLoading(true);
     try {
-      const [stats, pending, recent] = await Promise.all([
-        axiosClient.get('/billing/stats'),
-        axiosClient.get('/billing/pending'),
-        axiosClient.get('/billing/recent-activities')
+      // Dapatkan semua data secara serentak
+      const responses = await Promise.all([
+        apiClient.get('/billing/stats'),
+        apiClient.get('/billing/pending'),
+        apiClient.get('/billing/recent-activities')
       ]);
 
-      // Update stats
+      // Semak response untuk setiap panggilan
+      responses.forEach(response => {
+        if (!response.data.success) {
+          throw new Error(response.data.message || 'Gagal mendapatkan data dashboard');
+        }
+      });
+
+      const [statsResponse, pendingResponse, recentResponse] = responses;
+      const stats = statsResponse.data;
+      const pending = pendingResponse.data;
+      const recent = recentResponse.data;
+
+      // Kemaskini statistik
       setStatsData({
         totalPayments: stats.totalAmount || "0",
         pendingPayments: stats.pendingCount || "0",
@@ -34,7 +48,7 @@ function FinanceDashboard() {
         monthlyGrowth: stats.growthRate || "0"
       });
 
-      // Update pending items
+      // Kemaskini senarai menunggu
       setPendingItems(pending.items?.map(item => ({
         id: item.id,
         title: item.status,
@@ -44,7 +58,7 @@ function FinanceDashboard() {
         department: item.department
       })) || []);
 
-      // Update recent activities
+      // Kemaskini aktiviti terkini
       setRecentActivities(recent.activities?.map(activity => ({
         id: activity.id,
         type: activity.type,
@@ -54,11 +68,23 @@ function FinanceDashboard() {
         timestamp: formatTimestamp(activity.createdAt)
       })) || []);
 
-      setIsLoading(false);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('Ralat mendapatkan data dashboard:', error);
+      
+      let errorMessage;
+      if (error.message === 'Tiada response dari server') {
+        errorMessage = 'Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Sesi anda telah tamat. Sila log masuk semula.';
+      } else {
+        errorMessage = error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.';
+      }
+      
+      // Paparkan mesej ralat menggunakan komponen Toast atau Alert yang sedia ada
+      alert(errorMessage);
+      
+    } finally {
       setIsLoading(false);
-      // You might want to show an error message to the user here
     }
   };
 

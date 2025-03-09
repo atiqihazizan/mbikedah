@@ -13,7 +13,7 @@ import {
   FileClock,
 } from "lucide-react";
 
-import axiosClient from "../axios";
+import apiClient from "../axios";
 import Toast from "./Toast";
 import Spinner from "./Spinner";
 import Sidebar, { SidebarItem } from "./Sidebar";
@@ -122,24 +122,60 @@ export default function DefaultLayout() {
     useStateContext();
   if (!userToken) return <Navigate to="/login" />;
 
-  const logout = (ev) => {
+  const logout = async (ev) => {
     ev.preventDefault();
-    axiosClient.post("/auth/logout").then((e) => {
+    try {
+      await apiClient.post("/auth/logout");
       setCurrentUser({});
       setUserToken(null);
-    });
+    } catch (error) {
+      console.error('Ralat semasa log keluar:', error);
+      alert('Ralat semasa log keluar. Sila cuba sebentar lagi.');
+    }
   };
 
   useEffect(() => {
-    axiosClient
-      .get("/auth/me")
-      .then(({ user }) => {
+    const getMaklumatPengguna = async () => {
+      try {
+        const {success, user} = await apiClient.get("/auth/me");
+        
+        // Semak jika response ada mesej ralat
+        if (!success || !user) {
+          // Reset state
+          setCurrentUser({});
+          setUserToken(null);
+          
+          // Papar mesej ralat dari server
+          if (user.message) {
+            alert(user.message);
+          } else {
+            alert('Sesi anda telah tamat. Sila log masuk semula.');
+          }
+          return;
+        }
+
+        // Set maklumat pengguna jika berjaya
         setCurrentUser(user);
-      })
-      .catch((e) => {
+
+      } catch (error) {
+        console.error('Ralat mendapatkan maklumat pengguna:', error);
+        
+        // Reset state dan log keluar
         setCurrentUser({});
         setUserToken(null);
-      });
+
+        // Papar mesej ralat yang sesuai dalam Bahasa Melayu
+        if (error.message === 'Tiada response dari server' || error.message === 'Tiada data dari server') {
+          alert('Ralat: Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.');
+        } else if (error.response?.status === 401) {
+          alert('Sesi anda telah tamat. Sila log masuk semula.');
+        } else {
+          alert(error.message || 'Ralat semasa mendapatkan maklumat pengguna. Sila cuba sebentar lagi.');
+        }
+      }
+    };
+
+    getMaklumatPengguna();
   }, []);
 
   return (
