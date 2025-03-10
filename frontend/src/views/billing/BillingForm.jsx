@@ -185,7 +185,8 @@ export default function BillingForm() {
       }
 
       // URL dan method berdasarkan create/update
-      const url = !idform ? "/billings" : `/billings/${idform}/status`;
+      const url = !idform ? "/billings" : `/billings/${idform}`;
+      const method = !idform ? "post" : "put";
 
       // Set status untuk submit ke HOD
       const submitData = {
@@ -194,19 +195,19 @@ export default function BillingForm() {
       };
 
       // Hantar data ke backend
-      const {data} = await apiClient.post(url, submitData);
+      const {data} = await apiClient[method](url, submitData);
       const newId = data?.id || idform;
       
       setSuccessMessage("Permohonan bayaran berjaya dihantar kepada ketua jabatan");
 
-      if (!idform) {
-        // Reset form ke default
-        setPetition({
-          ...defaultPetition,
-          issued_at: new Date().toISOString().slice(0, 10),
-          payment_due: getPaymentDueDate(new Date())
-        });
-      }
+      // if (!idform) {
+      //   // Reset form ke default
+      //   setPetition({
+      //     ...defaultPetition,
+      //     issued_at: new Date().toISOString().slice(0, 10),
+      //     payment_due: getPaymentDueDate(new Date())
+      //   });
+      // }
       
       // Kembali ke halaman utama
       navigate(`/billing/incomplete`);
@@ -297,7 +298,7 @@ export default function BillingForm() {
   return (
     <PageComponent
       title={flagNew ? "Permohonan Bayaran" : "Kemaskini Permohonan"}
-      buttons={
+      buttons={!loading && (
         <div className="flex gap-2">
           {!flagNew && (
             <TButton color="light" to={'/billing/incomplete'}>Kembali</TButton>
@@ -307,21 +308,21 @@ export default function BillingForm() {
               <TButton 
                 color="light" 
                 onClick={saveDraft}
-                disabled={loading}
+                isDisable={loading || !checkValid()}
               >
                 Simpan sebagai Draf
               </TButton>
               <TButton 
                 color="green" 
                 onClick={submitToHOD}
-                disabled={loading || !checkValid()}
+                isDisable={loading || !checkValid() }
               >
                 Hantar ke Ketua Jabatan
               </TButton>
             </>
           )}
         </div>
-      }
+      )}
     >
       <div className="container-fixed py-5">
         <div className="grid gap-5 lg:gap-7.5 gow">
@@ -425,6 +426,7 @@ export default function BillingForm() {
                             <th className="text-start !pl-7 !pr-2">Bajet</th>
                             <th className="text-start !px-2 w-[30%]">Perkara</th>
                             <th className="text-start !px-2">Rujukan</th>
+                            <th className="text-start !px-2">Kuantiti</th>
                             <th className="text-start !px-2">Unit</th>
                             <th className="text-start !px-2">Harga</th>
                             <th className="text-start !px-2">Jumlah</th>

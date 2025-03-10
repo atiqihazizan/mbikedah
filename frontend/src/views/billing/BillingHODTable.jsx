@@ -6,7 +6,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import PageComponent from "../../components/PageComponent";
 import apiClient from "../../axios";
 
-function BillingTable() {
+function BillingHODTable() {
   const { countActive, setCountActive, showToast } = useStateContext();
   const [isLoading, setIsLoading] = useState(true);
   // Nilai awal untuk stats
@@ -152,7 +152,7 @@ function BillingTable() {
   };
 
   return (
-    <PageComponent title="Permohonan Aktif">
+    <PageComponent title="Permohonan Untuk Pengesahan">
       <div className="container mx-auto px-4 py-6 h-[calc(100vh-120px)] scrollable-y-hover overflow-auto">
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           {/* <h2 className="text-xl font-semibold mb-4">Permohonan Aktif</h2> */}
@@ -261,4 +261,4 @@ function BillingTable() {
   );
 }
 
-export default BillingTable;
+export default BillingHODTable;

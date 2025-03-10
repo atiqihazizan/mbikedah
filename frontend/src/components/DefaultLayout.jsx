@@ -46,7 +46,15 @@ const navigation = [
     type: 1,
   },
 
-  { text: "Tindakan Kewangan", to: "", type: 0 },
+  { text: "Ketua Jabatan", to: "", type: 0 },
+  {
+    text: "Pengesahan Bayaran",
+    to: "/billing/hod",
+    icon: <FileClock size={20} />,
+    type: 1,
+  },
+
+  { text: "Kewangan", to: "", type: 0 },
   {
     text: "Pengesahan Ketua Jabatan",
     to: "/peoples",

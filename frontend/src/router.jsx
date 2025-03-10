@@ -7,6 +7,7 @@ import BillingForm from "./views/billing/BillingForm";
 import GuestLayout from "./components/GuestLayout";
 import Login from "./views/Login";
 import Signup from "./views/Signup";
+import BillingHODTable from "./views/billing/BillingHODTable";
 
 const router = createBrowserRouter([
 	{
@@ -19,6 +20,7 @@ const router = createBrowserRouter([
       { path: "/billing/incomplete", element: <BillingTable /> },
 			{ path: "/billing/form", element: <BillingForm /> },
 			{ path: "/billing/:idform/edit", element: <BillingForm /> },
+      { path: "/billing/hod", element: <BillingHODTable /> },
 		],
 	},
 	{

@@ -158,6 +158,17 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
         />
       </td>
       <td className="!px-2">
+        <FormC.number
+          value={detail?.quantity || '0'}
+          onChange={(e) => currChange(e, "quantity", "price")}
+          option={{
+            disabled,
+            placeholder: "Kuantiti",
+            onFocus: onFocus
+          }}
+        />
+      </td>
+      <td className="!px-2">
         <FormC.text
           value={detail?.unit || ''}
           onChange={(e) => inputChange(e, "unit")}
@@ -169,21 +180,14 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
         />
       </td>
       <td className="!px-2">
-        <FormC.number
-          value={detail?.quantity || '0'}
-          onChange={(e) => currChange(e, "quantity", "price")}
-          option={{
-            disabled,
-            onFocus: onFocus
-          }}
-        />
-      </td>
-      <td className="!px-2">
         <FormC.currency
           value={detail?.price || '0.00'}
           onChange={(e) => currChange(e, "price", "quantity")}
           option={{
-            disabled, onFocus: onFocus }}
+            disabled,
+            placeholder: "Harga",
+            onFocus: onFocus
+          }}
         />
       </td>
       <td className="!px-2">
