@@ -11,6 +11,39 @@ return [
     'payment' => 7,
   ],
 
+  'abilities_name' => [
+    1 => 'Pentadbir',
+    2 => 'Pemohon',
+    3 => 'Ketua Jabatan',
+    4 => 'Penyemak',
+    5 => 'Pengesah',
+    6 => 'Pelulus',
+    7 => 'Pembayar',
+  ],
+
+  'abilities_menu' => [
+    // Admin boleh akses semua menu
+    1 => ['all'],
+    
+    // Pemohon
+    2 => ['billing.create', 'billing.incomplete', 'billing.archive'],
+    
+    // Ketua Jabatan
+    3 => ['billing.hod'],
+    
+    // Penyemak Kewangan
+    4 => ['billing.checker'],
+    
+    // Pengesah Kewangan
+    5 => ['billing.verifier'],
+    
+    // Pelulus Kewangan
+    6 => ['billing.approver'],
+    
+    // Pembayar
+    7 => ['billing.payment', 'billing.paid'],
+  ],
+
   'payment_methods' => [
     'cheque',
     'online',

@@ -4,9 +4,10 @@ import DashboardStats from "./components/DashboardStats";
 import ActiveItemsTable from "./components/ActiveItemsTable";
 import apiClient from "../../axios";
 import { useStateContext } from "../../contexts/ContextProvider";
+import { toast } from 'react-toastify';
 
 function ApplicantDashboard() {
-  const { countActive, setCountActive, showToast } = useStateContext();
+  const { countActive, setCountActive } = useStateContext();
   const [isLoading, setIsLoading] = useState(true);
   // Nilai awal untuk stats
   const defaultStats = {
@@ -71,7 +72,7 @@ function ApplicantDashboard() {
       
     } catch (error) {
       console.error('Ralat mendapatkan data dashboard:', error);
-      showToast('error', error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.');
+      toast.error(error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.');
     } finally {
       setIsLoading(false);
     }
@@ -125,7 +126,7 @@ function ApplicantDashboard() {
           errorMessage = error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.';
         }
         
-        showToast('error', errorMessage);
+        toast.error(errorMessage);
       } finally {
         // Pastikan component masih mounted
         if (!isSubscribed) return;
@@ -153,18 +154,18 @@ function ApplicantDashboard() {
         throw new Error(message || 'Gagal memadam permohonan');
       }
 
-      showToast("success", "Permohonan berjaya dipadam");
+      toast.success("Permohonan berjaya dipadam");
       await fetchDashboardData(); // Refresh data
       
     } catch (error) {
       console.error('Ralat semasa memadam permohonan:', error);
       
       if (error.response?.status === 404) {
-        showToast("error", "Permohonan tidak dijumpai");
+        toast.error("Permohonan tidak dijumpai");
       } else if (error.message === 'Tiada response dari server') {
-        showToast("error", "Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.");
+        toast.error("Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.");
       } else {
-        showToast("error", error.message || "Ralat semasa memadam permohonan. Sila cuba lagi.");
+        toast.error(error.message || "Ralat semasa memadam permohonan. Sila cuba lagi.");
       }
     }
   };

@@ -5,122 +5,51 @@ import { Link } from "react-router-dom";
 import { Pencil, Trash2 } from "lucide-react";
 import PageComponent from "../../components/PageComponent";
 import apiClient from "../../axios";
+import { toast } from 'react-toastify';
 
 function BillingTable() {
-  const { countActive, setCountActive, showToast } = useStateContext();
+  const { setCountActive } = useStateContext();
   const [isLoading, setIsLoading] = useState(true);
-  // Nilai awal untuk stats
-  const defaultStats = {
-    status_counts: {
-      draft_count: 0,
-      pending_count: 0,
-      approved_count: 0,
-      rejected_count: 0,
-    }
-  };
-  
-  const [statsData, setStatsData] = useState(defaultStats.status_counts);
   const [activeItems, setActiveItems] = useState([]);
-  const [recentActivities, setRecentActivities] = useState([]);
 
-  const fetchDashboardData = async () => {
+  const loadData = async () => {
     setIsLoading(true);
     try {
-      const {success, message, data} = await apiClient.get("/dashboard");
-      
+      const {success, message, data} = await apiClient.get("/billings/incomplete");
       if (!success) {
-        throw new Error(message || 'Gagal mendapatkan data dashboard');
+        throw new Error(message || 'Gagal mendapatkan data');
       }
 
-      const { stats, tables } = data;
-      
-      // Pastikan data stats ada dan lengkap
-      if (!stats?.status_counts) {
-        // console.warn('Data stats tidak lengkap, menggunakan nilai default');
-        setStatsData(defaultStats.status_counts);
-      } else {
-        // Gabungkan dengan nilai default untuk elakkan undefined
-        setStatsData({
-          ...defaultStats.status_counts,
-          ...stats.status_counts
-        });
-      }
-
-      // Pastikan tables.active_items wujud
-      const activeItems = tables?.active_items || [];
-      setActiveItems(activeItems);
-      setCountActive(activeItems.length);
+      // Pastikan data.items wujud
+      const items = data?.items || [];
+      setActiveItems(items);
+      setCountActive(items.length);
       
     } catch (error) {
-      console.error('Ralat mendapatkan data dashboard:', error);
-      showToast('error', error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.');
+      let errorMessage = error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.';
+
+      // Jika ada mesej dari server, guna itu
+      if(error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      // Jika tiada response dari server
+      else if (error.message === 'Tiada response dari server') {
+        errorMessage = 'Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.';
+      }
+      // Jika sesi tamat
+      else if (error.response?.status === 401) {
+        errorMessage = 'Sesi anda telah tamat. Sila log masuk semula.';
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Guna useEffect untuk load data pada permulaan
   useEffect(() => {
-    let isSubscribed = true;
-
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        const {success, message, data} = await apiClient.get("/dashboard");
-        
-        // Pastikan component masih mounted
-        if (!isSubscribed) return;
-
-        if (!success) {
-          throw new Error(message || 'Gagal mendapatkan data dashboard');
-        }
-
-        const { stats, tables } = data;
-        
-        // Pastikan data stats ada dan lengkap
-        if (!stats?.status_counts) {
-          setStatsData(defaultStats.status_counts);
-        } else {
-          // Gabungkan dengan nilai default untuk elakkan undefined
-          setStatsData({
-            ...defaultStats.status_counts,
-            ...stats.stcatus_counts
-          });
-        }
-
-        // Pastikan tables.active_items wujud
-        const activeItems = tables?.active_items || [];
-        setActiveItems(activeItems);
-        setCountActive(activeItems.length);
-        
-      } catch (error) {
-        // Pastikan component masih mounted
-        if (!isSubscribed) return;
-
-        console.error('Ralat mendapatkan data dashboard:', error);
-        
-        let errorMessage;
-        if (error.message === 'Tiada response dari server') {
-          errorMessage = 'Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.';
-        } else if (error.response?.status === 401) {
-          errorMessage = 'Sesi anda telah tamat. Sila log masuk semula.';
-        } else {
-          errorMessage = error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.';
-        }
-        
-        showToast('error', errorMessage);
-      } finally {
-        // Pastikan component masih mounted
-        if (!isSubscribed) return;
-        setIsLoading(false);
-      }
-    };
-
     loadData();
-
-    // Cleanup function
-    return () => {
-      isSubscribed = false;
-    };
   }, []); // Dependency array kosong kerana hanya perlu load sekali
 
   const handleDelete = async (id) => {
@@ -129,25 +58,39 @@ function BillingTable() {
     }
 
     try {
-      const { success, message } = await apiClient.delete(`/billing/${id}`);
+      const { success, message } = await apiClient.delete(`/billings/${id}`);
       
       if (!success) {
         throw new Error(message || 'Gagal memadam permohonan');
       }
 
-      showToast("success", "Permohonan berjaya dipadam");
-      await fetchDashboardData(); // Refresh data
+      toast.success("Permohonan berjaya dipadam");
+      await loadData(); // Refresh data
       
     } catch (error) {
-      console.error('Ralat semasa memadam permohonan:', error);
+      let errorMessage;
       
-      if (error.response?.status === 404) {
-        showToast("error", "Permohonan tidak dijumpai");
-      } else if (error.message === 'Tiada response dari server') {
-        showToast("error", "Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.");
-      } else {
-        showToast("error", error.message || "Ralat semasa memadam permohonan. Sila cuba lagi.");
+      // Jika ada mesej dari server, guna itu
+      if(error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
       }
+      // Jika permohonan tidak dijumpai
+      else if (error.response?.status === 404) {
+        errorMessage = "Permohonan tidak dijumpai";
+      }
+      // Jika tiada response dari server
+      else if (error.message === 'Tiada response dari server') {
+        errorMessage = "Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.";
+      }
+      // Jika sesi tamat
+      else if (error.response?.status === 401) {
+        errorMessage = 'Sesi anda telah tamat. Sila log masuk semula.';
+      }
+      else {
+        errorMessage = error.message || "Ralat semasa memadam permohonan. Sila cuba lagi.";
+      }
+      
+      toast.error(errorMessage);
     }
   };
 

@@ -17,16 +17,21 @@ class UserController extends Controller
     public function index()
     {
         $users = User::with('department')->get();
+        $abilities_name = Config::get('constants.abilities_name');
         
         return response()->json([
             'success' => true,
-            'data' => $users->map(function($user) {
+            'data' => $users->map(function($user) use ($abilities_name) {
+                $abilities = json_decode($user->abilities) ?? [];
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'username' => $user->username,
                     'email' => $user->email,
-                    'ability_id' => $user->ability_id,
+                    'abilities' => $abilities,
+                    'ability_names' => array_map(function($ability_id) use ($abilities_name) {
+                        return $abilities_name[$ability_id] ?? 'Peranan ' . $ability_id;
+                    }, $abilities),
                     'department_id' => $user->department_id,
                     'department' => $user->department ? $user->department->name : null
                 ];
@@ -45,7 +50,8 @@ class UserController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
             'department_id' => 'nullable|exists:departments,id',
-            'ability_id' => 'required|integer|in:' . implode(',', array_values(Config::get('constants.abilities')))
+            'abilities' => 'required|array',
+            'abilities.*' => 'required|integer|in:' . implode(',', array_keys(Config::get('constants.abilities_name')))
         ]);
 
         $user = User::create([
@@ -54,20 +60,24 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'department_id' => $request->department_id,
-            'ability_id' => $request->ability_id
+            'abilities' => json_encode($request->abilities)
         ]);
 
         $user->load('department');
+        $abilities_name = Config::get('constants.abilities_name');
 
         return response()->json([
             'success' => true,
-            'message' => 'User created successfully',
+            'message' => 'Pengguna berjaya dicipta',
             'data' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'username' => $user->username,
                 'email' => $user->email,
-                'ability_id' => $user->ability_id,
+                'abilities' => $request->abilities,
+                'ability_names' => array_map(function($ability_id) use ($abilities_name) {
+                    return $abilities_name[$ability_id] ?? 'Peranan ' . $ability_id;
+                }, $request->abilities),
                 'department_id' => $user->department_id,
                 'department' => $user->department ? $user->department->name : null
             ]
@@ -80,6 +90,8 @@ class UserController extends Controller
     public function show($id)
     {
         $user = User::with('department')->findOrFail($id);
+        $abilities = json_decode($user->abilities) ?? [];
+        $abilities_name = Config::get('constants.abilities_name');
 
         return response()->json([
             'success' => true,
@@ -88,7 +100,10 @@ class UserController extends Controller
                 'name' => $user->name,
                 'username' => $user->username,
                 'email' => $user->email,
-                'ability_id' => $user->ability_id,
+                'abilities' => $abilities,
+                'ability_names' => array_map(function($ability_id) use ($abilities_name) {
+                    return $abilities_name[$ability_id] ?? 'Peranan ' . $ability_id;
+                }, $abilities),
                 'department_id' => $user->department_id,
                 'department' => $user->department ? $user->department->name : null
             ]
@@ -107,7 +122,8 @@ class UserController extends Controller
             'username' => 'required|string|max:255|unique:users,username,' . $id,
             'email' => 'required|email|unique:users,email,' . $id,
             'department_id' => 'nullable|exists:departments,id',
-            'ability_id' => 'required|integer|in:' . implode(',', array_values(Config::get('constants.abilities'))),
+            'abilities' => 'required|array',
+            'abilities.*' => 'required|integer|in:' . implode(',', array_keys(Config::get('constants.abilities_name'))),
             'password' => 'nullable|min:6'
         ]);
 
@@ -116,7 +132,7 @@ class UserController extends Controller
             'username' => $request->username,
             'email' => $request->email,
             'department_id' => $request->department_id,
-            'ability_id' => $request->ability_id
+            'abilities' => json_encode($request->abilities)
         ];
 
         if ($request->filled('password')) {
@@ -125,18 +141,52 @@ class UserController extends Controller
 
         $user->update($updateData);
         $user->load('department');
+        $abilities_name = Config::get('constants.abilities_name');
 
         return response()->json([
             'success' => true,
-            'message' => 'User updated successfully',
+            'message' => 'Pengguna berjaya dikemaskini',
             'data' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'username' => $user->username,
                 'email' => $user->email,
-                'ability_id' => $user->ability_id,
+                'abilities' => $request->abilities,
+                'ability_names' => array_map(function($ability_id) use ($abilities_name) {
+                    return $abilities_name[$ability_id] ?? 'Peranan ' . $ability_id;
+                }, $request->abilities),
                 'department_id' => $user->department_id,
                 'department' => $user->department ? $user->department->name : null
+            ]
+        ]);
+    }
+
+    /**
+     * Update user abilities
+     */
+    public function updateAbilities(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'abilities' => 'required|array',
+            'abilities.*' => 'required|integer|in:' . implode(',', array_keys(Config::get('constants.abilities_name')))
+        ]);
+
+        $user->update([
+            'abilities' => json_encode($request->abilities)
+        ]);
+
+        $abilities_name = Config::get('constants.abilities_name');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Peranan pengguna berjaya dikemaskini',
+            'data' => [
+                'abilities' => $request->abilities,
+                'ability_names' => array_map(function($ability_id) use ($abilities_name) {
+                    return $abilities_name[$ability_id] ?? 'Peranan ' . $ability_id;
+                }, $request->abilities)
             ]
         ]);
     }
@@ -151,7 +201,7 @@ class UserController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'User deleted successfully'
+            'message' => 'Pengguna berjaya dipadam'
         ]);
     }
 }

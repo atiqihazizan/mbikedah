@@ -79,15 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('dashboard')->group(function () {
-        Route::get('/', [BillingController::class, 'getDashboardData']);
-
-        // // User Dashboard
-        // Route::get('/user-stats', [BillingController::class, 'getUserDashboardStats']);
-        // Route::get('/user-tables', [BillingController::class, 'getUserDashboardTables']);
-        
-        // // Officer Dashboard
-        // Route::get('/officer-stats', [BillingController::class, 'getOfficerDashboardStats']);
-        // Route::get('/officer-tables', [BillingController::class, 'getOfficerDashboardTables']);
+        // Route::get('/', [BillingController::class, 'getDashboardData']);
     });
 
     /*
@@ -96,14 +88,24 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('billings')->group(function () {
+        // Dapatkan senarai permohonan yang belum lengkap
+        Route::get('/incomplete', [BillingController::class, 'getIncomplete']);
         // Basic CRUD
         Route::get('/', [BillingController::class, 'getBillings']);
         Route::post('/', [BillingController::class, 'createBilling']);
         Route::put('/{id}', [BillingController::class, 'update']);
-        Route::post('/{id}/status', [BillingController::class, 'updateStatus']);
+        Route::post('/{id}/status', [BillingController::class, 'updateBillingStatus']);
+
+        // Approvals
+        Route::get('/pending-approvals', [BillingController::class, 'getPendingApprovals']);
         
         // Approval Flow
         Route::prefix('{id}')->group(function () {
+            // Approval Actions
+            // Route::post('/approve', [BillingController::class, 'approve']);
+            Route::post('/reject', [BillingController::class, 'reject']);
+            Route::post('/return', [BillingController::class, 'returnBilling']);
+
             // HOD Level
             Route::post('/hod-approve', [BillingController::class, 'hodApprove']);
             
@@ -117,10 +119,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/paid', [BillingController::class, 'paid']);
             Route::post('/complete', [BillingController::class, 'complete']);
             
-            // Action Routes
-            Route::post('/reject', [BillingController::class, 'reject']);
-            Route::post('/return', [BillingController::class, 'return']);
+            // Other Actions
             Route::post('/cancel', [BillingController::class, 'cancel']);
+            
+            // History Route
+            Route::get('/history', [BillingController::class, 'getHistory']);
         });
         
         // Reporting Routes
@@ -168,5 +171,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [UserController::class, 'show']);
         Route::put('/{id}', [UserController::class, 'update']);
         Route::delete('/{id}', [UserController::class, 'destroy']);
+
+        // Route untuk kemaskini abilities pengguna
+        Route::put('/{id}/abilities', [UserController::class, 'updateAbilities']);
     });
 });

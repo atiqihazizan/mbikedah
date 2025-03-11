@@ -10,18 +10,18 @@ class UserAbilities
   const FINANCE_CHECKER = 4;
   const FINANCE_VERIFIER = 5;
   const FINANCE_APPROVER = 6;
-  const FINANCE_PAYMENT = 7;
+  const PAYMENT_MAKER = 7;
 
   public static function getAbilitiesName()
   {
     return [
-      self::ADMIN => 'Admin',
-      self::APPLICANT => 'Applicant',
-      self::HOD => 'HOD',
-      self::FINANCE_CHECKER => 'Finance Checker',
-      self::FINANCE_VERIFIER => 'Finance Verifier',
-      self::FINANCE_APPROVER => 'Finance Approver',
-      self::FINANCE_PAYMENT => 'Finance Payment',
+      self::ADMIN => 'Pentadbir',
+      self::APPLICANT => 'Pemohon',
+      self::HOD => 'Ketua Jabatan',
+      self::FINANCE_CHECKER => 'Pemeriksa Kewangan',
+      self::FINANCE_VERIFIER => 'Penyemak Kewangan',
+      self::FINANCE_APPROVER => 'Pengesah Kewangan',
+      self::PAYMENT_MAKER => 'Pembuat Bayaran',
     ];
   }
 }

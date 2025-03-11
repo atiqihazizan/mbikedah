@@ -22,7 +22,7 @@ class User extends Authenticatable
     'email',
     'username',
     'password',
-    'ability_id',
+    'abilities',  
     'department_id',
     'is_active'
   ];
@@ -45,6 +45,7 @@ class User extends Authenticatable
   protected $casts = [
     'email_verified_at' => 'datetime',
     'password' => 'hashed',
+    'abilities' => 'array', // Cast abilities sebagai array
   ];
 
   /**
@@ -58,25 +59,40 @@ class User extends Authenticatable
   /**
    * Check if user has any of the given abilities
    *
-   * @param array|string $abilities
+   * @param array|string|int $abilities ID ability atau array of ability IDs
    * @return bool
    */
   public function hasAbility($abilities)
   {
-    if (is_array($abilities)) {
-      return in_array($this->ability_id, $abilities);
+    // Jika user adalah admin
+    if (in_array(Config::get('constants.abilities.admin'), $this->abilities)) {
+      return true;
     }
-    return $this->ability_id === $abilities;
+
+    // Jika abilities adalah string atau integer, tukar ke array
+    if (!is_array($abilities)) {
+      $abilities = [$abilities];
+    }
+
+    // Semak jika ada persilangan antara abilities user dan abilities yang diperlukan
+    return count(array_intersect($this->abilities, $abilities)) > 0;
   }
 
   /**
-   * Get the ability name
-   *
-   * @return string
+   * Get ability names
+   * 
+   * @return array
    */
-  public function getAbilityName()
+  public function getAbilityNames()
   {
-    return Config::get('constants.abilities')[$this->ability_id] ?? 'Unknown';
+    $names = [];
+    foreach ($this->abilities as $ability) {
+      $name = Config::get('constants.abilities_name.' . $ability);
+      if ($name) {
+        $names[] = $name;
+      }
+    }
+    return $names;
   }
 
   /**
@@ -84,7 +100,51 @@ class User extends Authenticatable
    */
   public function isAdmin()
   {
-    $abilities = Config::get('constants.abilities');
-    return $this->ability_id === $abilities['admin'];
+    return in_array(Config::get('constants.abilities.admin'), $this->abilities);
+  }
+
+  /**
+   * Check if user has access to given menu
+   * 
+   * @param string $menu Menu identifier (e.g. 'billing.create')
+   * @return bool
+   */
+  public function hasMenuAccess($menu)
+  {
+    // Jika user adalah admin
+    if ($this->isAdmin()) {
+      return true;
+    }
+
+    // Dapatkan menu yang dibenarkan untuk setiap ability
+    $allowedMenus = [];
+    foreach ($this->abilities as $ability) {
+      $menus = Config::get('constants.abilities_menu.' . $ability, []);
+      $allowedMenus = array_merge($allowedMenus, $menus);
+    }
+
+    return in_array($menu, $allowedMenus);
+  }
+
+  /**
+   * Get list of allowed menus for user
+   * 
+   * @return array
+   */
+  public function getAllowedMenus()
+  {
+    // Jika user adalah admin
+    if ($this->isAdmin()) {
+      return ['all'];
+    }
+
+    // Dapatkan menu yang dibenarkan untuk setiap ability
+    $allowedMenus = [];
+    foreach ($this->abilities as $ability) {
+      $menus = Config::get('constants.abilities_menu.' . $ability, []);
+      $allowedMenus = array_merge($allowedMenus, $menus);
+    }
+
+    return array_unique($allowedMenus);
   }
 }

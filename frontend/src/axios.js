@@ -27,7 +27,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.log(error)
+    // console.log(error)
     return Promise.reject(error);
   }
 );
@@ -114,9 +114,9 @@ const handleRequest = async (method, endpoint, data = null, config = {}) => {
 
     return response.data;
   } catch (error) {
-    console.error(`Error ${method} ${endpoint}:`, error);
+    // console.error(`Error ${method} ${endpoint}:`, error);
     if (error.response?.data?.message) {
-      console.log(error.response.data); 
+      // console.log(error.response.data); 
     }
     throw error;
   }

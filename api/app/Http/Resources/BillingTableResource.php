@@ -27,6 +27,7 @@ class BillingTableResource extends JsonResource
             'recipient' => $this->recipient ? $this->recipient->name : null,
             'created_by' => $this->creator ? $this->creator->name : null,
             'created_at' => $this->created_at,
+            'issued_at' => $this->issued_at,
             'is_archived' => $this->is_archived,
         ];
     }

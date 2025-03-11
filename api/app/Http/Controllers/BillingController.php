@@ -34,6 +34,344 @@ class BillingController extends Controller
   use AuthorizesRequests;
 
   /**
+   * Get billings that need approval
+   */
+  public function getPendingApprovals(Request $request)
+  {
+    try {
+      $user = $request->user();
+      $userAbilities = is_string($user->abilities) ? json_decode($user->abilities, true) : $user->abilities;
+      
+      if (empty($userAbilities)) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Anda tidak mempunyai kebenaran untuk melihat senarai permohonan'
+        ], 403);
+      }
+
+      $query = Billing::query()
+        ->with(['details', 'recipient', 'department', 'creator'])
+        ->orderBy('created_at', 'desc');
+
+      // Filter berdasarkan abilities
+      if (in_array(UserAbilities::HOD, $userAbilities)) {
+        // HOD boleh lihat permohonan jabatan sendiri yang perlu kelulusan HOD
+        $query->where(function($q) use ($user) {
+          $q->where('department_id', $user->department_id)
+            ->where('status_id', BillingStatus::HOD_APPROVAL);
+        });
+      }
+      
+      if (in_array(UserAbilities::FINANCE_APPROVER, $userAbilities)) {
+        // Finance boleh lihat semua permohonan yang perlu kelulusan finance
+        $query->orWhere('status_id', BillingStatus::FINANCE_APPROVAL);
+      }
+
+      if (in_array(UserAbilities::FINANCE_VERIFIER, $userAbilities)) {
+        // Penyemak boleh lihat permohonan yang perlu disemak
+        $query->orWhere('status_id', BillingStatus::FINANCE_REVIEW);
+      }
+
+      if (in_array(UserAbilities::PAYMENT_MAKER, $userAbilities)) {
+        // Pembayar boleh lihat permohonan yang perlu dibayar
+        $query->orWhere('status_id', BillingStatus::PROCESSING_PAYMENT);
+      }
+
+      $billings = $query->get();
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Senarai permohonan yang perlu disahkan',
+        'data' => BillingTableResource::collection($billings)
+      ]);
+
+    } catch (Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Ralat semasa mendapatkan senarai permohonan',
+        'error' => $e->getMessage()
+      ], 500);
+    }
+  }
+
+  /**
+   * Get billings that need Finance approval
+   */
+  public function getFinanceApprovals(Request $request)
+  {
+    try {
+      $billings = Billing::where('status_id', BillingStatus::FINANCE_APPROVAL)
+        ->with(['details', 'recipient', 'department'])
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Senarai billing yang perlu disahkan oleh Finance',
+        'data' => BillingTableResource::collection($billings)
+      ]);
+
+    } catch (Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Ralat semasa mendapatkan senarai billing',
+        'error' => $e->getMessage()
+      ], 500);
+    }
+  }
+
+  /**
+   * Update billing status
+   */
+  public function updateBillingStatus(Request $request, $id)
+  {
+    try {
+      $billing = Billing::findOrFail($id);
+      $user = $request->user();
+
+      $validator = Validator::make($request->all(), [
+        'status_id' => 'required|integer',
+        'remarks' => 'nullable|string'
+      ]);
+
+      if ($validator->fails()) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Validation error',
+          'errors' => $validator->errors()
+        ], 422);
+      }
+
+      $newStatus = $request->status_id;
+      $remarks = $request->remarks ?? '';
+
+      // Validate status transition
+      if (!$this->isValidStatusTransition($billing->status_id, $newStatus, $user)) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Perubahan status tidak dibenarkan'
+        ], 403);
+      }
+
+      DB::beginTransaction();
+
+      $billing->updateStatus($newStatus, $user->id, $remarks);
+
+      DB::commit();
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Status billing berjaya dikemaskini',
+        'data' => new BillingResource($billing->fresh(['details', 'recipient', 'department']))
+      ]);
+
+    } catch (ModelNotFoundException $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Billing tidak dijumpai'
+      ], 404);
+
+    } catch (Exception $e) {
+      DB::rollBack();
+      return response()->json([
+        'success' => false,
+        'message' => 'Ralat semasa mengemaskini status billing',
+        'error' => $e->getMessage()
+      ], 500);
+    }
+  }
+
+  /**
+   * Validate status transition based on user abilities and current status
+   */
+  private function isValidStatusTransition($currentStatus, $newStatus, $user)
+  {
+    $userAbilities = is_string($user->abilities) ? json_decode($user->abilities, true) : $user->abilities;
+
+    // HOD boleh lulus/tolak bila status HOD_APPROVAL
+    if (in_array(UserAbilities::HOD, $userAbilities)) {
+      if ($currentStatus === BillingStatus::HOD_APPROVAL) {
+        return in_array($newStatus, [
+          BillingStatus::FINANCE_REVIEW,   // Lulus ke semakan
+          BillingStatus::REJECTED,        // Tolak
+          BillingStatus::RETURNED         // Pulang untuk pembetulan
+        ]);
+      }
+    }
+
+    // Penyemak boleh semak bila status FINANCE_REVIEW
+    if (in_array(UserAbilities::FINANCE_VERIFIER, $userAbilities)) {
+      if ($currentStatus === BillingStatus::FINANCE_REVIEW) {
+        return in_array($newStatus, [
+          BillingStatus::FINANCE_APPROVAL, // Lulus ke pengesahan
+          BillingStatus::RETURNED,        // Pulang untuk pembetulan
+          BillingStatus::REJECTED         // Tolak
+        ]);
+      }
+    }
+
+    // Pengesah boleh sahkan bila status FINANCE_APPROVAL
+    if (in_array(UserAbilities::FINANCE_APPROVER, $userAbilities)) {
+      if ($currentStatus === BillingStatus::FINANCE_APPROVAL) {
+        return in_array($newStatus, [
+          BillingStatus::PROCESSING_PAYMENT, // Lulus ke pembayaran
+          BillingStatus::FINANCE_REVIEW,    // Pulang ke semakan
+          BillingStatus::REJECTED           // Tolak
+        ]);
+      }
+    }
+
+    // Pembayar boleh proses bila status PROCESSING_PAYMENT
+    if (in_array(UserAbilities::PAYMENT_MAKER, $userAbilities)) {
+      if ($currentStatus === BillingStatus::PROCESSING_PAYMENT) {
+        return in_array($newStatus, [
+          BillingStatus::COMPLETED,        // Selesai dibayar
+          BillingStatus::FINANCE_APPROVAL, // Pulang ke pengesahan
+          BillingStatus::REJECTED          // Tolak
+        ]);
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Dapatkan peranan pengguna berdasarkan abilities
+   */
+  private function getUserRoles($user)
+  {
+    $roles = [];
+    $userAbilities = is_string($user->abilities) ? json_decode($user->abilities, true) : $user->abilities;
+
+    $roleMap = [
+      UserAbilities::HOD => 'HOD',
+      UserAbilities::FINANCE_VERIFIER => 'PENYEMAK',
+      UserAbilities::FINANCE_APPROVER => 'PENGESAH',
+      UserAbilities::PAYMENT_MAKER => 'PEMBAYAR',
+      UserAbilities::APPLICANT => 'PEMOHON'
+    ];
+
+    foreach ($userAbilities as $ability) {
+      if (isset($roleMap[$ability])) {
+        $roles[] = $roleMap[$ability];
+      }
+    }
+
+    return $roles;
+  }
+
+  /**
+   * Semak sama ada pengguna boleh mengesahkan permohonan
+   */
+  private function canApprove($billing, $user)
+  {
+    $userAbilities = is_string($user->abilities) ? json_decode($user->abilities, true) : $user->abilities;
+    
+    // HOD boleh lulus bila status HOD_APPROVAL
+    if (in_array(UserAbilities::HOD, $userAbilities)) {
+      return $billing->status_id === BillingStatus::HOD_APPROVAL;
+    }
+
+    // Penyemak boleh lulus ke pengesahan bila status FINANCE_REVIEW 
+    if (in_array(UserAbilities::FINANCE_VERIFIER, $userAbilities)) {
+      return $billing->status_id === BillingStatus::FINANCE_REVIEW;
+    }
+
+    // Pengesah boleh lulus ke pembayaran bila status FINANCE_APPROVAL
+    if (in_array(UserAbilities::FINANCE_APPROVER, $userAbilities)) {
+      return $billing->status_id === BillingStatus::FINANCE_APPROVAL;
+    }
+
+    // Pembayar boleh lulus ke selesai bila status PROCESSING_PAYMENT
+    if (in_array(UserAbilities::PAYMENT_MAKER, $userAbilities)) {
+      return $billing->status_id === BillingStatus::PROCESSING_PAYMENT;
+    }
+
+    return false;
+  }
+
+  /**
+   * Semak sama ada pengguna boleh menolak permohonan
+   */
+  private function canReject($billing, $user)
+  {
+    $userAbilities = is_string($user->abilities) ? json_decode($user->abilities, true) : $user->abilities;
+    
+    // Semua peringkat boleh tolak permohonan
+    if (in_array(UserAbilities::HOD, $userAbilities) && 
+        $billing->status_id === BillingStatus::HOD_APPROVAL) {
+      return true;
+    }
+
+    if (in_array(UserAbilities::FINANCE_VERIFIER, $userAbilities) && 
+        $billing->status_id === BillingStatus::FINANCE_REVIEW) {
+      return true;
+    }
+
+    if (in_array(UserAbilities::FINANCE_APPROVER, $userAbilities) && 
+        $billing->status_id === BillingStatus::FINANCE_APPROVAL) {
+      return true;
+    }
+
+    if (in_array(UserAbilities::PAYMENT_MAKER, $userAbilities) && 
+        $billing->status_id === BillingStatus::PROCESSING_PAYMENT) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Semak sama ada pengguna boleh memulangkan permohonan
+   */
+  private function canReturn($billing, $user)
+  {
+    $userAbilities = is_string($user->abilities) ? json_decode($user->abilities, true) : $user->abilities;
+
+    // HOD boleh pulangkan ke pemohon
+    if (in_array(UserAbilities::HOD, $userAbilities) && 
+        $billing->status_id === BillingStatus::HOD_APPROVAL) {
+      return true;
+    }
+
+    // Penyemak boleh pulangkan ke pemohon
+    if (in_array(UserAbilities::FINANCE_VERIFIER, $userAbilities) && 
+        $billing->status_id === BillingStatus::FINANCE_REVIEW) {
+      return true;
+    }
+
+    // Pengesah boleh pulangkan ke penyemak
+    if (in_array(UserAbilities::FINANCE_APPROVER, $userAbilities) && 
+        $billing->status_id === BillingStatus::FINANCE_APPROVAL) {
+      return true;
+    }
+
+    // Pembayar boleh pulangkan ke pengesah
+    if (in_array(UserAbilities::PAYMENT_MAKER, $userAbilities) && 
+        $billing->status_id === BillingStatus::PROCESSING_PAYMENT) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Dapatkan status seterusnya berdasarkan peranan
+   */
+  private function getNextStatus($currentStatus, $user)
+  {
+    $userRole = is_string($user->abilities) ? json_decode($user->abilities, true) : $user->abilities;
+
+    if (in_array(UserAbilities::HOD, $userRole) && $currentStatus === BillingStatus::HOD_APPROVAL) {
+      return BillingStatus::FINANCE_REVIEW;
+    }
+    if (in_array(UserAbilities::FINANCE_APPROVER, $userRole) && $currentStatus === BillingStatus::FINANCE_APPROVAL) {
+      return BillingStatus::PROCESSING_PAYMENT;
+    }
+    return $currentStatus;
+  }
+
+  /**
    * Display a listing of the resource.
    */
   public function index()
@@ -78,7 +416,8 @@ class BillingController extends Controller
         'department_id' => $validatedData['department_id'],
         // running_no tidak boleh dikemaskini
         'issued_at' => $validatedData['issued_at'],
-        'payment_due' => $validatedData['payment_due']
+        'payment_due' => $validatedData['payment_due'],
+        'status_id' => $validatedData['status_id']
       ]);
 
       // Delete existing details
@@ -171,6 +510,7 @@ class BillingController extends Controller
         'created_by' => $request->user()->id,
         'issued_at' => $validatedData['issued_at'],
         'payment_due' => $validatedData['payment_due'],
+        'status_id' => $validatedData['status_id'],
         'is_archived' => false
       ]);
 
@@ -776,47 +1116,60 @@ class BillingController extends Controller
   }
 
   /**
-   * Get dashboard and table data
+   * Get incomplete billings
    */
-  public function getDashboardData(Billing $billing)
+  public function getIncomplete(Request $request)
   {
     try {
-      $user = request()->user();
+      $user = $request->user();
+      $query = Billing::query()
+        ->where('created_by', $user->id)
+        ->whereNotIn('status_id', [BillingStatus::PAID, BillingStatus::REJECTED, BillingStatus::CANCELLED, BillingStatus::RETURNED, BillingStatus::COMPLETED])
+        ->select(
+          'id',
+          'issued_at',
+          'no_project',
+          'running_no',
+          'description',
+          'total_amount',
+          'status_id',
+          'created_at'
+        );
 
-      // Jika user adalah admin atau applicant, dapatkan stats untuk user biasa
-      if ($user->hasAbility([UserAbilities::ADMIN, UserAbilities::APPLICANT])) {
-        $stats = $this->getUserDashboardStats();
-        $tables = $this->getUserDashboardTables();
-        
-        if (!$stats['success'] || !$tables['success']) {
-          throw new Exception($stats['message'] ?? $tables['message'] ?? 'Failed to get dashboard data');
-        }
+      // Pagination
+      $page = $request->input('page', 1);
+      $perPage = $request->input('per_page', 10);
+      $total = $query->count();
+      $items = $query->orderBy('created_at', 'desc')
+        ->skip(($page - 1) * $perPage)
+        ->take($perPage)
+        ->get()
+        ->map(function ($item) {
+          return [
+            'id' => $item->id,
+            'issued_at' => $item->issued_at,
+            'no_project' => $item->no_project,
+            'running_no' => $item->running_no,
+            'description' => $item->description,
+            'total_amount' => $item->total_amount,
+            'status' => BillingStatus::getStatusName($item->status_id),
+            'created_at' => $item->created_at
+          ];
+        });
 
-        return response()->json([
-          'success' => true,
-          'data' => [
-            'stats' => $stats['data'],
-            'tables' => $tables['data']
+      return response()->json([
+        'success' => true,
+        'data' => [
+          'items' => $items,
+          'meta' => [
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => ceil($total / $perPage)
           ]
-        ]);
-      } 
-      // Selain applicant (admin, hod, finance dll), dapatkan stats untuk officer
-      else {
-        $stats = $this->getOfficerDashboardStats();
-        $tables = $this->getOfficerDashboardTables();
-        
-        if (!$stats['success'] || !$tables['success']) {
-          throw new Exception($stats['message'] ?? $tables['message'] ?? 'Failed to get dashboard data');
-        }
+        ]
+      ]);
 
-        return response()->json([
-          'success' => true,
-          'data' => [
-            'stats' => $stats['data'],
-            'tables' => $tables['data']
-          ]
-        ]);
-      }
     } catch (Exception $error) {
       return response()->json([
         'success' => false,
@@ -826,265 +1179,235 @@ class BillingController extends Controller
   }
 
   /**
-   * Get dashboard statistics for normal users
+   * Pengesahan permohonan
    */
-  public function getUserDashboardStats()
+  public function approve(Request $request, $id)
   {
     try {
-      $user = request()->user();
+      $user = $request->user();
+      $billing = Billing::findOrFail($id);
+      $userAbilities = is_string($user->abilities) ? json_decode($user->abilities, true) : $user->abilities;
 
-      // Get counts by status using raw query to avoid model appends
-      $statusCounts = DB::table('billings')
-        ->where('created_by', $user->id)
-        ->selectRaw('
-          COUNT(CASE WHEN status_id = ? THEN 1 END) as draft_count,
-          COUNT(CASE WHEN status_id IN (?, ?, ?, ?, ?) THEN 1 END) as pending_count,
-          COUNT(CASE WHEN status_id = ? THEN 1 END) as approved_count,
-          COUNT(CASE WHEN status_id = ? THEN 1 END) as rejected_count
-        ', [
-          BillingStatus::DRAFT,
-          BillingStatus::HOD_APPROVAL,
-          BillingStatus::FINANCE_REVIEW,
-          BillingStatus::FINANCE_VERIFY,
-          BillingStatus::FINANCE_APPROVAL,
-          BillingStatus::PROCESSING_PAYMENT,
-          BillingStatus::PAID,
-          BillingStatus::REJECTED
-        ])->first();
-
-      // Get time-based statistics
-      $now = now();
-      $startOfWeek = $now->copy()->startOfWeek()->format('Y-m-d H:i:s');
-      $endOfWeek = $now->copy()->endOfWeek()->format('Y-m-d H:i:s');
-      $startOfMonth = $now->copy()->startOfMonth()->format('Y-m-d H:i:s');
-      $endOfMonth = $now->copy()->endOfMonth()->format('Y-m-d H:i:s');
-      $startOfYear = $now->copy()->startOfYear()->format('Y-m-d H:i:s');
-      $endOfYear = $now->copy()->endOfYear()->format('Y-m-d H:i:s');
-
-      $timeStats = DB::table('billings')
-        ->where('created_by', $user->id)
-        ->selectRaw("
-          COUNT(CASE WHEN created_at BETWEEN '{$startOfWeek}' AND '{$endOfWeek}' THEN 1 END) as weekly,
-          COUNT(CASE WHEN created_at BETWEEN '{$startOfMonth}' AND '{$endOfMonth}' THEN 1 END) as monthly,
-          COUNT(CASE WHEN created_at BETWEEN '{$startOfYear}' AND '{$endOfYear}' THEN 1 END) as yearly
-        ")
-        ->first();
-
-      return [
-        'success' => true,
-        'data' => [
-          'status_counts' => [
-            'draft_count' => $statusCounts->draft_count ?? 0,
-            'pending_count' => $statusCounts->pending_count ?? 0,
-            'approved_count' => $statusCounts->approved_count ?? 0,
-            'rejected_count' => $statusCounts->rejected_count ?? 0
-          ],
-          'time_stats' => [
-            'weekly' => $timeStats->weekly ?? 0,
-            'monthly' => $timeStats->monthly ?? 0,
-            'yearly' => $timeStats->yearly ?? 0
-          ]
-        ]
-      ];
-    } catch (Exception $error) {
-      return ['success' => false, 'message' => $error->getMessage()];
-    }
-  }
-
-  /**
-   * Get dashboard tables data for normal users
-   */
-  public function getUserDashboardTables()
-  {
-    try {
-      $user = request()->user();
-      // $query = Billing::with(['department', 'creator'])
-      $query = Billing::where('created_by', $user->id)
-        ->select('id', 'issued_at', 'no_project', 'running_no', 'description', 'total_amount', 'status_id', 'created_at');
-
-      // Draft and pending items
-      $activeItems = $query->clone()
-        ->whereIn('status_id', [
-          BillingStatus::DRAFT,
-          BillingStatus::HOD_APPROVAL,
-          BillingStatus::FINANCE_REVIEW,
-          BillingStatus::FINANCE_VERIFY,
-          BillingStatus::FINANCE_APPROVAL,
-          BillingStatus::PROCESSING_PAYMENT,
-          BillingStatus::RETURNED
-        ])
-        ->orderBy('created_at', 'desc')
-        ->limit(5)
-        ->get()
-        ->map(function ($item) {
-          return [
-            'id' => $item->id,
-            'issued_at' => $item->issued_at,
-            'no_project' => $item->no_project,
-            'running_no' => $item->running_no,
-            'description' => $item->description,
-            'total_amount' => $item->total_amount,
-            'status' => BillingStatus::getStatusName($item->status_id),
-            'created_at' => $item->created_at,
-            // 'department' => $item->department->name,
-            // 'applicant' => $item->creator->name
-          ];
-        });
-
-      // Completed items
-      $completedItems = $query->clone()
-        ->whereIn('status_id', [
-          BillingStatus::PAID,
-          BillingStatus::REJECTED,
-          BillingStatus::CANCELLED
-        ])
-        ->orderBy('created_at', 'desc')
-        ->limit(5)
-        ->get()
-        ->map(function ($item) {
-          return [
-            'id' => $item->id,
-            'issued_at' => $item->issued_at,
-            'no_project' => $item->no_project,
-            'running_no' => $item->running_no,
-            'description' => $item->description,
-            'total_amount' => $item->total_amount,
-            'status' => BillingStatus::getStatusName($item->status_id),
-            'created_at' => $item->created_at,
-            // 'department' => $item->department->name,
-            // 'applicant' => $item->creator->name
-          ];
-        });
-
-      return [
-        'success' => true,
-        'data' => [
-          'active_items' => $activeItems,
-          'completed_items' => $completedItems
-        ]
-      ];
-    } catch (Exception $error) {
-      return  ['success' => false, 'message' => $error->getMessage()];
-    }
-  }
-
-  /**
-   * Get dashboard statistics for officers (HOD, Finance, etc)
-   */
-  public function getOfficerDashboardStats()
-  {
-    try {
-      $user = request()->user();
-      $query = Billing::query();
-      $finance = [
-        UserAbilities::FINANCE_CHECKER,
-        UserAbilities::FINANCE_VERIFIER,
-        UserAbilities::FINANCE_APPROVER,
-        UserAbilities::FINANCE_PAYMENT
-      ];
-
-      // Filter based on ability
-      if ($user->hasAbility(UserAbilities::HOD)) {
-        $query->where('department_id', $user->department_id)
-          ->where('status_id', BillingStatus::HOD_APPROVAL);
-      } elseif ($user->hasAbility($finance)) {
-        $query->whereIn('status_id', [
-          BillingStatus::FINANCE_REVIEW,
-          BillingStatus::FINANCE_VERIFY,
-          BillingStatus::FINANCE_APPROVAL,
-          BillingStatus::PROCESSING_PAYMENT,
-          BillingStatus::PAID
-        ]);
+      // Semak kebenaran pengguna
+      if (empty($userAbilities)) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Anda tidak mempunyai kebenaran untuk mengesahkan permohonan ini'
+        ], 403);
       }
 
-      // Get counts
-      $stats = $query->selectRaw('
-        COUNT(CASE WHEN status_id IN (?, ?, ?, ?, ?) THEN 1 END) as pending_count,
-        COUNT(CASE WHEN status_id = ? THEN 1 END) as approved_count,
-        COUNT(CASE WHEN status_id = ? THEN 1 END) as rejected_count,
-        COUNT(CASE WHEN status_id = ? THEN 1 END) as returned_count
-      ', [
-        BillingStatus::HOD_APPROVAL,
-        BillingStatus::FINANCE_REVIEW,
-        BillingStatus::FINANCE_VERIFY,
-        BillingStatus::FINANCE_APPROVAL,
-        BillingStatus::PROCESSING_PAYMENT,
-        BillingStatus::COMPLETED,
-        BillingStatus::REJECTED,
-        BillingStatus::RETURNED
-      ])->first();
-
-      return [
-        'success' => true,
-        'data' => $stats
-      ];
-    } catch (Exception $error) {
-      return ['success' => false, 'message' => $error->getMessage()];
-    }
-  }
-
-  /**
-   * Get dashboard tables data for officers
-   */
-  public function getOfficerDashboardTables()
-  {
-    try {
-      $user = request()->user();
-      $query = Billing::with(['department', 'user'])
-        ->select('id', 'reference_no', 'total_amount', 'status_id', 'created_at', 'department_id', 'created_by');
-
-      $finance = [
-        UserAbilities::FINANCE_CHECKER,
-        UserAbilities::FINANCE_VERIFIER,
-        UserAbilities::FINANCE_APPROVER,
-        UserAbilities::FINANCE_PAYMENT
-      ];
-
-      // Filter based on ability
-      if ($user->hasAbility(UserAbilities::HOD)) {
-        $query->where('department_id', $user->department_id)
-          ->where('status_id', BillingStatus::HOD_APPROVAL);
-      } elseif ($user->hasAbility($finance)) {
-        $query->whereIn('status_id', [
-          BillingStatus::FINANCE_REVIEW,
-          BillingStatus::FINANCE_VERIFY,
-          BillingStatus::FINANCE_APPROVAL,
-          BillingStatus::PROCESSING_PAYMENT,
-          BillingStatus::PAID
-        ]);
+      // Semak status permohonan
+      if (!$this->canApprove($billing, $user)) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Permohonan ini tidak boleh disahkan pada status semasa'
+        ], 400);
       }
 
-      $items = $query->latest()
-        ->get()
-        ->map(function ($item) {
-          return [
-            'id' => $item->id,
-            'reference_no' => $item->reference_no,
-            'total_amount' => $item->total_amount,
-            'status' => BillingStatus::getStatusName($item->status_id),
-            'created_at' => $item->created_at,
-            'department' => $item->department->name,
-            'applicant' => $item->user->name
-          ];
-        });
+      // Untuk HOD, semak jabatan
+      if (in_array(UserAbilities::HOD, $userAbilities) && 
+          $billing->department_id !== $user->department_id) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Anda tidak boleh mengesahkan permohonan dari jabatan lain'
+        ], 403);
+      }
+
+      $validator = Validator::make($request->all(), [
+        'remarks' => 'nullable|string|max:500'
+      ]);
+
+      if ($validator->fails()) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Validation error',
+          'errors' => $validator->errors()
+        ], 422);
+      }
+
+      DB::beginTransaction();
+
+      // Kemaskini status berdasarkan abilities pengguna
+      $nextStatus = $this->getNextStatus($billing->status_id, $user);
+      // $remarks = $request->remarks ?? 'Disahkan oleh ' . implode(', ', $this->getUserRoles($user));
+      // $billing->updateStatus($nextStatus, $user->id, $remarks);
+      DB::commit();
 
       return response()->json([
         'success' => true,
-        'data' => $items
+        'message' => 'Permohonan telah disahkan',
+        'test'=>$billing->status_id,
+        'next'=>$nextStatus,
+        'user'=>$user,
+        'data' => new BillingResource($billing->fresh(['details', 'recipient', 'department']))
       ]);
-    } catch (Exception $error) {
-      return ['success' => false, 'message' => $error->getMessage()];
+
+    } catch (ModelNotFoundException $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Permohonan tidak dijumpai'
+      ], 404);
+
+    } catch (Exception $e) {
+      DB::rollBack();
+      return response()->json([
+        'success' => false,
+        'message' => 'Ralat semasa mengesahkan permohonan',
+        'error' => $e->getMessage()
+      ], 500);
     }
   }
 
   /**
-   * HOD Approval for billing
+   * Tolak permohonan
    */
-  public function hodApprove(Billing $billing)
+  public function reject(Request $request, $id)
   {
-    $this->authorize('process', $billing);
-    $billing->updateStatus(BillingStatus::HOD_APPROVAL, Auth::id(), 'Approved by HOD');
-    return response()->json(['message' => 'Billing approved by HOD']);
+    try {
+      $user = $request->user();
+      $billing = Billing::findOrFail($id);
+      $userAbilities = is_string($user->abilities) ? json_decode($user->abilities, true) : $user->abilities;
+
+      // Semak kebenaran pengguna
+      if (empty($userAbilities)) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Anda tidak mempunyai kebenaran untuk menolak permohonan ini'
+        ], 403);
+      }
+
+      // Semak status permohonan
+      if (!$this->canReject($billing, $user)) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Permohonan ini tidak boleh ditolak pada status semasa'
+        ], 400);
+      }
+
+      // Untuk HOD, semak jabatan
+      if (in_array(UserAbilities::HOD, $userAbilities) && 
+          $billing->department_id !== $user->department_id) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Anda tidak boleh menolak permohonan dari jabatan lain'
+        ], 403);
+      }
+
+      $validator = Validator::make($request->all(), [
+        'remarks' => 'required|string|max:500'
+      ]);
+
+      if ($validator->fails()) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Sila nyatakan sebab penolakan',
+          'errors' => $validator->errors()
+        ], 422);
+      }
+
+      DB::beginTransaction();
+
+      // Kemaskini status ke REJECTED
+      $billing->updateStatus(BillingStatus::REJECTED, $user->id, $request->remarks);
+
+      DB::commit();
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Permohonan telah ditolak',
+        'data' => new BillingResource($billing->fresh(['details', 'recipient', 'department']))
+      ]);
+
+    } catch (ModelNotFoundException $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Permohonan tidak dijumpai'
+      ], 404);
+
+    } catch (Exception $e) {
+      DB::rollBack();
+      return response()->json([
+        'success' => false,
+        'message' => 'Ralat semasa menolak permohonan',
+        'error' => $e->getMessage()
+      ], 500);
+    }
+  }
+
+  /**
+   * Pulangkan permohonan
+   */
+  public function returnBilling(Request $request, $id)
+  {
+    try {
+      $user = $request->user();
+      $billing = Billing::findOrFail($id);
+      $userAbilities = is_string($user->abilities) ? json_decode($user->abilities, true) : $user->abilities;
+
+      // Semak kebenaran pengguna
+      if (empty($userAbilities)) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Anda tidak mempunyai kebenaran untuk memulangkan permohonan ini'
+        ], 403);
+      }
+
+      // Semak status permohonan
+      if (!$this->canReturn($billing, $user)) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Permohonan ini tidak boleh dipulangkan pada status semasa'
+        ], 400);
+      }
+
+      // Untuk HOD, semak jabatan
+      if (in_array(UserAbilities::HOD, $userAbilities) && 
+          $billing->department_id !== $user->department_id) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Anda tidak boleh memulangkan permohonan dari jabatan lain'
+        ], 403);
+      }
+
+      $validator = Validator::make($request->all(), [
+        'remarks' => 'required|string|max:500'
+      ]);
+
+      if ($validator->fails()) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Sila nyatakan sebab pemulangan',
+          'errors' => $validator->errors()
+        ], 422);
+      }
+
+      DB::beginTransaction();
+
+      // Kemaskini status ke RETURNED
+      $billing->updateStatus(BillingStatus::RETURNED, $user->id, $request->remarks);
+
+      DB::commit();
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Permohonan telah dipulangkan untuk penambahbaikan',
+        'data' => new BillingResource($billing->fresh(['details', 'recipient', 'department']))
+      ]);
+
+    } catch (ModelNotFoundException $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Permohonan tidak dijumpai'
+      ], 404);
+
+    } catch (Exception $e) {
+      DB::rollBack();
+      return response()->json([
+        'success' => false,
+        'message' => 'Ralat semasa memulangkan permohonan',
+        'error' => $e->getMessage()
+      ], 500);
+    }
   }
 
   /**
@@ -1105,6 +1428,82 @@ class BillingController extends Controller
     $this->authorize('process', $billing);
     $billing->updateStatus(BillingStatus::FINANCE_VERIFY, Auth::id(), 'Verified by finance');
     return response()->json(['message' => 'Billing verified by finance']);
+  }
+
+
+  /**
+   * HOD Approval for billing
+   */
+  public function hodApprove(Request $request, $id)
+  {
+    try {
+      $user = $request->user();
+      $billing = Billing::findOrFail($id);
+
+      // Pastikan pengguna adalah HOD
+      if (!$user->hasAbility(UserAbilities::HOD)) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Anda tidak mempunyai kebenaran untuk mengesahkan permohonan ini'
+        ], 403);
+      }
+
+      // Pastikan billing adalah dalam status HOD_APPROVAL
+      if ($billing->status_id !== BillingStatus::HOD_APPROVAL) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Permohonan ini tidak boleh disahkan kerana bukan dalam status HOD Approval'
+        ], 400);
+      }
+
+      // Pastikan HOD adalah dari jabatan yang sama
+      if ($billing->department_id !== $user->department_id) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Anda tidak boleh mengesahkan permohonan dari jabatan lain'
+        ], 403);
+      }
+
+      $validator = Validator::make($request->all(), [
+        'remarks' => 'nullable|string|max:500'
+      ]);
+
+      if ($validator->fails()) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Validation error',
+          'errors' => $validator->errors()
+        ], 422);
+      }
+
+      DB::beginTransaction();
+
+      // Kemaskini status ke FINANCE_REVIEW
+      $remarks = $request->remarks ?? 'Disahkan oleh HOD';
+      $billing->updateStatus(BillingStatus::FINANCE_REVIEW, $user->id, $remarks);
+
+      DB::commit();
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Permohonan telah disahkan dan dihantar ke Finance',
+        'data' => new BillingResource($billing->fresh(['details', 'recipient', 'department']))
+      ]);
+
+    } catch (ModelNotFoundException $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Permohonan tidak dijumpai'
+      ], 404);
+
+    } catch (Exception $e) {
+      DB::rollBack();
+      return response()->json([
+        'success' => false,
+        'message' => 'Ralat semasa mengesahkan permohonan',
+        'error' => $e->getMessage()
+      ], 500);
+    }
   }
 
   /**
@@ -1148,26 +1547,6 @@ class BillingController extends Controller
   }
 
   /**
-   * Reject billing
-   */
-  public function reject(Billing $billing, Request $request)
-  {
-    $this->authorize('process', $billing);
-    $billing->updateStatus(BillingStatus::REJECTED, Auth::id(), $request->input('remarks', 'Billing rejected'));
-    return response()->json(['message' => 'Billing rejected']);
-  }
-
-  /**
-   * Return billing to draft
-   */
-  public function return(Billing $billing, Request $request)
-  {
-    $this->authorize('process', $billing);
-    $billing->updateStatus(BillingStatus::RETURNED, Auth::id(), $request->input('remarks', 'Billing returned for revision'));
-    return response()->json(['message' => 'Billing returned for revision']);
-  }
-
-  /**
    * Cancel billing
    */
   public function cancel(Billing $billing, Request $request)
@@ -1198,5 +1577,49 @@ class BillingController extends Controller
     ];
 
     return $statuses[$status_id] ?? 'Unknown Status';
+  }
+
+  /**
+   * Get billing history
+   */
+  public function getHistory(Billing $billing)
+  {
+    try {
+      $history = DB::table('billing_status_history as bsh')
+        ->join('users as u', 'bsh.user_id', '=', 'u.id')
+        ->where('bsh.billing_id', $billing->id)
+        ->select(
+          'bsh.id',
+          'bsh.status',
+          'bsh.remarks',
+          'bsh.created_at',
+          'u.name as user_name'
+        )
+        ->orderBy('bsh.created_at', 'desc')
+        ->get()
+        ->map(function ($item) {
+          return [
+            'id' => $item->id,
+            'status' => $item->status,
+            'status_name' => $this->getStatusName($item->status),
+            'remarks' => $item->remarks,
+            'created_at' => $item->created_at,
+            'user_name' => $item->user_name
+          ];
+        });
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Sejarah permohonan berjaya diperolehi',
+        'data' => $history
+      ]);
+
+    } catch (Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Ralat mendapatkan sejarah permohonan',
+        'error' => $e->getMessage()
+      ], 500);
+    }
   }
 }
