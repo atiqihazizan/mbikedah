@@ -79,9 +79,8 @@ function BillingTableArchive() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const { success, message, data } = await apiClient.get(
-        "/billings/incomplete"
-      );
+      const { success, message, data } = await apiClient.get( "/billings/archive");
+
       if (!success) {
         throw new Error(message || "Gagal mendapatkan data");
       }

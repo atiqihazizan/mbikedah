@@ -1,19 +1,109 @@
-import { ChevronFirst, ChevronLast, MoreHorizontal, MoreVertical } from "lucide-react";
+import {
+  ChevronFirst,
+  ChevronLast,
+  MoreHorizontal,
+  MoreVertical,
+} from "lucide-react";
 import { useStateContext } from "../contexts/ContextProvider";
-import { createContext, useContext, useState } from "react";
-import { NavLink } from "react-router-dom";
-import { Menu, MenuButton, MenuItem,MenuItems } from '@headlessui/react'
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+import { navigation } from "../config/navigation";
 import logo from "../assets/logo.png";
-import PropTypes from 'prop-types';
+import PropTypes from "prop-types";
+import apiClient from "../axios";
+import { toast } from "react-toastify";
 
 const SidebarContext = createContext();
 
-export default function Sidebar({ children ,logout}) {
-  const [expanded, setExpanded] = useState(true)
+export default function Sidebar() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { currentUser, setCurrentUser, userToken, setUserToken } = useStateContext();
+  const [expanded, setExpanded] = useState(true);
   const {
     currentUser: { name, username },
   } = useStateContext();
-  
+
+  const requestInProgress = useRef(false);
+
+  // Clear semua toast apabila tukar page
+  useEffect(() => {
+    toast.dismiss();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!userToken || requestInProgress.current) return;
+
+    const getMaklumatPengguna = async () => {
+      try {
+        requestInProgress.current = true;
+        const { success, user } = await apiClient.get("/auth/me");
+        if (!success || !user) {
+          setCurrentUser({});
+          setUserToken(null);
+          if (user.message) {
+            console.error(user.message);
+          }
+          return;
+        }
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Ralat semasa mendapatkan maklumat pengguna:", error);
+      } finally {
+        requestInProgress.current = false;
+      }
+    };
+    getMaklumatPengguna();
+  }, [userToken]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      navigate("/login");
+    }
+  }, [currentUser, navigate]);
+
+  // Filter menu berdasarkan allowed_menus dari user
+  const filterNavigation = () => {
+    // Jika user adalah admin, tunjuk semua menu
+    if (currentUser.allowed_menus?.includes("all")) {
+      return navigation;
+    }
+
+    // Jika bukan admin, filter menu berdasarkan allowed_menus
+    return navigation.filter((item) => {
+      // Jika item adalah header (type 0), periksa jika ada child menu yang dibenarkan
+      if (item.type === 0) {
+        const nextIndex = navigation.indexOf(item) + 1;
+        // Cari menu selepas header sehingga jumpa header seterusnya
+        for (
+          let i = nextIndex;
+          i < navigation.length && navigation[i].type !== 0;
+          i++
+        ) {
+          if (currentUser?.allowed_menus?.includes(navigation[i].menu)) {
+            return true;
+          }
+        }
+        return false;
+      }
+      // Jika item adalah menu (type 1), periksa jika menu dibenarkan
+      return currentUser.allowed_menus?.includes(item.menu);
+    });
+  };
+
+  const logout = async (ev) => {
+    ev.preventDefault();
+    try {
+      await apiClient.post("/auth/logout");
+      setCurrentUser({});
+      setUserToken(null);
+      navigate("/login");
+    } catch (error) {
+      console.error("Ralat semasa log keluar. Sila cuba sebentar lagi.");
+    }
+  };
+
   return (
     <Menu as={"div"} className="relative">
       <aside className="h-screen inline-block">
@@ -29,15 +119,18 @@ export default function Sidebar({ children ,logout}) {
 
             <button
               onClick={() => setExpanded((curr) => !curr)}
-              className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100"
-            >
+              className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100">
               {expanded ? <ChevronFirst /> : <ChevronLast />}
             </button>
           </div>
 
           <div className="scrollable-y-hover grow">
             <SidebarContext.Provider value={{ expanded }}>
-              <ul className="flex-1 px-3">{children}</ul>
+              <ul className="flex-1 px-3">
+                {filterNavigation()?.map((n, i) => (
+                  <SidebarItem key={i} {...n} />
+                ))}
+              </ul>
             </SidebarContext.Provider>
           </div>
 
@@ -50,8 +143,7 @@ export default function Sidebar({ children ,logout}) {
             <div
               className={`flex justify-between items-center overflow-hidden transition-all ${
                 expanded ? "w-52 ml-3" : "w-0"
-              }`}
-            >
+              }`}>
               <div className="leading-4">
                 <h4 className="font-semibold">{username}</h4>
                 <span className="text-xs text-gray-600 text-nowrap">
@@ -67,14 +159,12 @@ export default function Sidebar({ children ,logout}) {
             <MenuItems
               anchor="top end"
               transition={true}
-              className="[--anchor-gap:8px] [--anchor-padding:8px] rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 origin-top transition duration-200 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
-            >
+              className="[--anchor-gap:8px] [--anchor-padding:8px] rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 origin-top transition duration-200 ease-out data-[closed]:scale-95 data-[closed]:opacity-0">
               <div className="py-1">
                 <MenuItem>
                   <a
                     href="#"
-                    className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900 data-[focus]:outline-none"
-                  >
+                    className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900 data-[focus]:outline-none">
                     Ubahsuai Akaun
                   </a>
                 </MenuItem>
@@ -84,8 +174,7 @@ export default function Sidebar({ children ,logout}) {
                     // type="submit"
                     type="buttom"
                     onClick={logout}
-                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900 data-[focus]:outline-none"
-                  >
+                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900 data-[focus]:outline-none">
                     Log Keluar
                   </button>
                 </MenuItem>
@@ -98,15 +187,11 @@ export default function Sidebar({ children ,logout}) {
     </Menu>
   );
 }
-Sidebar.propTypes = {
-  logout: PropTypes.func.isRequired,
-  children: PropTypes.node.isRequired,
-};
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
-export function SidebarItem({ icon, text, to, type, badgeCount }) {
+function SidebarItem({ icon, text, to, type, badgeCount }) {
   const { expanded } = useContext(SidebarContext);
   return (
     <li className="relative">

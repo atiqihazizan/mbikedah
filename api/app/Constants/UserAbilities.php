@@ -12,6 +12,23 @@ class UserAbilities
   const FINANCE_APPROVER = 6;
   const PAYMENT_MAKER = 7;
 
+  const ABILITIES_MENU = [
+    // Admin boleh akses semua menu
+    1 => ['all'],
+    // Pemohon
+    2 => ['billing.create', 'billing.incomplete', 'billing.archive'],
+    // Ketua Jabatan
+    3 => ['billing.hod'],
+    // Penyemak Kewangan
+    4 => ['billing.finance'],
+    // Pengesah Kewangan
+    5 => ['billing.finance'],
+    // Pelulus Kewangan
+    6 => ['billing.finance'],
+    // Pembayar
+    7 => ['billing.finance'],
+  ];
+
   public static function getAbilitiesName()
   {
     return [

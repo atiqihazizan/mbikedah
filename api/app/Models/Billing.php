@@ -18,147 +18,129 @@ use App\Constants\BillingStatus;
 
 class Billing extends Model
 {
-    use HasFactory, HasStatus;
+  use HasFactory, HasStatus;
 
-    protected $fillable = [
-        'description',
-        'total_amount',
-        'department_id',
-        'created_by',
-        'status_id',
-        'payment_method',
-        'issued_at',
-        'payment_due',
-        'no_project',
-        'running_no',
-        'is_archived',
-        'recipient_id'
-    ];
+  protected $fillable = [
+    'description',
+    'total_amount',
+    'department_id',
+    'created_by',
+    'status_id',
+    'payment_method',
+    'issued_at',
+    'payment_due',
+    'no_project',
+    'running_no',
+    'is_archived',
+    'recipient_id'
+  ];
 
-    protected $appends = ['status_name', 'is_active'];
+  protected $appends = ['status_name', 'is_active'];
 
-    protected $casts = [
-        'total_amount' => 'decimal:2',
-        'issued_at' => 'datetime',
-        'payment_due' => 'datetime',
-        'status_id' => 'integer',
-        'is_archived' => 'boolean'
-    ];
+  protected $casts = [
+    'total_amount' => 'decimal:2',
+    'issued_at' => 'datetime',
+    'payment_due' => 'datetime',
+    'status_id' => 'integer',
+    'is_archived' => 'boolean'
+  ];
 
-    // Status constants
-    const STATUS_DRAFT = BillingStatus::DRAFT;
-    const STATUS_HOD_APPROVAL = BillingStatus::HOD_APPROVAL;
-    const STATUS_FINANCE_REVIEW = BillingStatus::FINANCE_REVIEW;
-    const STATUS_FINANCE_VERIFY = BillingStatus::FINANCE_VERIFY;
-    const STATUS_FINANCE_APPROVAL = BillingStatus::FINANCE_APPROVAL;
-    const STATUS_PROCESSING_PAYMENT = BillingStatus::PROCESSING_PAYMENT;
-    const STATUS_PAID = BillingStatus::PAID;
-    const STATUS_COMPLETED = BillingStatus::COMPLETED;
-    const STATUS_REJECTED = BillingStatus::REJECTED;
-    const STATUS_RETURNED = BillingStatus::RETURNED;
-    const STATUS_CANCELLED = BillingStatus::CANCELLED;
+  /**
+   * Get the creator of the billing.
+   */
+  public function creator()
+  {
+    return $this->belongsTo(User::class, 'created_by');
+  }
 
-    // Payment method constants 
-    const PAYMENT_CASH = 'cash';
-    const PAYMENT_CHEQUE = 'cheque';
-    const PAYMENT_ONLINE = 'online';
+  /**
+   * Alias for creator relationship
+   */
+  public function user()
+  {
+    return $this->creator();
+  }
 
-    /**
-     * Get the creator of the billing.
-     */
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
+  /**
+   * Get the department that owns the billing.
+   */
+  public function department(): BelongsTo
+  {
+    return $this->belongsTo(Department::class, 'department_id');
+  }
 
-    /**
-     * Alias for creator relationship
-     */
-    public function user()
-    {
-        return $this->creator();
-    }
+  /**
+   * Get the recipient of the billing.
+   */
+  public function recipient(): BelongsTo
+  {
+    return $this->belongsTo(BillingRecipient::class, 'recipient_id');
+  }
 
-    /**
-     * Get the department that owns the billing.
-     */
-    public function department(): BelongsTo
-    {
-        return $this->belongsTo(Department::class, 'department_id');
-    }
+  /**
+   * Get the billing details.
+   */
+  public function details(): HasMany
+  {
+    return $this->hasMany(BillingDetail::class);
+  }
 
-    /**
-     * Get the recipient of the billing.
-     */
-    public function recipient(): BelongsTo
-    {
-        return $this->belongsTo(BillingRecipient::class, 'recipient_id');
-    }
+  /**
+   * Get the billing history.
+   */
+  public function history(): HasMany
+  {
+    return $this->hasMany(BillingHistory::class);
+  }
 
-    /**
-     * Get the billing details.
-     */
-    public function details(): HasMany
-    {
-        return $this->hasMany(BillingDetail::class);
-    }
+  public function getStatusName()
+  {
+    return BillingStatus::getStatusName($this->status_id);
+  }
 
-    /**
-     * Get the billing history.
-     */
-    public function history(): HasMany
-    {
-        return $this->hasMany(BillingHistory::class);
-    }
+  /**
+   * Boot function untuk auto-generate running number
+   */
+  protected static function boot()
+  {
+    parent::boot();
 
-    public function getStatusName()
-    {
-        return BillingStatus::getStatusName($this->status_id);
-    }
+    static::creating(function ($billing) {
+      if (empty($billing->running_no)) {
+        $billing->running_no = static::generateRunningNumber();
+      }
+    });
+  }
 
-    /**
-     * Boot function untuk auto-generate running number
-     */
-    protected static function boot()
-    {
-        parent::boot();
+  /**
+   * Generate running number untuk billing baru
+   */
+  public static function generateRunningNumber(string $prefix = 'INV'): string
+  {
+    return BillingSequence::getNextNumber($prefix, now()->year);
+  }
 
-        static::creating(function ($billing) {
-            if (empty($billing->running_no)) {
-                $billing->running_no = static::generateRunningNumber();
-            }
-        });
-    }
+  /**
+   * Set semula sequence untuk tahun tertentu
+   */
+  public static function resetRunningNumber(string $prefix = 'INV', int $year = null): void
+  {
+    BillingSequence::resetSequence($prefix, $year);
+  }
 
-    /**
-     * Generate running number untuk billing baru
-     */
-    public static function generateRunningNumber(string $prefix = 'INV'): string
-    {
-        return BillingSequence::getNextNumber($prefix, now()->year);
-    }
+  /**
+   * Tukar prefix untuk running number
+   */
+  public static function updateRunningNumberPrefix(string $oldPrefix, string $newPrefix, int $year = null): void
+  {
+    BillingSequence::updatePrefix($oldPrefix, $newPrefix, $year);
+  }
 
-    /**
-     * Set semula sequence untuk tahun tertentu
-     */
-    public static function resetRunningNumber(string $prefix = 'INV', int $year = null): void
-    {
-        BillingSequence::resetSequence($prefix, $year);
-    }
-
-    /**
-     * Tukar prefix untuk running number
-     */
-    public static function updateRunningNumberPrefix(string $oldPrefix, string $newPrefix, int $year = null): void
-    {
-        BillingSequence::updatePrefix($oldPrefix, $newPrefix, $year);
-    }
-
-    /**
-     * Tukar padding untuk running number
-     */
-    public static function updateRunningNumberPadding(string $prefix = 'INV', int $padding = 3, int $year = null): void
-    {
-        BillingSequence::updatePadding($prefix, $padding, $year);
-    }
+  /**
+   * Tukar padding untuk running number
+   */
+  public static function updateRunningNumberPadding(string $prefix = 'INV', int $padding = 3, int $year = null): void
+  {
+    BillingSequence::updatePadding($prefix, $padding, $year);
+  }
 }

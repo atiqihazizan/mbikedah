@@ -103,3 +103,6 @@ api/storage/debugbar/
 *.iml
 *.ipr
 *.iws
+
+# windsurf rules
+.windsurfrules

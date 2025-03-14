@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import PropTypes from 'prop-types';
 
 export default function ConfirmationModal({ 
   isOpen, 
@@ -11,18 +12,27 @@ export default function ConfirmationModal({
   isLoading,
   disabled
 }) {
-  if (!isOpen) return null;
-
   const [comment, setComment] = useState('');
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
       {/* Overlay */}
-      <div className="fixed inset-0 bg-black opacity-50" onClick={onClose}></div>
+      <div 
+        className="fixed inset-0 bg-black opacity-50" 
+        onClick={onClose}
+        aria-hidden="true"
+      ></div>
 
       {/* Modal */}
       <div className="relative bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h2 className="text-lg font-semibold mb-4">{title}</h2>
+        <h2 id="modal-title" className="text-lg font-semibold mb-4">{title}</h2>
         <p className="text-gray-600 mb-6">{message}</p>
 
         <textarea
@@ -30,22 +40,9 @@ export default function ConfirmationModal({
           placeholder="Masukkan komen..."
           value={comment}
           onChange={(e) => setComment(e.target.value)}
+          aria-label="Komen"
         ></textarea>
 
-        <div className="flex justify-end space-x-4 mt-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={() => onConfirm(comment)}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-          >
-            {confirmText}
-          </button>
-        </div>
         <div className="mt-4 flex justify-end space-x-3">
           <button
             type="button"
@@ -54,17 +51,18 @@ export default function ConfirmationModal({
             className={`px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Batal
+            {cancelText}
           </button>
           <button
-            type="submit"
-            disabled={disabled}
+            type="button"
+            onClick={() => onConfirm(comment)}
+            disabled={disabled || isLoading}
             className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 
-              ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {isLoading ? (
               <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" aria-hidden="true"></div>
                 <span>Memproses...</span>
               </div>
             ) : (
@@ -76,3 +74,15 @@ export default function ConfirmationModal({
     </div>
   );
 }
+
+ConfirmationModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+  message: PropTypes.string.isRequired,
+  confirmText: PropTypes.string,
+  cancelText: PropTypes.string,
+  isLoading: PropTypes.bool,
+  disabled: PropTypes.bool
+};

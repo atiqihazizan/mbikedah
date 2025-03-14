@@ -4,7 +4,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BillingActivitiesController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\BillingListController;
 use App\Http\Controllers\BillingRecipientController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DepartmentController;
@@ -26,15 +28,16 @@ use App\Http\Controllers\UserController;
 | Authentication Routes
 |--------------------------------------------------------------------------
 */
-Route::prefix('auth')->group(function () {
-    // Public routes
-    Route::post('/login', [AuthController::class, 'login']);
 
-    // Protected routes
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/logout', [AuthController::class, 'logout']);
-        Route::get('/me', [AuthController::class, 'getMe']);
-    });
+Route::prefix('auth')->group(function () {
+  // Public routes
+  Route::post('/login', [AuthController::class, 'login']);
+
+  // Protected routes
+  Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'getMe']);
+  });
 });
 
 /*
@@ -43,136 +46,128 @@ Route::prefix('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Redis Test Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('redis-test')->group(function () {
-        Route::get('/set', function () {
-            Cache::put('test_key', 'Redis berjaya dipasang!', now()->addMinutes(5));
-            return response()->json(['message' => 'Data telah disimpan dalam Redis']);
-        });
-
-        Route::get('/get', function () {
-            $value = Cache::get('test_key', 'Tiada data dalam Redis');
-            return response()->json(['message' => $value]);
-        });
+  Route::prefix('redis-test')->group(function () {
+    Route::get('/set', function () {
+      Cache::put('test_key', 'Redis berjaya dipasang!', now()->addMinutes(5));
+      return response()->json(['message' => 'Data telah disimpan dalam Redis']);
     });
-    
-    /*
+
+    Route::get('/get', function () {
+      $value = Cache::get('test_key', 'Tiada data dalam Redis');
+      return response()->json(['message' => $value]);
+    });
+  });
+
+  /*
     |--------------------------------------------------------------------------
     | Budget Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('budgets')->group(function () {
-        Route::get('/', [BudgetController::class, 'index']);
-        Route::post('/', [BudgetController::class, 'store']);
-        Route::get('/{id}', [BudgetController::class, 'show']);
-        Route::put('/{id}', [BudgetController::class, 'update']);
-        Route::delete('/{id}', [BudgetController::class, 'destroy']);
-    });
+  Route::prefix('budgets')->group(function () {
+    Route::get('/', [BudgetController::class, 'index']);
+    Route::post('/', [BudgetController::class, 'store']);
+    Route::get('/{id}', [BudgetController::class, 'show']);
+    Route::put('/{id}', [BudgetController::class, 'update']);
+    Route::delete('/{id}', [BudgetController::class, 'destroy']);
+  });
 
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Dashboard Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('dashboard')->group(function () {
-        // Route::get('/', [BillingController::class, 'getDashboardData']);
-    });
+  Route::prefix('dashboard')->group(function () {
+    // Route::get('/', [BillingController::class, 'getDashboardData']);
+  });
 
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Billing Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('billings')->group(function () {
-        // Dapatkan senarai permohonan yang belum lengkap
-        Route::get('/incomplete', [BillingController::class, 'getIncomplete']);
-        // Basic CRUD
-        Route::get('/', [BillingController::class, 'getBillings']);
-        Route::post('/', [BillingController::class, 'createBilling']);
-        Route::put('/{id}', [BillingController::class, 'update']);
-        Route::post('/{id}/status', [BillingController::class, 'updateBillingStatus']);
+  Route::prefix('billings')->group(function () {
+    // Basic Resource Routes
+    Route::post('/', [BillingController::class, 'store']);
+    Route::put('/{billing}', [BillingController::class, 'update']);
+    
+    // Additional Custom Routes
+    Route::get('/incomplete', [BillingListController::class, 'getIncomplete']);
+    Route::get('/pending-hod', [BillingListController::class, 'getPendingHOD']);
+    Route::get('/pending-finance', [BillingListController::class, 'getPendingFinance']);
+    Route::get('/archive', [BillingListController::class, 'getArchive']);
 
-        // Approvals
-        Route::get('/pending-approvals', [BillingController::class, 'getPendingApprovals']);
-        
-        // Approval Flow
-        Route::prefix('{id}')->group(function () {
-            // Approval Actions
-            // Route::post('/approve', [BillingController::class, 'approve']);
-            Route::post('/reject', [BillingController::class, 'reject']);
-            Route::post('/return', [BillingController::class, 'returnBilling']);
+    // Nested/Specific Routes
+    Route::prefix('{billing}')->group(function () {
+      // HOD Level
+      Route::post('/hod-approve', [BillingActivitiesController::class, 'hodApprove']);
 
-            // HOD Level
-            Route::post('/hod-approve', [BillingController::class, 'hodApprove']);
-            
-            // Finance Level
-            Route::post('/finance-review', [BillingController::class, 'financeReview']);
-            Route::post('/finance-verify', [BillingController::class, 'financeVerify']);
-            Route::post('/finance-approve', [BillingController::class, 'financeApprove']);
-            
-            // Payment Level
-            Route::post('/process-payment', [BillingController::class, 'processPayment']);
-            Route::post('/paid', [BillingController::class, 'paid']);
-            Route::post('/complete', [BillingController::class, 'complete']);
-            
-            // Other Actions
-            Route::post('/cancel', [BillingController::class, 'cancel']);
-            
-            // History Route
-            Route::get('/history', [BillingController::class, 'getHistory']);
-        });
-        
-        // Reporting Routes
-        Route::get('/stats', [BillingController::class, 'getStats']);
-        Route::get('/activities', [BillingController::class, 'getRecentActivities']);
-        Route::get('/pending', [BillingController::class, 'getPendingItems']);
-        Route::get('/export', [BillingController::class, 'exportBillings']);
-        Route::get('/{id}', [BillingController::class, 'getBillingById']);
+      // Finance Level
+      Route::post('/finance-review', [BillingActivitiesController::class, 'financeReview']);
+      Route::post('/finance-verify', [BillingActivitiesController::class, 'financeVerify']);
+      Route::post('/finance-approve', [BillingActivitiesController::class, 'financeApprove']);
+
+      // Payment Level
+      Route::post('/process-payment', [BillingActivitiesController::class, 'processPayment']);
+      Route::post('/paid-complete', [BillingActivitiesController::class, 'paidComplete']);
+
+      // Other Actions
+      Route::post('/cancel', [BillingActivitiesController::class, 'cancelBilling']);
+      Route::post('/reject', [BillingActivitiesController::class, 'rejectBilling']);
+      Route::post('/return', [BillingActivitiesController::class, 'returnBilling']);
+
+      // History Route
+      Route::get('/history', [BillingListController::class, 'getHistory']);
+
+      // Edit Route
     });
 
-    /*
+    Route::get('/{id}', [BillingController::class, 'getBillingById']);
+  });
+
+  /*
     |--------------------------------------------------------------------------
     | Department Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('departments')->group(function () {
-        Route::get('/', [DepartmentController::class, 'index']);
-        Route::post('/', [DepartmentController::class, 'store']);
-        Route::get('/{id}', [DepartmentController::class, 'show']);
-        Route::put('/{id}', [DepartmentController::class, 'update']);
-        Route::delete('/{id}', [DepartmentController::class, 'destroy']);
-    });
+  Route::prefix('departments')->group(function () {
+    Route::get('/', [DepartmentController::class, 'index']);
+    Route::post('/', [DepartmentController::class, 'store']);
+    Route::get('/{id}', [DepartmentController::class, 'show']);
+    Route::put('/{id}', [DepartmentController::class, 'update']);
+    Route::delete('/{id}', [DepartmentController::class, 'destroy']);
+  });
 
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Billing Recipient Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('billing-recipients')->group(function () {
-        Route::get('/', [BillingRecipientController::class, 'index']);
-        Route::post('/', [BillingRecipientController::class, 'store']);
-        Route::get('/{id}', [BillingRecipientController::class, 'show']);
-        Route::put('/{id}', [BillingRecipientController::class, 'update']);
-        Route::delete('/{id}', [BillingRecipientController::class, 'destroy']);
-    });
+  Route::prefix('billing-recipients')->group(function () {
+    Route::get('/', [BillingRecipientController::class, 'index']);
+    Route::post('/', [BillingRecipientController::class, 'store']);
+    Route::get('/{id}', [BillingRecipientController::class, 'show']);
+    Route::put('/{id}', [BillingRecipientController::class, 'update']);
+    Route::delete('/{id}', [BillingRecipientController::class, 'destroy']);
+  });
 
-    /*
+  /*
     |--------------------------------------------------------------------------
     | User Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('users')->group(function () {
-        Route::get('/', [UserController::class, 'index']);
-        Route::post('/', [UserController::class, 'store']);
-        Route::get('/{id}', [UserController::class, 'show']);
-        Route::put('/{id}', [UserController::class, 'update']);
-        Route::delete('/{id}', [UserController::class, 'destroy']);
+  Route::prefix('users')->group(function () {
+    Route::get('/', [UserController::class, 'index']);
+    Route::post('/', [UserController::class, 'store']);
+    Route::get('/{id}', [UserController::class, 'show']);
+    Route::put('/{id}', [UserController::class, 'update']);
+    Route::delete('/{id}', [UserController::class, 'destroy']);
 
-        // Route untuk kemaskini abilities pengguna
-        Route::put('/{id}/abilities', [UserController::class, 'updateAbilities']);
-    });
+    // Route untuk kemaskini abilities pengguna
+    Route::put('/{id}/abilities', [UserController::class, 'updateAbilities']);
+  });
 });

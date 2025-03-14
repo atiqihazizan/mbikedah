@@ -1,6 +1,8 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStateContext } from "../../contexts/ContextProvider";
+import { FaPlus, FaEdit } from "react-icons/fa";
+import { toast } from "react-toastify";
 import Pulse from "../../components/Core/Pulse";
 import Card from "../../components/Card";
 import FormC from "../../components/FormContext";
@@ -8,161 +10,119 @@ import TButton from "../../components/Core/TButton";
 import PageComponent from "../../components/PageComponent";
 import PropTypes from "prop-types";
 import RowTR from "./RowTR";
-import RecipientModal from "./RecipientModal";
-import { FaPlus, FaEdit } from "react-icons/fa";
+import RecipientModal from "./RecipientModal"; // Modified import statement
 import apiClient from "../../axios";
 
 export default function BillingForm() {
-  const { idform } = useParams();
   const navigate = useNavigate();
+  const { idform } = useParams();
   const { currentUser } = useStateContext();
-  const dataFetchedRef = useRef(false);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [recipients, setRecipients] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [budgets, setBudgets] = useState([]);
+  const [showRecipientModal, setShowRecipientModal] = useState(false);
+  const [selectedRecipient, setSelectedRecipient] = useState(null);
   
-  const [state, setState] = useState({
-    loading: false,
-    error: null,
-    successMessage: '',
-    recipients: [],
-    departments: [],
-    budgets: [],
-    showRecipientModal: false,
-    selectedRecipient: null
-  });
+  const flagNew = idform == undefined ? true : false;
 
-  const [petition, setPetition] = useState({
-    issued_at: new Date().toISOString().slice(0, 10),
-    no_project: "N/A",
-    recipient_id: "",
-    description: "",
-    total_amount: "0.00",
-    payment_method: "online",
-    department_id: currentUser?.is_admin ? '0' : (currentUser?.department_id || '0'),
-    running_no: "",
-    payment_due: new Date(Date.now() + 30*24*60*60*1000).toISOString().slice(0, 10),
-    status_id: 1,
-    created_by: "",
-    details: []
-  });
-
-  const handleSubmit = async (isDraft = false) => {
-    setState(prev => ({ ...prev, loading: true, error: null, successMessage: '' }));
-    
-    try {
-      if (!isDraft && !checkValid()) {
-        throw new Error("Please complete all required fields");
-      }
-
-      const submitData = {
-        ...petition,
-        status_id: isDraft ? 1 : 2
-      };
-
-      const url = idform ? `/billings/${idform}` : "/billings";
-      const { data } = await apiClient[idform ? 'put' : 'post'](url, submitData);
-
-      setState(prev => ({
-        ...prev,
-        successMessage: isDraft ? 'Draft saved' : 'Submitted to HOD'
-      }));
-
-      navigate(isDraft ? `/billing/${data.id}/edit` : '/billing/incomplete');
-      
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error.message || 'Submission failed'
-      }));
-    } finally {
-      setState(prev => ({ ...prev, loading: false }));
-    }
+  // Fungsi untuk dapatkan tarikh 30 hari dari tarikh yang diberi
+  const getPaymentDueDate = (issuedDate) => {
+    const date = new Date(issuedDate);
+    date.setDate(date.getDate() + 30);
+    return date.toISOString().slice(0, 10);
   };
 
+  // Default values untuk petition
+  const defaultPetition = {
+    issued_at: new Date().toISOString().slice(0, 10),    // Tarikh bil
+    no_project: "N/A",                                    // No projek
+    recipient_id: "",                                    // ID penerima
+    description: "",                                     // Keterangan bayaran
+    total_amount: "0.00",                                // Jumlah bayaran
+    payment_method: "online",                            // Kaedah pembayaran (default: online)
+    department_id: currentUser?.is_admin ? '0' : (currentUser?.department_id || '0'),  // ID jabatan berdasarkan user
+    running_no: "",                                     // No rujukan bil
+    payment_due: getPaymentDueDate(new Date()),         // Tarikh perlu dibayar (30 hari dari issued_at)
+    status_id: 1,                                       // Status bil (default: draft)
+    created_by: "",                                     // ID pengguna
+    details: []                                          // Senarai item bayaran
+  };
+
+  const [petition, setPetition] = useState(defaultPetition);
+
   const handleAddRecipient = () => {
-    setState(prev => ({ ...prev, selectedRecipient: null, showRecipientModal: true }));
+    setSelectedRecipient(null);
+    setShowRecipientModal(true);
   };
 
   const handleEditRecipient = (recipient) => {
-    setState(prev => ({ ...prev, selectedRecipient: recipient, showRecipientModal: true }));
+    setSelectedRecipient(recipient);
+    setShowRecipientModal(true);
   };
 
-  const apiCalls = useMemo(() => ({
-    budgets: () => apiClient.get("/budgets"),
-    departments: () => apiClient.get("/departments"),
-    recipients: () => apiClient.get("/billing-recipients"),
-    formData: () => idform ? apiClient.get(`/billings/${idform}`) : Promise.resolve({ data: null })
-  }), [idform]);
-
-  const loadData = useCallback(async () => {
-    if (dataFetchedRef.current) return;
-    setState(prev => ({ ...prev, loading: true, error: null }));
+  const handleSaveRecipient = async (recipientData) => {
     try {
-      const [budgets, departments, recipients, formData] = await Promise.all([
-        apiCalls.budgets(),
-        apiCalls.departments(),
-        apiCalls.recipients(),
-        apiCalls.formData()
-      ]);
+      const url = selectedRecipient 
+        ? `/billing-recipients/${selectedRecipient.id}`
+        : '/billing-recipients';
       
-      setState(prev => ({
-        ...prev,
-        budgets: budgets.data,
-        departments: departments.data,
-        recipients: recipients.data,
-        loading: false
-      }));
+      const method = selectedRecipient ? 'put' : 'post';
 
-      if (formData?.data) {
-        setPetition({
-          ...formData.data,
-          issued_at: formData.data.issued_at?.slice(0, 10),
-          payment_due: formData.data.payment_due?.slice(0, 10)
-        });
-      }
+      await apiClient[method](url, recipientData);
       
-      dataFetchedRef.current = true;
-    } catch (error) {
-      setState(prev => ({
-        ...prev, 
-        error: error.message || 'Error loading data',
-        loading: false
-      }));
-    }
-  }, [apiCalls]);
-
-  const fetchRecipients = useCallback(async () => {
-    try {
-      const { data } = await apiCalls.recipients();
-      setState(prev => ({
-        ...prev,
-        recipients: data
-      }));
-      return data;
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error.message || 'Error loading recipients'
-      }));
-      return [];
-    }
-  }, [apiCalls]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const handleRecipientSaved = async (success, message) => {
-    setState(prev => ({
-      ...prev,
-      showRecipientModal: false,
-      successMessage: success ? message : '',
-      error: !success ? message : null
-    }));
-    
-    if (success) {
+      toast.success(selectedRecipient 
+        ? 'Penerima berjaya dikemaskini'
+        : 'Penerima baru berjaya ditambah');
+      
       await fetchRecipients();
+      setShowRecipientModal(false);
+      
+    } catch (error) {
+      console.error('Ralat semasa simpan penerima:', error);
+      toast.error(error.message || 'Ralat semasa menyimpan penerima. Sila cuba lagi.');
     }
   };
 
+  const fetchRecipients = async () => {
+    try {
+      const {data:recipientsResponse} = await apiClient.get("/billing-recipients");
+      if (recipientsResponse) {
+        setRecipients(recipientsResponse);
+      }
+    } catch (error) {
+      console.error('Ralat semasa mendapatkan penerima:', error);
+      setError(error.message || 'Ralat mendapatkan penerima. Sila cuba sebentar lagi.');
+    }
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    
+    try {
+      // Dapatkan senarai budget
+      const {data:budgetResponse} = await apiClient.get("/budgets");
+      if (budgetResponse) {
+        setBudgets(budgetResponse);
+      }
+      // Dapatkan senarai jabatan
+      const {data:departmentsResponse} = await apiClient.get("/departments");
+      if (departmentsResponse) {
+        setDepartments(departmentsResponse);
+      }
+
+      // Dapatkan senarai penerima bil
+      await fetchRecipients();
+    } catch (error) {
+      console.error('Ralat mendapatkan data:', error);
+      setError(error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function untuk semak form lengkap
   const checkValid = () => {
     return (
       petition?.recipient_id !== "" &&
@@ -172,29 +132,178 @@ export default function BillingForm() {
     );
   };
 
+  // Function untuk simpan sebagai draft
+  const saveDraft = async () => {
+    setError(null);
+    toast.dismiss();
+
+    try {
+      // URL dan method berdasarkan create/update
+      const url = !idform ? "/billings" : `/billings/${idform}`;
+      const method = !idform ? "post" : "put";
+
+      // Set status sebagai draft
+      const draftData = {
+        ...petition,
+        status_id: 1 // Draft status
+      };
+
+      // Hantar data ke backend
+      const {data} = await apiClient[method](url, draftData);
+      const newId = data?.id || idform;
+      console.log(data)
+      
+      // toast.success("Permohonan bayaran berjaya disimpan sebagai draf");
+      if (flagNew) {
+        // Reset form ke default dan navigate ke ID baru
+        // setPetition({
+        //   ...defaultPetition,
+        //   issued_at: new Date().toISOString().slice(0, 10),
+        //   payment_due: getPaymentDueDate(new Date())
+        // });
+        navigate(`/billing/${newId}/edit`);
+      }
+    } catch (error) {
+      console.error('Ralat semasa simpan draf:', error.message);
+      toast.error(error.message || "Ralat semasa menyimpan draf. Sila cuba lagi.");
+    } finally {
+    }
+  };
+
+  // Function untuk submit kepada ketua jabatan
+  const submitToHOD = async () => {
+    toast.dismiss();
+    setLoading(true);
+
+    try {
+      // Semak validation
+      if (!checkValid()) {
+        throw new Error("Sila lengkapkan semua maklumat yang diperlukan");
+      }
+
+      // URL dan method berdasarkan create/update
+      const url = !idform ? "/billings" : `/billings/${idform}`;
+      const method = !idform ? "post" : "put";
+
+      // Set status untuk submit ke HOD
+      const submitData = {
+        ...petition,
+        status_id: 2 // Status untuk HOD review
+      };
+
+      // Hantar data ke backend
+      const {data} = await apiClient[method](url, submitData);
+      const newId = data?.id || idform;
+      
+      toast.success("Permohonan bayaran berjaya dihantar kepada ketua jabatan");
+
+      // Kembali ke halaman utama
+      navigate(`/billing/incomplete`);
+      
+    } catch (error) {
+      console.error('Ralat semasa hantar ke HOD:', error);
+      if(error?.response?.status === 403) {
+        toast.error("Anda tidak mempunyai kebenaran untuk menghantar permohonan ini");
+      } else {
+        toast.error("Ralat semasa menghantar permohonan. Sila cuba lagi.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function untuk handle form submit - prevent default sahaja
+  function onSubmit(ev) {
+    ev.preventDefault();
+  }
+
+  useEffect(() => {
+    let isSubscribed = true;
+
+    const loadInitialData = async () => {
+      if (!isSubscribed) return;
+      await fetchData();
+    };
+
+    loadInitialData();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setPetition({
+      ...petition,
+      department_id: currentUser?.is_admin ? '0' : (currentUser?.department_id || '0')
+    });
+  }, [currentUser]);
+
+  useEffect(() => {
+    const initBilling = async () => {
+      // Jika update, dapatkan data bil
+      if (idform) {
+        const {data} = await apiClient.get(`/billings/${idform}`);
+        if (data) {
+          console.log(data)
+          // Format data untuk form
+          setPetition({
+            ...data,
+            // Pastikan tarikh dalam format YYYY-MM-DD
+            issued_at: data.issued_at?.slice(0, 10),
+            payment_due: data.payment_due?.slice(0, 10)
+          });
+        }
+      } else {
+        setPetition(defaultPetition);
+      }
+    };
+
+    initBilling();
+  }, [idform]);
+
+  // Semak sama ada bil boleh diedit (hanya status draft sahaja)
   const canEdit = petition.status_id === 1;
+
+  // Jika bukan draft, tunjuk mesej
+  const statusMessage = !canEdit ? (
+    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+      <div className="flex">
+        <div className="flex-shrink-0">
+          <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div className="ml-3">
+          <p className="text-sm text-yellow-700">
+            Bil ini tidak boleh dikemaskini kerana status bukan lagi dalam draft.
+          </p>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <PageComponent
-      title={idform ? "Kemaskini Permohonan" : "Permohonan Baru"}
-      buttons={!state.loading && (
+      title={flagNew ? "Permohonan Bayaran" : "Kemaskini Permohonan"}
+      buttons={!loading && (
         <div className="flex gap-2">
-          {(idform && petition) && (
+          {!flagNew && (
             <TButton color="light" to={'/billing/incomplete'}>Kembali</TButton>
           )}
           {canEdit && (
             <>
               <TButton 
                 color="light" 
-                onClick={() => handleSubmit(true)}
-                isDisable={state.loading || !checkValid()}
+                onClick={saveDraft}
+                isDisable={loading || !checkValid()}
               >
                 Simpan sebagai Draf
               </TButton>
               <TButton 
                 color="green" 
-                onClick={() => handleSubmit(false)}
-                isDisable={state.loading || !checkValid() }
+                onClick={submitToHOD}
+                isDisable={loading || !checkValid() }
               >
                 Hantar ke Ketua Jabatan
               </TButton>
@@ -205,38 +314,13 @@ export default function BillingForm() {
     >
       <div className="container-fixed py-5">
         <div className="grid gap-5 lg:gap-7.5 gow">
-          {state.loading && <Pulse />}
-          {!state.loading && (
+          {loading && <Pulse />}
+          {!loading && (
             <Card>
-              <form className="" onSubmit={(ev) => ev.preventDefault()}>
+              <form className="" onSubmit={(ev) => onSubmit(ev)}>
+                {/* <Card.Body oClass="flex flex-col divide-y devide-gray-200 gap-7.5"> */}
                 <Card.Body oClass="flex flex-col gap-7.5">
-                  {state.error && (
-                    <div className="text-red-500 mb-4">
-                      <strong>Terjadi masalah:</strong> {state.error}
-                    </div>
-                  )}
-                  {state.successMessage && (
-                    <div className="text-green-500 mb-4">
-                      <strong>Berjaya:</strong> {state.successMessage}
-                    </div>
-                  )}
-                  {!canEdit && (
-                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm text-yellow-700">
-                            Bil ini tidak boleh dikemaskini kerana status bukan lagi dalam draft.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <FormC data={petition} setValue={setPetition} error={state.error} disabled={!canEdit}>
+                  <FormC data={petition} setValue={setPetition} error={error} disabled={!canEdit}>
                     <div className="grid gap-7 ">
                       <FormC.LDate 
                         field={"issued_at"} 
@@ -246,7 +330,7 @@ export default function BillingForm() {
                           setPetition(prev => ({
                             ...prev,
                             issued_at: newDate,
-                            payment_due: new Date(newDate).setDate(new Date(newDate).getDate() + 30).toISOString().slice(0, 10)
+                            payment_due: getPaymentDueDate(newDate)
                           }));
                         }}
                         option={{ disabled: !canEdit }}
@@ -256,7 +340,7 @@ export default function BillingForm() {
                         text="Jabatan"
                         field={"department_id"}
                         keyval="id,name"
-                        listArr={state.departments}
+                        listArr={departments}
                         option={{ disabled: !canEdit }}
                       />
                       <div className="flex items-center gap-2">
@@ -265,7 +349,7 @@ export default function BillingForm() {
                             text="Individu/Syarikat"
                             field={"recipient_id"}
                             keyval="id,name"
-                            listArr={state.recipients}
+                            listArr={recipients}
                             option={{ disabled: !canEdit }}
                           />
                         </div>
@@ -284,7 +368,7 @@ export default function BillingForm() {
                                 <TButton 
                                   color="light" 
                                   onClick={() => {
-                                    const recipient = state.recipients.find(r => r.id === parseInt(petition.recipient_id));
+                                    const recipient = recipients.find(r => r.id === parseInt(petition.recipient_id));
                                     if (recipient) handleEditRecipient(recipient);
                                   }}
                                   className="p-2"
@@ -300,10 +384,10 @@ export default function BillingForm() {
                       <FormC.LText field={"description"} text={"Keterangan Bayaran"} option={{ readOnly: !canEdit }} />
 
                       <RecipientModal 
-                        show={state.showRecipientModal}
-                        onClose={() => setState(prev => ({ ...prev, showRecipientModal: false }))}
-                        onSaved={handleRecipientSaved}
-                        recipient={state.selectedRecipient}
+                        show={showRecipientModal}
+                        onClose={() => setShowRecipientModal(false)}
+                        onSaved={handleSaveRecipient}
+                        recipient={selectedRecipient}
                       />
                       <FormC.LDate field={"payment_due"} text={"Bayaran Perlu Dibuat Pada"} option={{ disabled: !canEdit }} />
                       <FormC.LText
@@ -334,15 +418,17 @@ export default function BillingForm() {
                               data={d}
                               idx={i}
                               setChange={setPetition}
-                              budgets={state.budgets}
+                              budgets={budgets}
                             />
                           ))}
                           {canEdit && (
-                            <RowTR FormC={FormC} setChange={setPetition} budgets={state.budgets} />
+                            <RowTR FormC={FormC} setChange={setPetition} budgets={budgets} />
                           )}
                         </tbody>
                       </table>
                     </div>
+
+
                   </FormC>
                 </Card.Body>
               </form>
@@ -351,11 +437,12 @@ export default function BillingForm() {
         </div>
       </div>
 
+      {/* Modal untuk tambah/edit penerima */}
       <RecipientModal
-        show={state.showRecipientModal}
-        onClose={() => setState(prev => ({ ...prev, showRecipientModal: false }))}
-        onSaved={handleRecipientSaved}
-        recipient={state.selectedRecipient}
+        show={showRecipientModal}
+        onClose={() => setShowRecipientModal(false)}
+        onSaved={handleSaveRecipient}
+        recipient={selectedRecipient}
       />
     </PageComponent>
   );

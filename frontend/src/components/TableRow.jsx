@@ -59,7 +59,7 @@ function Table({ columns = [], data = [], loading, onChecked, tOption = {} }) {
                 </td>
               )}
               {columns?.map(({ classRow, field, nClassRow, render }, j) => (
-                <td key={j} className={nClassRow || `pl-4 py-4 ${classRow || ''}`}>
+                <td key={j} className={nClassRow || `px-6 py-4 ${classRow || ''}`}>
                   {renderCell(raw, field, render)}
                 </td>
               ))}

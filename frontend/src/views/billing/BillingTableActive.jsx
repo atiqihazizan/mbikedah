@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useStateContext } from "../../contexts/ContextProvider";
 import { format, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
@@ -7,12 +7,14 @@ import PageComponent from "../../components/PageComponent";
 import apiClient from "../../axios";
 import { toast } from 'react-toastify';
 import Table from "../../components/TableRow";
+import PulseTable from "../../components/Core/PulseTable";
 
 function BillingTableActive() {
   const { setCountActive } = useStateContext();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState(null);
   const [activeItems, setActiveItems] = useState([]);
+  const mounted = useRef(false);
 
   const getErrorMessage = (error) => {
     if (error?.response?.data?.message) return error.response.data.message;
@@ -34,19 +36,28 @@ function BillingTableActive() {
     setIsLoading(true);
     try {
       const {success, data} = await apiClient.get("/billings/incomplete");
-      if (success) {
+      if (success && mounted.current) {
         setActiveItems(data?.items || []);
         setCountActive(data?.items?.length || 0);
       }
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      if (mounted.current) {
+        toast.error(getErrorMessage(error));
+      }
     } finally {
-      setIsLoading(false);
+      if (mounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
+    if(isLoading) return;
+    mounted.current = true;
     loadData();
+    return () => {
+      mounted.current = false;
+    };
   }, []);
 
   const handleDelete = async (id) => {
@@ -103,6 +114,7 @@ function BillingTableActive() {
       name: "Tindakan",
       render: (item) => item.status_id === 1 && (
         <div className="flex space-x-2">
+          {console.log(item)}
           <Link
             to={`/billing/${item.id}/edit`}
             className={`text-indigo-600 hover:text-indigo-900 ${isDeletingId && 'opacity-50'}`}
@@ -126,16 +138,20 @@ function BillingTableActive() {
     <PageComponent title="Permohonan Aktif">
       <div className="container mx-auto px-4 py-6 h-[calc(100vh-120px)] scrollable-y-hover overflow-auto">
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <Table
-            columns={columns}
-            data={activeItems}
-            loading={isLoading}
-            tOption={{
-              checkable: false,
-              oClassTable: "min-w-full divide-y divide-gray-200",
-              oClassThead: "bg-gray-50"
-            }}
-          />
+          {isLoading ? (
+            <PulseTable/>
+          ) : (
+            <Table
+              columns={columns}
+              data={activeItems}
+              loading={isLoading}
+              tOption={{
+                checkable: false,
+                oClassTable: "min-w-full divide-y divide-gray-200",
+                oClassThead: "bg-gray-50"
+              }}
+            />
+          )}
         </div>
       </div>
     </PageComponent>

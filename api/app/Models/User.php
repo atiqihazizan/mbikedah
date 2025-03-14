@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Facades\Config;
+use App\Constants\UserAbilities;
 
 class User extends Authenticatable
 {
@@ -65,7 +66,7 @@ class User extends Authenticatable
   public function hasAbility($abilities)
   {
     // Jika user adalah admin
-    if (in_array(Config::get('constants.abilities.admin'), $this->abilities)) {
+    if (in_array(UserAbilities::ADMIN, $this->abilities)) {
       return true;
     }
 
@@ -87,7 +88,7 @@ class User extends Authenticatable
   {
     $names = [];
     foreach ($this->abilities as $ability) {
-      $name = Config::get('constants.abilities_name.' . $ability);
+      $name = UserAbilities::getAbilitiesName()[$ability];
       if ($name) {
         $names[] = $name;
       }
@@ -100,7 +101,7 @@ class User extends Authenticatable
    */
   public function isAdmin()
   {
-    return in_array(Config::get('constants.abilities.admin'), $this->abilities);
+    return in_array(UserAbilities::ADMIN, $this->abilities);
   }
 
   /**
@@ -119,7 +120,7 @@ class User extends Authenticatable
     // Dapatkan menu yang dibenarkan untuk setiap ability
     $allowedMenus = [];
     foreach ($this->abilities as $ability) {
-      $menus = Config::get('constants.abilities_menu.' . $ability, []);
+      $menus = UserAbilities::ABILITIES_MENU[$ability] ?? [];
       $allowedMenus = array_merge($allowedMenus, $menus);
     }
 
@@ -141,7 +142,7 @@ class User extends Authenticatable
     // Dapatkan menu yang dibenarkan untuk setiap ability
     $allowedMenus = [];
     foreach ($this->abilities as $ability) {
-      $menus = Config::get('constants.abilities_menu.' . $ability, []);
+      $menus = UserAbilities::ABILITIES_MENU[$ability] ?? [];
       $allowedMenus = array_merge($allowedMenus, $menus);
     }
 
