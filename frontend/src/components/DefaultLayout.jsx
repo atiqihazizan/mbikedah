@@ -1,201 +1,32 @@
 import { useEffect, useRef } from "react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import {  Outlet, useLocation, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import { useStateContext } from "../contexts/ContextProvider";
-import {
-  Package,
-  BarChart3,
-  LayoutDashboard,
-  Banknote,
-  Code2,
-  FilePlus,
-  FolderOpen,
-  Archive,
-  FileClock,
-} from "lucide-react";
-
 import apiClient from "../axios";
-import Spinner from "./Spinner";
 import Sidebar, { SidebarItem } from "./Sidebar";
-
-const navigation = [
-  // Permohonan Bayaran
-  { text: "Permohonan Bayaran", to: "", type: 0 },
-  {
-    text: "Permohonan Baru",
-    to: "/billing/form",
-    icon: <FilePlus size={20} />,
-    type: 1,
-    menu: "billing.create"
-  },
-  {
-    text: "Masih Aktif",
-    to: "/billing/incomplete",
-    icon: <FolderOpen size={20} />,
-    type: 1,
-    menu: "billing.incomplete"
-  },
-  {
-    text: "Sudah Selesai",
-    to: "/billing/archive",
-    icon: <Archive size={20} />,
-    type: 1,
-    menu: "billing.archive"
-  },
-
-  // Ketua Jabatan
-  { text: "Ketua Jabatan", to: "", type: 0 },
-  {
-    text: "Pengesahan Bayaran",
-    to: "/billing/hod",
-    icon: <FileClock size={20} />,
-    type: 1,
-    menu: "billing.hod"
-  },
-
-  // Kewangan
-  { text: "Kewangan", to: "", type: 0 },
-  {
-    text: "Semakan Pegawai Kewangan",
-    to: "/billing/checker",
-    icon: <FileClock size={20} />,
-    type: 1,
-    menu: "billing.checker"
-  },
-  {
-    text: "Pengesahan Pegawai Kewangan",
-    to: "/billing/verifier",
-    icon: <FileClock size={20} />,
-    type: 1,
-    menu: "billing.verifier"
-  },
-  {
-    text: "Kelulusan Pegawai Kewangan",
-    to: "/billing/approver",
-    icon: <FileClock size={20} />,
-    type: 1,
-    menu: "billing.approver"
-  },
-  {
-    text: "Proses Bayaran",
-    to: "/billing/payment",
-    icon: <FileClock size={20} />,
-    type: 1,
-    menu: "billing.payment"
-  },
-  { 
-    text: "Selesai", 
-    to: "/billing/paid", 
-    icon: <Archive size={20} />, 
-    type: 1,
-    menu: "billing.paid"
-  },
-
-  // Laporan
-  { text: "Laporan Kewangan", to: "", type: 0 },
-  { 
-    text: "Keseluruhan", 
-    to: "/report/all", 
-    icon: <Package size={20} />, 
-    type: 1,
-    menu: "report.all"
-  },
-  {
-    text: "Induk Penerimaan",
-    to: "/report/income",
-    icon: <Package size={20} />,
-    type: 1,
-    menu: "report.income"
-  },
-  {
-    text: "Induk Perbelanjaan",
-    to: "/report/expense",
-    icon: <Package size={20} />,
-    type: 1,
-    menu: "report.expense"
-  },
-  {
-    text: "Perincian Penerimaan",
-    to: "/report/income-detail",
-    icon: <Package size={20} />,
-    type: 1,
-    menu: "report.income.detail"
-  },
-  {
-    text: "Perincian Perbelanjaan",
-    to: "/report/expense-detail",
-    icon: <Package size={20} />,
-    type: 1,
-    menu: "report.expense.detail"
-  },
-  {
-    text: "Carta Pendapatan Dan Perbelanjaan",
-    to: "/report/chart",
-    icon: <BarChart3 size={20} />,
-    type: 1,
-    menu: "report.chart"
-  },
-
-  // Tetapan
-  { text: "Tetapan", to: "", type: 0 },
-  { 
-    text: "Bank", 
-    to: "/settings/bank", 
-    icon: <Banknote size={20} />, 
-    type: 1,
-    menu: "settings.bank"
-  },
-  { 
-    text: "Kod Kewangan", 
-    to: "/settings/code", 
-    icon: <Code2 size={20} />, 
-    type: 1,
-    menu: "settings.code"
-  },
-  {
-    text: "Bajet Kewangan",
-    to: "/settings/budget",
-    icon: <Package size={20} />,
-    type: 1,
-    menu: "settings.budget"
-  },
-];
+import { navigation } from "../config/navigation";
 
 export default function DefaultLayout() {
   const location = useLocation();
-  const { currentUser, setCurrentUser, userToken, setUserToken, countActive } =
-    useStateContext();
-
-  if (!userToken) return <Navigate to="/login" />;
+  const navigate = useNavigate();
+  const { currentUser, setCurrentUser, userToken, setUserToken } = useStateContext();
+  const requestInProgress = useRef(false);
 
   // Clear semua toast apabila tukar page
   useEffect(() => {
     toast.dismiss();
   }, [location.pathname]);
 
-  const logout = async (ev) => {
-    ev.preventDefault();
-    try {
-      await apiClient.post("/auth/logout");
-      // setCurrentUser({});
-      setUserToken(null);
-    } catch (error) {
-      console.error('Ralat semasa log keluar:', error);
-      console.error('Ralat semasa log keluar. Sila cuba sebentar lagi.');
-    }
-  };
-
   useEffect(() => {
+    if (!userToken || requestInProgress.current) return;
+    
     const getMaklumatPengguna = async () => {
       try {
+        requestInProgress.current = true;
         const {success, user} = await apiClient.get("/auth/me");
-        // Semak jika response ada mesej ralat
         if (!success || !user) {
-          // Reset state
           setCurrentUser({});
           setUserToken(null);
-          
-          // Papar mesej ralat dari server
           if (user.message) {
             console.error(user.message);
           }
@@ -204,10 +35,30 @@ export default function DefaultLayout() {
         setCurrentUser(user);
       } catch (error) {
         console.error('Ralat semasa mendapatkan maklumat pengguna:', error);
+      } finally {
+        requestInProgress.current = false;
       }
     };
     getMaklumatPengguna();
-  }, []);
+  }, [userToken]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      navigate("/login");
+    }
+  }, [currentUser, navigate]);
+
+  const logout = async (ev) => {
+    ev.preventDefault();
+    try {
+      await apiClient.post("/auth/logout");
+      setCurrentUser({});
+      setUserToken(null);
+      navigate("/login");
+    } catch (error) {
+      console.error('Ralat semasa log keluar. Sila cuba sebentar lagi.');
+    }
+  };
 
   // Filter menu berdasarkan allowed_menus dari user
   const filterNavigation = () => {
@@ -249,9 +100,6 @@ export default function DefaultLayout() {
             <Outlet />
           </div>
         </div>
-
-        <Spinner />
-
       </>
     )
   );

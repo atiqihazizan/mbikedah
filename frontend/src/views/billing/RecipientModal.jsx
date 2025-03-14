@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import FormC from "../../components/FormContext";
 import TButton from "../../components/Core/TButton";
+import apiClient from "../../axios";
+import PropTypes from "prop-types";
 
-export default function RecipientModal({ show, onClose, onSave, recipient = null }) {
+export default function RecipientModal({ show, onClose, onSaved, recipient = null }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [recipientData, setRecipientData] = useState({
     name: "",
     short: "",
@@ -17,11 +21,74 @@ export default function RecipientModal({ show, onClose, onSave, recipient = null
     if (recipient) {
       setRecipientData(recipient);
     }
+    setError(null);
   }, [recipient]);
 
-  const handleSubmit = (ev) => {
+  const validateForm = () => {
+    if (!recipientData.name?.trim()) {
+      setError("Nama Syarikat/Individu diperlukan");
+      return false;
+    }
+    if (!recipientData.addr?.trim()) {
+      setError("Alamat diperlukan");
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (ev) => {
     ev.preventDefault();
-    onSave(recipientData);
+    setError(null);
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const url = recipient 
+        ? `/billing-recipients/${recipient.id}`
+        : '/billing-recipients';
+      
+      const method = recipient ? 'put' : 'post';
+      
+      const trimmedData = Object.keys(recipientData).reduce((acc, key) => ({
+        ...acc,
+        [key]: typeof recipientData[key] === 'string' ? recipientData[key].trim() : recipientData[key]
+      }), {});
+
+      await apiClient[method](url, trimmedData);
+      
+      const message = recipient 
+        ? 'Penerima berjaya dikemaskini'
+        : 'Penerima baru berjaya ditambah';
+
+      onSaved(true, message);
+      handleClose();
+      
+    } catch (error) {
+      const errorMessage = error.response?.data?.message 
+        || error.message 
+        || 'Ralat semasa menyimpan penerima. Sila cuba lagi.';
+      setError(errorMessage);
+      onSaved(false, errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setRecipientData({
+      name: "",
+      short: "",
+      attn: "",
+      hp: "",
+      tel: "",
+      fax: "",
+      addr: "",
+    });
+    setError(null);
+    onClose();
   };
 
   if (!show) return null;
@@ -33,41 +100,71 @@ export default function RecipientModal({ show, onClose, onSave, recipient = null
           {recipient ? "Kemaskini Penerima" : "Tambah Penerima Baru"}
         </h2>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700">
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
-          <FormC data={recipientData} setValue={setRecipientData}>
+          <FormC data={recipientData} setValue={setRecipientData} error={error}>
             <div className="grid gap-4">
-              <FormC.LText field="name" text="Nama Syarikat/Individu" />
-              <FormC.LText field="short" text="Nama Pendek" />
-              <FormC.LText field="attn" text="Perhatian Kepada" />
-              <FormC.LText field="addr" text="Alamat" />
+              <FormC.LText 
+                field="name" 
+                text="Nama Syarikat/Individu" 
+                required={true}
+                option={{ disabled: loading }}
+              />
+              <FormC.LText 
+                field="short" 
+                text="Nama Pendek"
+                option={{ disabled: loading }}
+              />
+              <FormC.LText 
+                field="attn" 
+                text="Perhatian Kepada"
+                option={{ disabled: loading }}
+              />
+              <FormC.LText 
+                field="addr" 
+                text="Alamat" 
+                required={true}
+                option={{ disabled: loading }}
+              />
               
               <div className="grid grid-cols-3 gap-4">
-                <FormC.LText field="tel" text="No. Telefon" />
-                <FormC.LText field="hp" text="No. HP" />
-                <FormC.LText field="fax" text="No. Faks" />
+                <FormC.LText 
+                  field="tel" 
+                  text="No. Telefon"
+                  option={{ disabled: loading }}
+                />
+                <FormC.LText 
+                  field="hp" 
+                  text="No. HP"
+                  option={{ disabled: loading }}
+                />
+                <FormC.LText 
+                  field="fax" 
+                  text="No. Faks"
+                  option={{ disabled: loading }}
+                />
               </div>
             </div>
 
             <div className="flex justify-end gap-2 mt-6">
               <TButton 
                 color="light" 
-                onClick={() => {
-                  setRecipientData({
-                    name: "",
-                    short: "",
-                    attn: "",
-                    hp: "",
-                    tel: "",
-                    fax: "",
-                    addr: "",
-                  });
-                  onClose();
-                }}
+                onClick={handleClose}
+                isDisable={loading}
               >
                 Batal
               </TButton>
-              <TButton color="primary" type="submit">
-                {recipient ? "Kemaskini" : "Simpan"}
+              <TButton 
+                color="primary" 
+                type="submit"
+                isDisable={loading}
+              >
+                {loading ? "Menyimpan..." : (recipient ? "Kemaskini" : "Simpan")}
               </TButton>
             </div>
           </FormC>
@@ -76,3 +173,19 @@ export default function RecipientModal({ show, onClose, onSave, recipient = null
     </div>
   );
 }
+
+RecipientModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSaved: PropTypes.func.isRequired,
+  recipient: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+    short: PropTypes.string,
+    attn: PropTypes.string,
+    hp: PropTypes.string,
+    tel: PropTypes.string,
+    fax: PropTypes.string,
+    addr: PropTypes.string,
+  })
+};

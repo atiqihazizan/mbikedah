@@ -1,0 +1,145 @@
+import { useState, useEffect, useMemo } from "react";
+import { useStateContext } from "../../contexts/ContextProvider";
+import { format, parseISO } from "date-fns";
+import { Link } from "react-router-dom";
+import { Pencil, Trash2 } from "lucide-react";
+import PageComponent from "../../components/PageComponent";
+import apiClient from "../../axios";
+import { toast } from 'react-toastify';
+import Table from "../../components/TableRow";
+
+function BillingTableActive() {
+  const { setCountActive } = useStateContext();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeletingId, setIsDeletingId] = useState(null);
+  const [activeItems, setActiveItems] = useState([]);
+
+  const getErrorMessage = (error) => {
+    if (error?.response?.data?.message) return error.response.data.message;
+    if (error.response?.status === 401) return 'Sesi anda telah tamat. Sila log masuk semula.';
+    return error.message || 'Ralat. Sila cuba sebentar lagi.';
+  };
+
+  const getStatusStyle = (status) => {
+    const styles = {
+      Draft: "bg-gray-100 text-gray-800",
+      Diluluskan: "bg-green-100 text-green-800",
+      Ditolak: "bg-red-100 text-red-800",
+      default: "bg-yellow-100 text-yellow-800"
+    };
+    return styles[status] || styles.default;
+  };
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const {success, data} = await apiClient.get("/billings/incomplete");
+      if (success) {
+        setActiveItems(data?.items || []);
+        setCountActive(data?.items?.length || 0);
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Adakah anda pasti untuk padam permohonan ini?")) return;
+
+    setIsDeletingId(id);
+    try {
+      const { success } = await apiClient.delete(`/billings/${id}`);
+      if (success) {
+        toast.success("Permohonan berjaya dipadam");
+        await loadData();
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsDeletingId(null);
+    }
+  };
+
+  const columns = useMemo(() => [
+    {
+      name: "Tarikh Permohonan",
+      render: ({issued_at}) => format(parseISO(issued_at), "dd/MM/yyyy")
+    },
+    {
+      name: "No. Projek",
+      field: "no_project",
+      nClassRow: "px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600"
+    },
+    {
+      name: "Perkara",
+      field: "description"
+    },
+    {
+      name: "Jumlah (RM)",
+      render: ({total_amount}) => parseFloat(total_amount).toLocaleString("en-MY", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+    },
+    {
+      name: "Status",
+      render: ({status}) => (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyle(status)}`}>
+          {status}
+        </span>
+      )
+    },
+    {
+      name: "Tarikh Dibuat",
+      render: ({created_at}) => format(parseISO(created_at), "dd/MM/yyyy HH:mm")
+    },
+    {
+      name: "Tindakan",
+      render: (item) => item.status_id === 1 && (
+        <div className="flex space-x-2">
+          <Link
+            to={`/billing/${item.id}/edit`}
+            className={`text-indigo-600 hover:text-indigo-900 ${isDeletingId && 'opacity-50'}`}
+            disabled={isDeletingId}
+          >
+            <Pencil size={18} />
+          </Link>
+          <button
+            onClick={() => handleDelete(item.id)}
+            disabled={isDeletingId}
+            className={`text-red-600 hover:text-red-900 ${isDeletingId === item.id && 'opacity-50'}`}
+          >
+            {isDeletingId === item.id ? <span className="text-sm text-gray-500">Memadam...</span> : <Trash2 size={18} />}
+          </button>
+        </div>
+      )
+    }
+  ], [isDeletingId]);
+
+  return (
+    <PageComponent title="Permohonan Aktif">
+      <div className="container mx-auto px-4 py-6 h-[calc(100vh-120px)] scrollable-y-hover overflow-auto">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+          <Table
+            columns={columns}
+            data={activeItems}
+            loading={isLoading}
+            tOption={{
+              checkable: false,
+              oClassTable: "min-w-full divide-y divide-gray-200",
+              oClassThead: "bg-gray-50"
+            }}
+          />
+        </div>
+      </div>
+    </PageComponent>
+  );
+}
+
+export default BillingTableActive;

@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 
-export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, message, confirmText = 'Ya', cancelText = 'Tidak' }) {
+export default function ConfirmationModal({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title, 
+  message, 
+  confirmText = 'Ya', 
+  cancelText = 'Tidak',
+  isLoading,
+  disabled
+}) {
   if (!isOpen) return null;
 
   const [comment, setComment] = useState('');
@@ -34,6 +44,32 @@ export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, m
             className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
           >
             {confirmText}
+          </button>
+        </div>
+        <div className="mt-4 flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={disabled}
+            className={`px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 
+              ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={disabled}
+            className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 
+              ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Memproses...</span>
+              </div>
+            ) : (
+              confirmText
+            )}
           </button>
         </div>
       </div>

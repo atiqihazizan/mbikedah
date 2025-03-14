@@ -15,15 +15,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <RouterProvider router={router} />
       <ToastContainer
         position="top-right"
-        autoClose={5000}
-        limit={1}
+        autoClose={1000}
+        // limit={1}
         hideProgressBar={false}
         newestOnTop
         closeOnClick
         rtl={false}
         pauseOnFocusLoss
         draggable
-        pauseOnHover
+        pauseOnHover={false}
         theme="colored"
       />
     </ContextProvider>

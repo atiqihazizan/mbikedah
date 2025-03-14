@@ -17,6 +17,9 @@ export default defineConfig(({ mode }) => ({
       plugins: [tailwindcss, autoprefixer],
     },
   },
+  resolve: {
+    extensions: ['.js', '.jsx', '.json']
+  },
   build: {
     outDir: "../api/public/dist",
     assetsDir: "assets",
@@ -62,7 +65,7 @@ export default defineConfig(({ mode }) => ({
     },
     chunkSizeWarningLimit: 500,
     minify: "esbuild",
-    sourcemap: false,
+    sourcemap: true,
   },
   server: {
     proxy: {
