@@ -57,13 +57,13 @@ function BillingTableHOD() {
 
     try {
       const endpoint = getEndpointForAction(action);
-      const response = await apiClient.post(
+      const {success,data,message} = await apiClient.post(
         `/billings/${selectedBilling}/${endpoint}`,
         { remarks }
       );
 
-      if (!response?.data?.success) {
-        throw new Error(response?.data?.message || `Gagal ${getActionText(action)} permohonan`);
+      if (!success) {
+        throw new Error(message || `Gagal ${getActionText(action)} permohonan`);
       }
 
       await loadData();

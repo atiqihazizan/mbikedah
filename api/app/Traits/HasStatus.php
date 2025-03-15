@@ -46,7 +46,7 @@ trait HasStatus
       BillingStatus::PROCESSING_PAYMENT => [BillingStatus::COMPLETED], 
       BillingStatus::REJECTED => [], 
       BillingStatus::CANCELLED => [], 
-      BillingStatus::RETURNED => [BillingStatus::DRAFT], 
+      BillingStatus::RETURNED => [BillingStatus::DRAFT,BillingStatus::HOD_APPROVAL,BillingStatus::CANCELLED], 
       BillingStatus::COMPLETED => [] 
     ];
 

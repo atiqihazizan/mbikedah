@@ -112,7 +112,7 @@ function BillingTableActive() {
     },
     {
       name: "Tindakan",
-      render: (item) => item.status_id === 1 && (
+      render: (item) => [1,9].includes(item.status_id) && (
         <div className="flex space-x-2">
           <Link
             to={`/billing/${item.id}/edit`}

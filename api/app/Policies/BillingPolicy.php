@@ -21,7 +21,7 @@ class BillingPolicy
   {
     if (
       !$user->hasAbility([UserAbilities::ADMIN, UserAbilities::APPLICANT]) ||
-      $billing->status_id !== BillingStatus::DRAFT ||
+      !in_array($billing->status_id, [BillingStatus::DRAFT, BillingStatus::RETURNED]) ||
       ($user->hasAbility(UserAbilities::APPLICANT) && $billing->created_by !== $user->id)
     ) {
       return false;
@@ -55,14 +55,13 @@ class BillingPolicy
   public function update(User $user, Billing $billing): bool
   {
     if (
-      $user->hasAbility(UserAbilities::ADMIN) ||
-      ($user->hasAbility(UserAbilities::APPLICANT) &&
-        $billing->created_by === $user->id &&
-        $billing->status_id === BillingStatus::DRAFT)
+      !$user->hasAbility([UserAbilities::ADMIN, UserAbilities::APPLICANT]) ||
+      !in_array($billing->status_id, [BillingStatus::DRAFT, BillingStatus::RETURNED]) ||
+      ($user->hasAbility(UserAbilities::APPLICANT) && $billing->created_by !== $user->id)
     ) {
-      return true;
+      return false;
     }
-    return false;
+    return true;
   }
   public function delete(User $user, Billing $billing): bool
   {

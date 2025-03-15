@@ -93,7 +93,7 @@ export default function BillingForm() {
       }
     } catch (error) {
       console.error('Ralat semasa mendapatkan penerima:', error);
-      setError(error.message || 'Ralat mendapatkan penerima. Sila cuba sebentar lagi.');
+      toast.error(error.message || 'Ralat mendapatkan penerima. Sila cuba sebentar lagi.');
     }
   };
 
@@ -116,7 +116,7 @@ export default function BillingForm() {
       await fetchRecipients();
     } catch (error) {
       console.error('Ralat mendapatkan data:', error);
-      setError(error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.');
+      toast.error(error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.');
     } finally {
       setLoading(false);
     }
@@ -133,84 +133,71 @@ export default function BillingForm() {
   };
 
   // Function untuk simpan sebagai draft
-  const saveDraft = async () => {
+  const saveForm = async (statusId, successMessage) => {
     setError(null);
     toast.dismiss();
-
-    try {
-      // URL dan method berdasarkan create/update
-      const url = !idform ? "/billings" : `/billings/${idform}`;
-      const method = !idform ? "post" : "put";
-
-      // Set status sebagai draft
-      const draftData = {
-        ...petition,
-        status_id: 1 // Draft status
-      };
-
-      // Hantar data ke backend
-      const {data} = await apiClient[method](url, draftData);
-      const newId = data?.id || idform;
-      console.log(data)
-      
-      // toast.success("Permohonan bayaran berjaya disimpan sebagai draf");
-      if (flagNew) {
-        // Reset form ke default dan navigate ke ID baru
-        // setPetition({
-        //   ...defaultPetition,
-        //   issued_at: new Date().toISOString().slice(0, 10),
-        //   payment_due: getPaymentDueDate(new Date())
-        // });
-        navigate(`/billing/${newId}/edit`);
-      }
-    } catch (error) {
-      console.error('Ralat semasa simpan draf:', error.message);
-      toast.error(error.message || "Ralat semasa menyimpan draf. Sila cuba lagi.");
-    } finally {
-    }
-  };
-
-  // Function untuk submit kepada ketua jabatan
-  const submitToHOD = async () => {
-    toast.dismiss();
-    setLoading(true);
-
-    try {
-      // Semak validation
+    
+    if (statusId !== 1) { // If not saving as draft, show loading and validate
+      setLoading(true);
+      // Only check validation when submitting to HOD
       if (!checkValid()) {
+        setLoading(false);
         throw new Error("Sila lengkapkan semua maklumat yang diperlukan");
       }
-
+    }
+  
+    try {
       // URL dan method berdasarkan create/update
       const url = !idform ? "/billings" : `/billings/${idform}`;
       const method = !idform ? "post" : "put";
-
-      // Set status untuk submit ke HOD
-      const submitData = {
+  
+      // Set status berdasarkan parameter
+      const formData = {
         ...petition,
-        status_id: 2 // Status untuk HOD review
+        status_id: statusId
       };
-
+  
       // Hantar data ke backend
-      const {data} = await apiClient[method](url, submitData);
+      const {data} = await apiClient[method](url, formData);
       const newId = data?.id || idform;
       
-      toast.success("Permohonan bayaran berjaya dihantar kepada ketua jabatan");
-
-      // Kembali ke halaman utama
-      navigate(`/billing/incomplete`);
+      // Show success message
+      if (successMessage) {
+        toast.success(successMessage);
+      }
       
+      // Handle navigation based on statusId
+      if (statusId === 1 && flagNew) {
+        navigate(`/billing/${newId}/edit`);
+      } else if (statusId === 2) {
+        // Immediately navigate away when submitting to HOD
+        // Use replace: true to replace the current route in history
+        navigate(`/billing/incomplete`, { replace: true });
+      }
+      
+      return { success: true, data };
     } catch (error) {
-      console.error('Ralat semasa hantar ke HOD:', error);
+      
       if(error?.response?.status === 403) {
         toast.error("Anda tidak mempunyai kebenaran untuk menghantar permohonan ini");
+      } else if(error?.response?.status === 422) {
+        const {data} = error?.response;
+        setError(data?.errors);
       } else {
-        toast.error("Ralat semasa menghantar permohonan. Sila cuba lagi.");
+        toast.error(error.message || `Ralat semasa ${statusId === 1 ? 'menyimpan draf' : 'menghantar permohonan'}. Sila cuba lagi.`);
       }
+      
+      return { success: false, error };
     } finally {
-      setLoading(false);
+      if (statusId !== 1) { // Only reset loading if it was set
+        setLoading(false);
+      }
     }
   };
+  
+  // Then use it like this:
+  const saveDraft = () => saveForm(1, "Permohonan berjaya disimpan sebagai draf");
+  const submitToHOD = () => saveForm(2, "Permohonan berjaya dihantar kepada ketua jabatan");
 
   // Function untuk handle form submit - prevent default sahaja
   function onSubmit(ev) {
@@ -245,7 +232,6 @@ export default function BillingForm() {
       if (idform) {
         const {data} = await apiClient.get(`/billings/${idform}`);
         if (data) {
-          console.log(data)
           // Format data untuk form
           setPetition({
             ...data,
@@ -263,7 +249,7 @@ export default function BillingForm() {
   }, [idform]);
 
   // Semak sama ada bil boleh diedit (hanya status draft sahaja)
-  const canEdit = petition.status_id === 1;
+  const canEdit = [1,9].includes(petition.status_id);
 
   // Jika bukan draft, tunjuk mesej
   const statusMessage = !canEdit ? (
@@ -296,14 +282,14 @@ export default function BillingForm() {
               <TButton 
                 color="light" 
                 onClick={saveDraft}
-                isDisable={loading || !checkValid()}
+                // isDisable={loading || !checkValid()}
               >
                 Simpan sebagai Draf
               </TButton>
               <TButton 
                 color="green" 
                 onClick={submitToHOD}
-                isDisable={loading || !checkValid() }
+                // isDisable={loading || !checkValid() }
               >
                 Hantar ke Ketua Jabatan
               </TButton>
@@ -419,6 +405,7 @@ export default function BillingForm() {
                               idx={i}
                               setChange={setPetition}
                               budgets={budgets}
+                              error={error}
                             />
                           ))}
                           {canEdit && (
@@ -426,8 +413,10 @@ export default function BillingForm() {
                           )}
                         </tbody>
                       </table>
+                      <span className="text-xs px-6 mt-2 text-red-600">
+                        {error?.details}
+                      </span>
                     </div>
-
 
                   </FormC>
                 </Card.Body>

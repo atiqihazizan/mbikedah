@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Billing;
+use App\Constants\BillingStatus;
 
 class UpdateBillingStatusRequest extends FormRequest
 {
@@ -15,7 +16,7 @@ class UpdateBillingStatusRequest extends FormRequest
         $billing = Billing::findOrFail($this->route('id'));
         
         // Jika status = 2 (HOD_APPROVAL), guna policy sendToHod
-        if ($this->input('status_id') === 2) {
+        if (in_array($this->input('status_id'), [BillingStatus::HOD_APPROVAL, BillingStatus::RETURNED])) {
             return $this->user()->can('sendToHod', $billing);
         }
         

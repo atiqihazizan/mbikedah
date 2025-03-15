@@ -3,7 +3,7 @@ import { FormContext } from "../../components/FormContext";
 import { SaveIcon, XIcon } from "lucide-react";
 import PropTypes from "prop-types";
 
-export default function RowTR({ FormC, data, idx = false, setChange, budgets }) {
+export default function RowTR({ FormC, data, idx = false, setChange, budgets, error }) {
   // Dapatkan disabled state dari FormContext
   const { disabled } = useContext(FormContext);
   const def = {
@@ -142,6 +142,9 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
             }
           }}
         />
+        {error?.[`details.${idx}.budget_id`] && (
+          <span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.budget_id`]}</span>
+        )}
       </td>
       <td className="!px-2">
         <FormC.text
@@ -149,6 +152,9 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
           onChange={(e) => inputChange(e, "description")}
           option={{ disabled }}
         />
+        {error?.[`details.${idx}.description`] && (
+          <span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.description`]}</span>
+        )}
       </td>
       <td className="!px-2">
         <FormC.text
@@ -156,6 +162,9 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
           onChange={(e) => inputChange(e, "reference")}
           option={{ disabled }}
         />
+        {error?.[`details.${idx}.reference`] && (
+          <span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.reference`]}</span>
+        )}
       </td>
       <td className="!px-2">
         <FormC.number
@@ -167,7 +176,10 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
             onFocus: onFocus
           }}
         />
-      </td>
+        {error?.[`details.${idx}.quantity`] && (
+          <span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.quantity`]}</span>
+        )}
+        </td>
       <td className="!px-2">
         <FormC.text
           value={detail?.unit || ''}
@@ -178,6 +190,9 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
             className: "input input-sm"
           }}
         />
+        {error?.[`details.${idx}.unit`] && (
+          <span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.unit`]}</span>
+        )}
       </td>
       <td className="!px-2">
         <FormC.currency
@@ -189,6 +204,9 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets }) 
             onFocus: onFocus
           }}
         />
+        {error?.[`details.${idx}.price`] && (
+          <span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.price`]}</span>
+        )}
       </td>
       <td className="!px-2">
         <FormC.currency value={detail?.total || '0.00'} option={{ readOnly: true }} />
@@ -222,4 +240,5 @@ RowTR.propTypes = {
   FormC: PropTypes.func,
   setChange: PropTypes.func,
   idx: PropTypes.number,
+  error: PropTypes.object
 };

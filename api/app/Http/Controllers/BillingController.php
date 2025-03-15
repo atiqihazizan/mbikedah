@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class BillingController extends Controller
 {
@@ -95,7 +96,21 @@ class BillingController extends Controller
         ]);
       }
 
-      $billing->updateStatus(BillingStatus::DRAFT, $request->user()->id, 'Billing created');
+      $billing->history()->create([
+        'old_status' => 0,
+        'new_status' => BillingStatus::DRAFT,
+        'created_by' => $request->user()->id,
+        'remarks' => 'Permohonan baru'
+      ]);
+      if ($validatedData['status_id'] === BillingStatus::HOD_APPROVAL) {
+        $billing->history()->create([
+          'old_status' => BillingStatus::DRAFT,
+          'new_status' => BillingStatus::HOD_APPROVAL,
+          'created_by' => $request->user()->id,
+          'remarks' => 'Permohonan dihantar ke HOD'
+        ]);
+      }
+
 
       DB::commit();
 
@@ -138,6 +153,8 @@ class BillingController extends Controller
 
       DB::beginTransaction();
 
+      $isReturn = $billing->status_id === BillingStatus::RETURNED ? true : false;
+
       $billing->update([
         'description' => $validatedData['description'],
         'no_project' => $validatedData['no_project'],
@@ -147,7 +164,7 @@ class BillingController extends Controller
         'department_id' => $validatedData['department_id'],
         'issued_at' => $validatedData['issued_at'],
         'payment_due' => $validatedData['payment_due'],
-        'status_id' => $validatedData['status_id']
+        // 'status_id' => $validatedData['status_id']
       ]);
 
       $billing->details()->delete();
@@ -162,6 +179,10 @@ class BillingController extends Controller
           'unit' => $detail['unit'] ?? null,
           'reference' => $detail['reference'] ?? null
         ]);
+      }
+
+      if ($validatedData['status_id'] === BillingStatus::HOD_APPROVAL) {
+        $billing->updateStatus(BillingStatus::HOD_APPROVAL, Auth::id(), 'Billing submit after returned');
       }
 
       // Reset cache
