@@ -204,12 +204,11 @@ class BillingController extends Controller
   /**
    * Remove the specified billing and its details.
    */
-  public function destroy(string $id)
+  public function destroy(Billing $billing)
   {
     try {
       DB::beginTransaction();
 
-      $billing = Billing::findOrFail($id);
       $this->authorize('delete', $billing);
 
       // Delete related billing details first

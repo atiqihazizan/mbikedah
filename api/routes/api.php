@@ -94,6 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Basic Resource Routes
     Route::post('/', [BillingController::class, 'store']);
     Route::put('/{billing}', [BillingController::class, 'update']);
+    Route::delete('/{billing}', [BillingController::class, 'destroy']);
     
     // Additional Custom Routes
     Route::get('/incomplete', [BillingListController::class, 'getIncomplete']);

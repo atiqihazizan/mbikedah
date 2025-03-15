@@ -114,7 +114,6 @@ function BillingTableActive() {
       name: "Tindakan",
       render: (item) => item.status_id === 1 && (
         <div className="flex space-x-2">
-          {console.log(item)}
           <Link
             to={`/billing/${item.id}/edit`}
             className={`text-indigo-600 hover:text-indigo-900 ${isDeletingId && 'opacity-50'}`}

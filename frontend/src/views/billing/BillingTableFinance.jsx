@@ -27,10 +27,19 @@ function BillingTableFinance() {
     7: "paid-complete",
   };
 
+  const getActionText = (action, type = 'verb') => {
+    const actionTexts = {
+        reject: { verb: 'menolak', noun: 'Ditolak', reason: 'penolakan' },
+        approve: { verb: 'mengesahkan', noun: 'Disahkan', reason: 'pengesahan' },
+        return: { verb: 'memulangkan', noun: 'Dipulangkan', reason: 'pemulangan' }
+    };
+    return actionTexts[action]?.[type] || '';
+  };
+
   const actionMapping = {
-    approve: { url: (id) => actionUrl[id], text: "mengesahkan" },
-    reject: { url: () => "reject", text: "menolak" },
-    return: { url: () => "return", text: "memulangkan" }
+    approve: { url: (id) => actionUrl[id], text: getActionText('approve') },
+    reject: { url: () => "reject", text: getActionText('reject') },
+    return: { url: () => "return", text: getActionText('return') }
   };
 
   const handleAction = (id, action, statusId = null) => {
@@ -181,21 +190,21 @@ function BillingTableFinance() {
             className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 flex items-center"
           >
             <CheckIcon size={16} className="mr-1" />
-            Sahkan
+            {getActionText('approve')}
           </button>
           <button
             onClick={() => handleAction(item.id, 'reject')}
             className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 flex items-center"
           >
             <Trash2 size={16} className="mr-1" />
-            Tolak
+            {getActionText('reject')}
           </button>
           <button
             onClick={() => handleAction(item.id, 'return')}
             className="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600 flex items-center"
           >
             <Pencil size={16} className="mr-1" />
-            Pulang
+            {getActionText('return')}
           </button>
           <button
             onClick={() => handleViewHistory(item.id)}
@@ -230,28 +239,10 @@ function BillingTableFinance() {
               setSelectedBilling(null);
               setAction(null);
             }}
-            onConfirm={(remarks) => handleConfirm(remarks)}
-            title={
-              action === "reject"
-                ? "Tolak Permohonan"
-                : action === "approve"
-                ? "Sahkan Permohonan"
-                : "Kembali kepada Permohonan"
-            }
-            message={` ${
-              action === "reject"
-                ? "Sila nyatakan sebab penolakan"
-                : action === "approve"
-                ? "Masukkan catatan"
-                : "Sila nyatakan sebab pemulangan"
-            }:`}
-            confirmText={
-              action === "reject"
-                ? "Tolak"
-                : action === "approve"
-                ? "Sahkan"
-                : "Pulang"
-            }
+            onConfirm={handleConfirm}
+            title={getActionText(action, 'noun')}
+            message={` ${getActionText(action, 'reason')}:`}
+            confirmText={getActionText(action)}
           />
           <BillingHistoryModal
             isOpen={showHistory}

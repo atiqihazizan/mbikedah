@@ -147,7 +147,7 @@ class BillingActivitiesController extends Controller
 
   public function rejectBilling(Request $request, Billing $billing) {
     try {
-      $this->authorize('process', [$billing, BillingStatus::REJECTED]);
+      $this->authorize('reject', $billing);
       $validator = Validator::make($request->all(), [
         'remarks' => 'required|string|max:500'
       ]);
@@ -184,7 +184,7 @@ class BillingActivitiesController extends Controller
 
   public function returnBilling(Request $request, Billing $billing) {
     try {
-      $this->authorize('process', [$billing, BillingStatus::RETURNED]);
+      $this->authorize('reject', $billing);
       $validator = Validator::make($request->all(), [
         'remarks' => 'required|string|max:500'
       ]);

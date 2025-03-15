@@ -44,9 +44,9 @@ function BillingTableHOD() {
 
   const getActionText = (action, type = 'verb') => {
     const actionTexts = {
-      reject: { verb: 'menolak', noun: 'ditolak', reason: 'penolakan' },
-      approve: { verb: 'mengesahkan', noun: 'disahkan', reason: 'pengesahan' },
-      return: { verb: 'memulangkan', noun: 'dipulangkan', reason: 'pemulangan' }
+      reject: { verb: 'menolak', noun: 'Ditolak', reason: 'penolakan' },
+      approve: { verb: 'mengesahkan', noun: 'Disahkan', reason: 'pengesahan' },
+      return: { verb: 'memulangkan', noun: 'Dipulangkan', reason: 'pemulangan' }
     };
     return actionTexts[action]?.[type] || '';
   };
