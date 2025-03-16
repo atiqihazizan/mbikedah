@@ -310,7 +310,9 @@ class BillingController extends Controller
               'remarks',
               'created_by',
               'created_at'
-            ])->orderBy('created_at', 'desc');
+            ])
+            ->orderBy('new_status', 'desc')
+            ->orderBy('created_at', 'desc');
           },
           'history.creator:id,name'
         ])

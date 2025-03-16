@@ -13,6 +13,7 @@ const BillingPaper = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [billing, setBilling] = useState(null);
+  const [history, setHistory] = useState([]);
   const [action, setAction] = useState(null); // 'reject' atau 'return'
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -93,6 +94,7 @@ const BillingPaper = () => {
         ]
         console.log(data)
         setBilling(data);
+        setHistory(data?.history.filter(h => h.old_status > 0) || []);
         setError(null);
       } catch (error) {
         console.error("Error fetching billing:", error);
@@ -251,72 +253,42 @@ const BillingPaper = () => {
                 </colgroup>
                 <tbody>
                   <tr>
-                    <th className="textCenter thBlock fwBold" colSpan="10">
-                      PERMOHONAN PEMBAYARAN
-                    </th>
+                    <th className="textCenter thBlock fwBold" colSpan="10">PERMOHONAN PEMBAYARAN</th>
                   </tr>
                   <tr>
-                    <td
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN A: MAKLUMAT PERMOHONAN
-                    </td>
+                    <td className="text-center th-block fw-bold bg-opacity-25 bg-dark" colSpan="10">BAHAGIAN A: MAKLUMAT PERMOHONAN</td>
                   </tr>
                   <tr>
-                    <td className="fw-bold th-title" colSpan="4">
-                      TARIKH PERMOHONAN
-                    </td>
-                    <td className="text-center">
-                      {formatDate(billing?.created_at)}
-                    </td>
+                    <td className="fw-bold th-title" colSpan="4">TARIKH PERMOHONAN</td>
+                    <td className="text-center">{formatDate(billing?.created_at)}</td>
                     <td className="text-center fw-bold">NO. SIRI</td>
-                    <td className="" colSpan="4">
-                      {billing?.running_no}
-                    </td>
+                    <td className="" colSpan="4">{billing?.running_no}</td>
                   </tr>
                   <tr>
-                    <td className="fw-bold th-title" colSpan="4">
-                      PERMOHONAN OLEH
-                    </td>
+                    <td className="fw-bold th-title" colSpan="4">PERMOHONAN OLEH</td>
                     <td colSpan="6">{billing?.creator?.name}</td>
                   </tr>
                   <tr>
-                    <td className="fw-bold th-title" colSpan="4">
-                      JABATAN
-                    </td>
+                    <td className="fw-bold th-title" colSpan="4">JABATAN</td>
                     <td colSpan="6">{billing?.department?.name}</td>
                   </tr>
                   <tr>
-                    <td className="fw-bold th-title" colSpan="4">
-                      NO. PROJEK
-                    </td>
+                    <td className="fw-bold th-title" colSpan="4">NO. PROJEK</td>
                     <td colSpan="6">{billing?.no_project}</td>
                   </tr>
                   <tr>
-                    <td className="fw-bold th-title" colSpan="4">
-                      NAMA PEMBEKAL/KONTRAKTOR/PENERIMA
-                    </td>
+                    <td className="fw-bold th-title" colSpan="4">NAMA PEMBEKAL/KONTRAKTOR/PENERIMA</td>
                     <td colSpan="6">{billing?.recipient?.name}</td>
                   </tr>
 
                   <tr>
-                    <th
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN B: MAKLUMAT KEPERLUAN
-                    </th>
+                    <th className="text-center th-block fw-bold bg-opacity-25 bg-dark" colSpan="10">BAHAGIAN B: MAKLUMAT KEPERLUAN</th>
                   </tr>
                   <tr>
                     <td className="text-center th-detail fw-bold">BIL</td>
                     <td className="text-center th-detail fw-bold">KOD BAJET</td>
-                    <td className="text-center th-detail fw-bold" colSpan="4">
-                      BUTIR BEKALAN/PERKHIDMATAN
-                    </td>
-                    <td className="text-center th-detail fw-bold">
-                      NO. RUJUKAN/INBOIS
-                    </td>
+                    <td className="text-center th-detail fw-bold" colSpan="4">BUTIR BEKALAN/PERKHIDMATAN</td>
+                    <td className="text-center th-detail fw-bold">NO. RUJUKAN/INBOIS</td>
                     <td className="text-center th-detail fw-bold">BIL/UNIT</td>
                     <td className="text-center th-detail fw-bold">KOS/UNIT</td>
                     <td className="text-center th-detail fw-bold">JUMLAH</td>
@@ -329,21 +301,13 @@ const BillingPaper = () => {
                       <td colSpan="4">{detail.description}</td>
                       <td>{detail.reference || ""}</td>
                       <td className="text-center">{detail.quantity}</td>
-                      <td className="text-end">
-                        {Number(detail.price).toFixed(2)}
-                      </td>
-                      <td className="text-end">
-                        {Number(detail.total).toFixed(2)}
-                      </td>
+                      <td className="text-end">{Number(detail.price).toFixed(2)}</td>
+                      <td className="text-end">{Number(detail.total).toFixed(2)}</td>
                     </tr>
                   ))}
 
                   {/* Tambah baris kosong untuk mencapai 10 baris */}
-                  {Array(
-                    10 - billing?.details?.length - billing?.credits?.length
-                  )
-                    .fill(0)
-                    .map((_, index) => (
+                  {Array(10 - billing?.details?.length - billing?.credits?.length).fill(0).map((_, index) => (
                       <tr key={index}>
                         <td className="text-center">&nbsp;</td>
                         <td className="text-center">&nbsp;</td>
@@ -356,228 +320,126 @@ const BillingPaper = () => {
                     ))}
 
                   <tr>
-                    <td className="text-center fw-bold" colSpan="10">
-                      TUJUAN/KETERANGAN BAYARAN
-                    </td>
+                    <td className="text-center fw-bold" colSpan="10">TUJUAN/KETERANGAN BAYARAN</td>
                   </tr>
                   <tr>
-                    <td className="" colSpan="10">
-                      {billing?.description}
-                    </td>
+                    <td className="" colSpan="10">{billing?.description}</td>
                   </tr>
                   <tr>
-                    <td className="" colSpan="10">
-                      &nbsp;
-                    </td>
+                    <td className="" colSpan="10">&nbsp;</td>
                   </tr>
                   <tr>
-                    <td className="text-center fw-bold" colSpan="5">
-                      DISEDIAKAN OLEH
-                    </td>
+                    <td className="text-center fw-bold" colSpan="5">DISEDIAKAN OLEH</td>
                     <td className="text-center fw-bold">TARIKH</td>
-                    <td className="text-center fw-bold" colSpan="3">
-                      DISAHKAN OLEH KETUA JABATAN
-                    </td>
+                    <td className="text-center fw-bold" colSpan="3">DISAHKAN OLEH KETUA JABATAN</td>
                     <td className="text-center fw-bold">TARIKH</td>
                   </tr>
                   <tr>
-                    <td className="text-center" colSpan="5">
-                      {billing?.creator?.name}
-                    </td>
-                    <td className="text-center">
-                      {formatDate(billing?.created_at)}
-                    </td>
-                    <td className="text-center" colSpan="3">
-                      {billing?.verified_by?.name}
-                    </td>
-                    <td className="text-center">
-                      {billing?.verified_by?.date}
-                    </td>
+                    <td className="text-center" colSpan="5">{history?.[0]?.created_by}</td>
+                    <td className="text-center">{formatDate(history?.[0]?.created_at)}</td>
+                    <td className="text-center" colSpan="3">{history?.[1]?.created_by}</td>
+                    <td className="text-center">{formatDate(history?.[1]?.created_at)}</td>
                   </tr>
 
                   <tr>
-                    <th
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN C: SEMAKAN OLEH JABATAN KEWANGAN
-                    </th>
+                    <th className="text-center th-block fw-bold bg-opacity-25 bg-dark" colSpan="10">BAHAGIAN C: SEMAKAN OLEH JABATAN KEWANGAN</th>
                   </tr>
                   <tr>
-                    <td className="text-center fw-bold" colSpan="5">
-                      DISEMAK OLEH PEGAWAI KEWANGAN
-                    </td>
+                    <td className="text-center fw-bold" colSpan="5">DISEMAK OLEH PEGAWAI KEWANGAN</td>
                     <td className="text-center fw-bold">TARIKH</td>
-                    <td className="text-center fw-bold" colSpan="3">
-                      KOD AKAUN : DEBIT
-                    </td>
-                    <td className="text-center" colSpan="1">
-                      {billing?.debit_account_codes?.join(", ")}
-                    </td>
+                    <td className="text-center fw-bold" colSpan="3">KOD AKAUN : DEBIT</td>
+                    <td className="text-center" colSpan="1">{billing?.debit_account_codes?.join(", ")}</td>
                   </tr>
                   <tr>
-                    <td className="text-center" colSpan="5">
-                      {billing?.finance_officer?.name}
-                    </td>
-                    <td className="text-center">
-                      {billing?.finance_officer?.date}
-                    </td>
-                    <td className="text-center fw-bold" colSpan="3">
-                      KOD AKAUN : KREDIT
-                    </td>
-                    <td className="text-center" colSpan="1">
-                      {billing?.credit_account_code}
-                    </td>
+                    <td className="text-center" colSpan="5">{history?.[2]?.created_by}</td>
+                    <td className="text-center">{formatDate(history?.[2]?.created_at)}</td>
+                    <td className="text-center fw-bold" colSpan="3">KOD AKAUN : KREDIT</td>
+                    <td className="text-center" colSpan="1">{billing?.credit_account_code}</td>
                   </tr>
                   <tr>
-                    <td className="text-center fw-bold" colSpan="6">
-                      ULASAN
-                    </td>
-                    <td className="text-center fw-bold" colSpan="3">
-                      NAMA BANK
-                    </td>
-                    <td className="text-center fw-bold" colSpan="1">
-                      BAKI BANK
-                    </td>
+                    <td className="text-center fw-bold" colSpan="6">ULASAN</td>
+                    <td className="text-center fw-bold" colSpan="3">NAMA BANK</td>
+                    <td className="text-center fw-bold" colSpan="1">BAKI BANK</td>
                   </tr>
                   <tr>
-                    <td className="text-center" colSpan="6" rowSpan="2">
-                      {billing?.finance_officer?.remark}
-                    </td>
+                    <td className="text-center" colSpan="6" rowSpan="2">{history?.[2]?.remarks}</td>
                     <td className="text-center" colSpan="3">
                       <div className="flex flex-col text-start min-h-3">
                         {billing?.credits?.map((credit, index) => (
-                          <span key={index} className="text-start">
-                            {credit.text}
-                          </span>
+                          <span key={index} className="text-start">{credit.text}</span>
                         ))}
                       </div>
                     </td>
                     <td className="text-end" colSpan="1">
                       <div className="flex flex-col text-right">
                         {billing?.credits?.map((credit, index) => (
-                          <span key={index}>
-                            {new Intl.NumberFormat("en-MY", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            }).format(credit.total)}
-                          </span>
+                          <span key={index}>{new Intl.NumberFormat("en-MY", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }).format(credit.total)}</span>
                         ))}
                       </div>
                     </td>
                   </tr>
                   <tr>
-                    <td className="text-center fw-bold" colSpan="3">
-                      JUMLAH INI
-                    </td>
-                    <td className="text-end" colSpan="1">
-                      {billing?.credit_verified?.toFixed(2)}
-                    </td>
+                    <td className="text-center fw-bold" colSpan="3">JUMLAH INI</td>
+                    <td className="text-end" colSpan="1">{billing?.credit_verified?.toFixed(2)}</td>
                   </tr>
 
                   <tr>
-                    <th
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN D: PENGESAHAN JABATAN KEWANGAN
-                    </th>
+                    <th className="text-center th-block fw-bold bg-opacity-25 bg-dark" colSpan="10">BAHAGIAN D: PENGESAHAN JABATAN KEWANGAN</th>
                   </tr>
                   <tr>
-                    <td className="text-center fw-bold" colSpan="5">
-                      DISAHKAN OLEH JABATAN KEWANGAN
-                    </td>
+                    <td className="text-center fw-bold" colSpan="5">DISAHKAN OLEH JABATAN KEWANGAN</td>
                     <td className="text-center fw-bold">TARIKH</td>
-                    <td className="text-center fw-bold" colSpan="4">
-                      ULASAN
-                    </td>
+                    <td className="text-center fw-bold" colSpan="4">ULASAN</td>
                   </tr>
                   <tr>
-                    <td className="text-center" colSpan="5">
-                      {billing?.finance_verification?.name}&nbsp;
-                    </td>
-                    <td className="text-center">
-                      {billing?.finance_verification?.date}
-                    </td>
-                    <td className="text-center" colSpan="4">
-                      {billing?.finance_verification?.remark}
-                    </td>
+                    <td className="text-center" colSpan="5">{history?.[3]?.created_by}&nbsp;</td>
+                    <td className="text-center">{formatDate(history?.[3]?.created_at)}</td>
+                    <td className="text-center" colSpan="4">{history?.[3]?.remarks}</td>
                   </tr>
 
                   <tr>
-                    <th
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN E: KELULUSAN KETUA JABATAN KEWANGAN
-                    </th>
+                    <th className="text-center th-block fw-bold bg-opacity-25 bg-dark" colSpan="10">BAHAGIAN E: KELULUSAN KETUA JABATAN KEWANGAN</th>
                   </tr>
                   <tr>
-                    <td className="text-center fw-bold" colSpan="5">
-                      DILULUSKAN OLEH KETUA JABATAN KEWANGAN
-                    </td>
+                    <td className="text-center fw-bold" colSpan="5">DILULUSKAN OLEH KETUA JABATAN KEWANGAN</td>
                     <td className="text-center fw-bold">TARIKH</td>
-                    <td className="text-center fw-bold" colSpan="4">
-                      TANDATANGAN
-                    </td>
+                    <td className="text-center fw-bold" colSpan="4">TANDATANGAN</td>
                   </tr>
                   <tr>
-                    <td className="text-center" colSpan="5">
-                      &nbsp;
-                    </td>
+                    <td className="text-center" colSpan="5">&nbsp;</td>
                     <td className="text-center">&nbsp;</td>
-                    <td className="text-center" colSpan="4" rowSpan="3">
-                      &nbsp;
-                    </td>
+                    <td className="text-center" colSpan="4" rowSpan="3">&nbsp;</td>
                   </tr>
 
                   <tr>
-                    <td className="text-center fw-bold" colSpan="6">
-                      ULASAN
-                    </td>
+                    <td className="text-center fw-bold" colSpan="6">ULASAN</td>
                   </tr>
                   <tr>
-                    <td className="text-center" colSpan="6">
-                      &nbsp;
-                    </td>
+                    <td className="text-center" colSpan="6">&nbsp;</td>
                   </tr>
 
                   <tr>
-                    <th
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN F: KELULUSAN KETUA PEGAWAI EKSEKUTIF
-                    </th>
+                    <th className="text-center th-block fw-bold bg-opacity-25 bg-dark" colSpan="10">BAHAGIAN F: KELULUSAN KETUA PEGAWAI EKSEKUTIF</th>
                   </tr>
                   <tr>
-                    <td className="text-center fw-bold" colSpan="5">
-                      DILULUSKAN OLEH KETUA PEGAWAI EKSEKUTIF
-                    </td>
+                    <td className="text-center fw-bold" colSpan="5">DILULUSKAN OLEH KETUA PEGAWAI EKSEKUTIF</td>
                     <td className="text-center fw-bold">TARIKH</td>
-                    <td className="text-center fw-bold" colSpan="4">
-                      TANDATANGAN
-                    </td>
+                    <td className="text-center fw-bold" colSpan="4">TANDATANGAN</td>
                   </tr>
                   <tr>
-                    <td className="text-center" colSpan="5">
-                      &nbsp;
-                    </td>
+                    <td className="text-center" colSpan="5">&nbsp;</td>
                     <td className="text-center">&nbsp;</td>
-                    <td className="text-center" colSpan="4" rowSpan="3">
-                      &nbsp;
-                    </td>
+                    <td className="text-center" colSpan="4" rowSpan="3">&nbsp;</td>
                   </tr>
 
                   <tr>
-                    <td className="text-center fw-bold" colSpan="6">
-                      ULASAN
-                    </td>
+                    <td className="text-center fw-bold" colSpan="6">ULASAN</td>
                   </tr>
                   <tr>
-                    <td className="text-center" colSpan="6">
-                      &nbsp;
-                    </td>
+                    <td className="text-center" colSpan="6">&nbsp;</td>
                   </tr>
                 </tbody>
               </table>
