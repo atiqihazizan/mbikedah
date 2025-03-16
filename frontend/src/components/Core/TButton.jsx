@@ -10,7 +10,7 @@ function TButton({
 	onClick = () => {},
 	children,
 	nClasses = false,
-	isClasses,
+	className,
 	isDisable = false,
 	onChecking = false,
 }) {
@@ -97,7 +97,7 @@ function TButton({
 		classes = [...classes, "p-0", "py-2", "px-4", "rounded-md"];
 	}
 
-	classes = [isClasses, ...classes];
+	classes = [className, ...classes];
 	if (nClasses !== false) classes = [nClasses];
 
 	return (

@@ -102,7 +102,7 @@ function Login() {
           </div>
           <TButton
             onChecking={onChecking}
-            isClasses="w-full py-2.5 bg-indigo-600 text-white justify-center rounded-md hover:bg-indigo-700"
+            className="w-full py-2.5 bg-indigo-600 text-white justify-center rounded-md hover:bg-indigo-700"
           >
             {onChecking ? "Sedang Masuk..." : "Masuk"}
           </TButton>

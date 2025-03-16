@@ -7,10 +7,11 @@ import { Link } from "react-router-dom";
 import PageComponent from "../../components/PageComponent";
 import apiClient from "../../axios";
 import Table from "../../components/TableRow";
+import PulseTable from "../../components/Core/PulseTable";
 
 function BillingTableHOD() {
   const { setCountActive } = useStateContext();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [activeItems, setActiveItems] = useState([]);
 
   const loadData = async () => {
@@ -110,17 +111,21 @@ function BillingTableHOD() {
     <PageComponent title="Permohonan Untuk Pengesahan">
       <div className="container mx-auto px-4 py-6 h-[calc(100vh-120px)] scrollable-y-hover overflow-auto">
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <Table
-            columns={columns}
-            data={activeItems}
-            loading={isLoading}
-            tOption={{
+          {isLoading ? (
+            <PulseTable/>
+          ) : (
+            <Table
+              columns={columns}
+              data={activeItems}
+              loading={isLoading}
+              tOption={{
               checkable: false,
               oClassParent: "overflow-x-auto",
               oClassTable: "min-w-full divide-y divide-gray-200",
               oClassThead: "bg-gray-50",
             }}
           />
+          )}
         </div>
       </div>
     </PageComponent>

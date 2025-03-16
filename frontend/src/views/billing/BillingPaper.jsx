@@ -1,29 +1,46 @@
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { CheckIcon, Pencil, Trash2, History, EyeIcon } from "lucide-react";
+import { CheckIcon, Pencil, Trash2, PrinterIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import apiClient from "../../axios";
+import { toast } from "react-toastify";
 import PageComponent from "../../components/PageComponent";
 import TButton from "../../components/Core/TButton";
 import ConfirmationModal from "../../components/modals/ConfirmationModal";
+import apiClient from "../../axios";
+import logoMBI from "../../assets/logo/mbi-head.png"
 
 const BillingPaper = () => {
-  const navigate = useNavigate();
   const { idBilling, pageback } = useParams();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [billing, setBilling] = useState(null);
   const [history, setHistory] = useState([]);
   const [action, setAction] = useState(null); // 'reject' atau 'return'
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [endPointApprove, setEndPointApprove] = useState(null);
+  
+  const endPointsByStatus = {
+    2: "hod-approve",
+    3: "finance-review",
+    4: "finance-verify",
+    5: "finance-approve",
+    6: "process-payment",
+    7: "paid-complete",
+  };
 
   const actionButtons = [
-    { type: 'approve', icon: CheckIcon, label: 'Sahkan', colorClass: 'bg-green-500 hover:bg-green-600' },
-    { type: 'reject', icon: Trash2, label: 'Tolak', colorClass: 'bg-red-500 hover:bg-red-600' },
-    { type: 'return', icon: Pencil, label: 'Serah Kembali', colorClass: 'bg-yellow-500 hover:bg-yellow-600' },
+    { type: 'approve', icon: CheckIcon, label: 'Sahkan', colorClass: '!bg-green-500 hover:bg-green-600' },
+    { type: 'reject', icon: Trash2, label: 'Tolak', colorClass: '!bg-red-500 hover:bg-red-600' },
+    { type: 'return', icon: Pencil, label: 'Kembali', colorClass: '!bg-yellow-500 hover:bg-yellow-600' },
   ];
 
+  const agency = {
+    name: "MENTERI BESAR KEDAH INCORPORATED",
+    address: "Aras 2 Blok A, Wisma Darulaman, 05503 Alor Setar, Kedah Darulaman",
+    tel: "04-730 2137 / 731 0122",
+    fax: "04-774 4076"
+  }
+  
   const handleAction = async (id, actionType) => {
     if (!['approve', 'reject', 'return'].includes(actionType)) {
       toast.error('Aktivity tidak boleh diteruskan, sila maklum kepada admin');
@@ -33,13 +50,14 @@ const BillingPaper = () => {
     setShowConfirmation(true);
   };
 
-  const getEndpointForAction = (action) => {
-    const endpoints = {
+  const getEndpointForAction = () => {
+    const _endpoints = {
       reject: "reject",
-      approve: "hod-approve",
+      approve: endPointApprove,
       return: "return"
     };
-    return endpoints[action] || "";
+    
+    return `/billings/${idBilling}/${_endpoints[action]}`;
   };
 
   const getActionText = (action, type = 'verb') => {
@@ -49,37 +67,6 @@ const BillingPaper = () => {
       return: { verb: 'memulangkan', noun: 'Dipulangkan', reason: 'pemulangan' }
     };
     return actionTexts[action]?.[type] || '';
-  };
-
-
-  const handleConfirm = async (remarks) => {
-    if ( !action) return;
-    setIsActionLoading(true);
-
-    try {
-      const endpoint = getEndpointForAction(action);
-      const {success,data,message} = await apiClient.post(
-        `/billings/${idBilling}/${endpoint}`,
-        { remarks: remarks || '' }
-      );
-
-      if (!success) {
-        throw new Error(message || `Gagal ${getActionText(action)} permohonan`);
-      }
-
-      await loadData();
-      toast.success(`Permohonan berjaya ${getActionText(action, 'noun')}`);
-      navigate(`/billing/${pageback}`);
-    } catch (error) {
-      const errorMessage = error.response?.data?.message 
-        || error.message 
-        || `Ralat ${getActionText(action)} permohonan`;
-      toast.error(errorMessage);
-    } finally {
-      setIsActionLoading(false);
-      setShowConfirmation(false);
-      setAction(null);
-    }
   };
 
   useEffect(() => {
@@ -92,13 +79,11 @@ const BillingPaper = () => {
           // {text: 'BANK MUAMALAT - 02010004544718', total: 2000000.00},
           // {text: 'BANK MUAMALAT - 02010004544718', total: 2000000.00}
         ]
-        console.log(data)
         setBilling(data);
-        setHistory(data?.history.filter(h => h.old_status > 0) || []);
-        setError(null);
+        setHistory(data.history.filter(h => h.old_status > 0 ) || []);
+        setEndPointApprove(endPointsByStatus[data.status_id]);
       } catch (error) {
         console.error("Error fetching billing:", error);
-        setError(error.message || "Failed to load billing data");
       } finally {
         setIsLoading(false);
       }
@@ -124,34 +109,32 @@ const BillingPaper = () => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('ms-MY');
   };
-
-  // Fungsi untuk mencetak kandungan dalam id=printpage
-  const printPage = () => {
-    const printArea = document.getElementById('printpage');
-    const printWindow = window.open('', '', 'height=700,width=800');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-          <style>
-            @page { margin: 0; padding: 7mm; }
-            body { margin: 0; padding: 7mm; }
-          </style>
-        </head>
-        <body>
-          ${printArea.innerHTML}
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR' }).format(amount);
   };
 
-  const allowedAbilities = [2, 3, 4, 5, 6, 7];
-  const hasAllowedAbility = billing?.creator?.abilities.some(ability => allowedAbilities.includes(ability));
+  const print = () => {
+    const printContents = document.getElementById('printpage').innerHTML;
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write('<html><head><title>Print</title>');
+    doc.write('<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">');
+    doc.write('</head><body>');
+    doc.write(printContents);
+    doc.write('</body></html>');
+    setTimeout(() => {
+      doc.close();
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      document.body.removeChild(iframe);
+    }, 500);
+  };
 
   return (
     <PageComponent
@@ -159,30 +142,21 @@ const BillingPaper = () => {
       buttons={
         !isLoading && (
           <div className="flex gap-2">
-            <TButton color="light" to={`/billing/${pageback}`}>
-              Kembali
-            </TButton>
-            {((pageback === "hod" && billing.status_id === 2) ||
-              (pageback === "finance" &&
-                [3, 4, 5, 6, 7].includes(billing.status_id))) && (
-              <>
-                <TButton color="light" onClick={printPage}>
-                  Cetak
-                </TButton>
-                {actionButtons.map(
-                  ({ type, icon: Icon, label, colorClass }) => (
-                    <button
-                      key={type}
-                      onClick={() => handleAction(billing.id, type)}
-                      className={`${colorClass} text-white px-3 py-1 rounded text-sm flex items-center`}
-                    >
-                      <Icon size={16} className="mr-1" />
-                      {label}
-                    </button>
-                  )
-                )}
-              </>
-            )}
+            <TButton color="light" to={`/billing/${pageback}`}>Kembali</TButton>
+            {([3,4,5,6].includes(billing.status_id) && 
+              <TButton onClick={print} className="bg-blue-500 text-white font-bold py-2 px-4 rounded">
+                <PrinterIcon size={16} className="mr-1" />
+                Print
+              </TButton>)}
+            {(
+              (pageback === 'hod' && billing.status_id === 2) ||
+              (pageback === 'finance' && [3,4,5,6].includes(billing.status_id))
+            ) && 
+            actionButtons.map(({ type, icon: Icon, label, colorClass }) => (
+              <TButton key={type} onClick={() => handleAction(billing.id, type)} className={colorClass}>
+                <Icon size={16} className="mr-1" />{label}
+              </TButton>
+            ))}
           </div>
         )
       }
@@ -190,24 +164,23 @@ const BillingPaper = () => {
       {showConfirmation && (
         <ConfirmationModal
           isOpen={true}
-          onClose={() => !isActionLoading && setShowConfirmation(false)}
-          onConfirm={handleConfirm}
+          onClose={() => setShowConfirmation(false)}
           title="Pengesahan tindakan"
-          message={`Sila nyatakan ${getActionText(
-            action,
-            "reason"
-          )} (pilihan):`}
+          message={getActionText(action, "reason")}
           confirmText={getActionText(action, "noun")}
-          isLoading={isActionLoading}
-          disabled={isActionLoading}
+          action={action}
+          setAction={setAction}
+          endpoint={getEndpointForAction()}
+          callBack={() => navigate(`/billing/${pageback}`)}
         />
       )}
+
       <div className="px-4 py-6 h-[calc(100vh-90px)] scrollable-y-hover overflow-auto">
         <div
           style={{
             backgroundColor: "#fff",
             width: "210mm",
-            height: "297mm",
+            // height: "297mm",
             padding: "10mm",
             boxShadow: "0 0 10px rgba(0,0,0,0.5)",
             margin: "auto",
@@ -226,19 +199,27 @@ const BillingPaper = () => {
 
                 div#tab41 .header { display: none}
                 @media print {
-                    .table-payment * { font-size: 7pt }
-                    .table-payment .th-title { font-size: 7pt }
-                    .table-payment .th-block { font-size: 8pt }
-                    .table-payment .th-detail { font-size: 6pt }
+                  body { padding: 10mm; margin: 0; font-size: 7pt;}
+                  .table-payment * { font-size: 7pt }
+                  .table-payment .th-title { font-size: 7pt }
+                  .table-payment .th-block { font-size: 8pt }
+                  .table-payment .th-detail { font-size: 6pt }
                 }
               `}
             </style>
-            <div
-              className="sheet"
-              id="form-payment"
-              style={{ position: "relative" }}
-            >
-              <table className="table-payment mt-1">
+            <div className="sheet" id="form-payment" style={{ position: "relative" }}>
+              <div className="mt-1 flex flex-row gap-5">
+                <img src={logoMBI} alt="heade-logo" className="head-logo" style={{ width: '200px' }} />
+                <div className="pt-4 flex flex-col gap-1">
+                  <h4 id="fname" className="text-2xl font-bold">{agency.name}</h4>
+                  <span className="text-sm" id="addr">{agency.address}</span>
+                  <div className="flex flex-row gap-14 text-sm">
+                    <span>Tel : {agency.tel}</span>
+                    <span>Fax : {agency.fax}</span>
+                  </div>
+                </div>
+              </div>
+              <table className="table-payment mt-2">
                 <colgroup>
                   <col style={{ width: "11cm" }} />
                   <col style={{ width: "15cm" }} />
@@ -301,24 +282,24 @@ const BillingPaper = () => {
                       <td colSpan="4">{detail.description}</td>
                       <td>{detail.reference || ""}</td>
                       <td className="text-center">{detail.quantity}</td>
-                      <td className="text-end">{Number(detail.price).toFixed(2)}</td>
-                      <td className="text-end">{Number(detail.total).toFixed(2)}</td>
+                      <td className="text-right">{Number(detail.price).toFixed(2)}</td>
+                      <td className="text-right">{Number(detail.total).toFixed(2)}</td>
                     </tr>
                   ))}
-
+                  
                   {/* Tambah baris kosong untuk mencapai 10 baris */}
                   {Array(10 - billing?.details?.length - billing?.credits?.length).fill(0).map((_, index) => (
-                      <tr key={index}>
-                        <td className="text-center">&nbsp;</td>
-                        <td className="text-center">&nbsp;</td>
-                        <td colSpan="4">&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td className="text-center">&nbsp;</td>
-                        <td className="text-end">&nbsp;</td>
-                        <td className="text-end">&nbsp;</td>
-                      </tr>
-                    ))}
-
+                    <tr key={index}>
+                      <td className="text-center">&nbsp;</td>
+                      <td className="text-center">&nbsp;</td>
+                      <td colSpan="4">&nbsp;</td>
+                      <td>&nbsp;</td>
+                      <td className="text-center">&nbsp;</td>
+                      <td className="text-right">&nbsp;</td>
+                      <td className="text-right">&nbsp;</td>
+                    </tr>
+                  ))}
+                  
                   <tr>
                     <td className="text-center fw-bold" colSpan="10">TUJUAN/KETERANGAN BAYARAN</td>
                   </tr>
@@ -365,25 +346,22 @@ const BillingPaper = () => {
                     <td className="text-center" colSpan="6" rowSpan="2">{history?.[2]?.remarks}</td>
                     <td className="text-center" colSpan="3">
                       <div className="flex flex-col text-start min-h-3">
+                        {billing?.credits?.length === 0 && <span>&nbsp;</span>}
                         {billing?.credits?.map((credit, index) => (
                           <span key={index} className="text-start">{credit.text}</span>
                         ))}
-                      </div>
-                    </td>
-                    <td className="text-end" colSpan="1">
+                      </div></td>
+                    <td className="text-right" colSpan="1">
                       <div className="flex flex-col text-right">
                         {billing?.credits?.map((credit, index) => (
-                          <span key={index}>{new Intl.NumberFormat("en-MY", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          }).format(credit.total)}</span>
+                          <span key={index}>{formatCurrency(credit.total)}</span>
                         ))}
                       </div>
                     </td>
                   </tr>
                   <tr>
                     <td className="text-center fw-bold" colSpan="3">JUMLAH INI</td>
-                    <td className="text-end" colSpan="1">{billing?.credit_verified?.toFixed(2)}</td>
+                    <td className="text-right" colSpan="1">{formatCurrency(billing?.credit_verified)}</td>
                   </tr>
 
                   <tr>

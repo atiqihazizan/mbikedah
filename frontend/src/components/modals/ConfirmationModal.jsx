@@ -1,18 +1,44 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
+import apiClient from '../../axios';
+import { toast } from 'react-toastify';
 
 export default function ConfirmationModal({ 
   isOpen, 
   onClose, 
-  onConfirm, 
   title, 
   message, 
   confirmText = 'Ya', 
   cancelText = 'Tidak',
-  isLoading,
-  disabled
+  action,
+  setAction,
+  endpoint,
+  callBack,
 }) {
   const [comment, setComment] = useState('');
+  const [isActionLoading, setIsActionLoading] = useState(false);
+
+  const handleConfirm = async (remarks) => {
+    if (!action) return;
+
+    setIsActionLoading(true);
+    try {
+      const {success,data,message} = await apiClient.post(endpoint, { remarks });
+      if (!success) {
+        throw new Error(message || `Sila cuba sekali lagi`);
+      }
+      callBack();
+    } catch (error) {
+      const errorMessage = error.response?.data?.message 
+        || error.message 
+        || `Sila cuba sekali lagi`;
+      toast.error(errorMessage);
+    } finally {
+      setIsActionLoading(false);
+      setAction(null);
+      onClose();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -33,34 +59,34 @@ export default function ConfirmationModal({
       {/* Modal */}
       <div className="relative bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <h2 id="modal-title" className="text-lg font-semibold mb-4">{title}</h2>
-        <p className="text-gray-600 mb-6">{message}</p>
+        <p className="text-gray-600 mb-6">Catatan {message} (jika perlu):</p>
 
         <textarea
           className="w-full border border-gray-300 rounded-md p-2"
-          placeholder="Masukkan komen..."
+          placeholder="Masukkan catatan..."
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          aria-label="Komen"
+          aria-label="Catatan"
         ></textarea>
 
         <div className="mt-4 flex justify-end space-x-3">
           <button
             type="button"
             onClick={onClose}
-            disabled={disabled}
+            disabled={isActionLoading}
             className={`px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 
-              ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              ${isActionLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {cancelText}
           </button>
           <button
             type="button"
-            onClick={() => onConfirm(comment)}
-            disabled={disabled || isLoading}
+            onClick={() => handleConfirm()}
+            disabled={isActionLoading}
             className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 
-              ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              ${isActionLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isLoading ? (
+            {isActionLoading ? (
               <div className="flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" aria-hidden="true"></div>
                 <span>Memproses...</span>
@@ -78,11 +104,9 @@ export default function ConfirmationModal({
 ConfirmationModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  onConfirm: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
   message: PropTypes.string.isRequired,
   confirmText: PropTypes.string,
   cancelText: PropTypes.string,
-  isLoading: PropTypes.bool,
-  disabled: PropTypes.bool
+  isLoading: PropTypes.bool
 };

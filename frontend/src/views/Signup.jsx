@@ -115,7 +115,7 @@ function Signup() {
 						<div>
 							<TButton
 								onChecking={onChecking}
-								isClasses="w-full justify-center"
+								className="w-full justify-center"
 							>
 								Daftar
 							</TButton>
