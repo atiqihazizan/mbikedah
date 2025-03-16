@@ -79,8 +79,13 @@ const BillingPaper = () => {
           // {text: 'BANK MUAMALAT - 02010004544718', total: 2000000.00},
           // {text: 'BANK MUAMALAT - 02010004544718', total: 2000000.00}
         ]
+        const endos = data
+          ?.history
+          ?.filter(h => h.old_status > 0 )
+          ?.sort((a, b) => a.old_status - b.old_status) || [];
+        
         setBilling(data);
-        setHistory(data.history.filter(h => h.old_status > 0 ) || []);
+        setHistory(endos);
         setEndPointApprove(endPointsByStatus[data.status_id]);
       } catch (error) {
         console.error("Error fetching billing:", error);
@@ -361,7 +366,7 @@ const BillingPaper = () => {
                   </tr>
                   <tr>
                     <td className="text-center fw-bold" colSpan="3">JUMLAH INI</td>
-                    <td className="text-right" colSpan="1">{formatCurrency(billing?.credit_verified)}</td>
+                    <td className="text-right" colSpan="1">{formatCurrency(billing?.credit_verified || 0  )}</td>
                   </tr>
 
                   <tr>

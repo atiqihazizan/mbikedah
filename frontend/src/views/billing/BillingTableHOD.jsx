@@ -58,6 +58,11 @@ function BillingTableHOD() {
       classRow: "font-medium text-blue-600",
     },
     {
+      name: "Pemohon",
+      field: "created_by",
+      nClassRow: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+    },
+    {
       name: "Perkara",
       field: "description",
     },

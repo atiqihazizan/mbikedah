@@ -17,7 +17,9 @@ function BillingTableFinance() {
     if(isLoading) return;
     try {
       setIsLoading(true);
-      const {success,message,data} = await apiClient.get("/billings/pending-finance");
+      const { success, message, data } = await apiClient.get(
+        "/billings/pending-finance"
+      );
       if (!success) {
         throw new Error(message || "Gagal mendapatkan data");
       }
@@ -51,6 +53,11 @@ function BillingTableFinance() {
       name: "Tarikh Permohonan",
       field: "issued_at",
       render: (item) => item.issued_at ? format(parseISO(item.issued_at), "dd/MM/yyyy") : "-"
+    },
+    {
+      name: "Pemohon",
+      field: "created_by",
+      nClassRow: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
     },
     {
       name: "No. Projek",
