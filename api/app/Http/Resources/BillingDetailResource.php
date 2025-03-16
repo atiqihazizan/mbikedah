@@ -48,6 +48,8 @@ class BillingDetailResource extends JsonResource
           'description' => $detail->description,
           'budget_code' => $detail->budget_code,
           'budget_id' => $detail->budget_id,
+          'old_budget_id' => $detail->old_budget_id,
+          'old_budget_code' => $detail->old_budget_code,
           'price' => $detail->price,
           'quantity' => $detail->quantity,
           'reference' => $detail->reference,

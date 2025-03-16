@@ -294,6 +294,8 @@ class BillingController extends Controller
               'description',
               'budget_code',
               'budget_id',
+              'old_budget_id',
+              'old_budget_code',
               'price',
               'quantity',
               'reference',

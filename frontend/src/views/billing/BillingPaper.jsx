@@ -15,6 +15,7 @@ const BillingPaper = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [billing, setBilling] = useState(null);
   const [history, setHistory] = useState([]);
+  const [details, setDetails] = useState([]);
   const [action, setAction] = useState(null); // 'reject' atau 'return'
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [endPointApprove, setEndPointApprove] = useState(null);
@@ -73,6 +74,7 @@ const BillingPaper = () => {
     const fetchBilling = async () => {
       try {
         const { data } = await apiClient.get(`/billings/${idBilling}`);
+        console.log(data);
         data.credits = [
           // {text: 'BANK MUAMALAT - 02010004544718', total: 2000000.00},
           // {text: 'BANK MUAMALAT - 02010004544718', total: 2000000.00},
@@ -84,6 +86,7 @@ const BillingPaper = () => {
           ?.filter(h => h.old_status > 0 )
           ?.sort((a, b) => a.old_status - b.old_status) || [];
         
+        setDetails(data?.details || []);
         setBilling(data);
         setHistory(endos);
         setEndPointApprove(endPointsByStatus[data.status_id]);
@@ -177,6 +180,7 @@ const BillingPaper = () => {
           setAction={setAction}
           endpoint={getEndpointForAction()}
           callBack={() => navigate(`/billing/${pageback}`)}
+          details={details}
         />
       )}
 
@@ -280,7 +284,7 @@ const BillingPaper = () => {
                     <td className="text-center th-detail fw-bold">JUMLAH</td>
                   </tr>
 
-                  {billing?.details?.map((detail, index) => (
+                  {details?.map((detail, index) => (
                     <tr key={index}>
                       <td className="text-center">{index + 1}</td>
                       <td className="text-center">{detail.budget?.code}</td>
@@ -293,7 +297,7 @@ const BillingPaper = () => {
                   ))}
                   
                   {/* Tambah baris kosong untuk mencapai 10 baris */}
-                  {Array(10 - billing?.details?.length - billing?.credits?.length).fill(0).map((_, index) => (
+                  {Array(10 - details?.length - billing?.credits?.length).fill(0).map((_, index) => (
                     <tr key={index}>
                       <td className="text-center">&nbsp;</td>
                       <td className="text-center">&nbsp;</td>

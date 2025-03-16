@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('billing_id')->constrained('billings')->onDelete('cascade');
             $table->foreignId('budget_id')->nullable()->constrained('budgets')->onDelete('set null');
-            $table->string('budget_code');
+            $table->varchar('budget_code', 50);
+            $table->foreignId('old_budget_id')->default(0);
+            $table->varchar('old_budget_code', 50)->nullable();
             $table->string('reference')->nullable();
             $table->string('description');
             $table->decimal('price', 12, 2);

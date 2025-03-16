@@ -12,6 +12,8 @@ class BillingDetail extends Model
     'description',
     'budget_code',
     'budget_id',
+    'old_budget_id',
+    'old_budget_code',
     'price',
     'quantity',
     'reference'
