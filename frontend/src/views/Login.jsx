@@ -4,6 +4,7 @@ import apiClient from "../axios";
 import TButton from "../components/Core/TButton";
 import { FaEye, FaEyeSlash, FaUser, FaLock } from "react-icons/fa";
 import Logo from "../assets/logo.png"; // Gantilah dengan path logo yang sesuai
+import bgImage from "../assets/images/bg-2.jpg";
 
 function Login() {
   const { setCurrentUser, setUserToken } = useStateContext();
@@ -56,7 +57,7 @@ function Login() {
   }, [username, password, setCurrentUser, setUserToken]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover' }}>
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <div className="flex justify-center mb-6">
           <img src={Logo} alt="Logo" className="h-16" />
