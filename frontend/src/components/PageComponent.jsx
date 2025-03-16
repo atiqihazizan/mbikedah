@@ -10,7 +10,7 @@ function PageComponent({ title, buttons = "", children, className }) {
 					{buttons}
 				</div>
 			</header>
-			<main className={`grow ${className}`}>
+			<main className={`grow ${className || ""}`}>
 				{/* <div className="mx-auto max-w-7xl">{children}</div> */}
 				{/* <div className="py-6 sm:px-6 lg:px-8">{children}</div> */}
 				{/* <div className={mainClass}>{children}</div> */}

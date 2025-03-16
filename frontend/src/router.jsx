@@ -11,6 +11,7 @@ import BillingTableActive from "./views/billing/BillingTableActive";
 import BillingTableHOD from "./views/billing/BillingTableHOD";
 import BillingTableFinance from "./views/billing/BillingTableFinance";
 import BillingTableArchive from "./views/billing/BillingTableArchive";
+import BillingPaper from "./views/billing/BillingPaper";
 
 const router = createBrowserRouter([
 	{
@@ -25,6 +26,7 @@ const router = createBrowserRouter([
 			{ path: "/billing/:idform/edit", element: <BillingForm /> },
       { path: "/billing/hod", element: <BillingTableHOD /> },
       { path: "/billing/finance", element: <BillingTableFinance /> },
+      { path: "/billing/:idBilling/:pageback/show", element: <BillingPaper /> },
 		],
 	},
 	{

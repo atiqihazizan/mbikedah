@@ -15,7 +15,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <RouterProvider router={router} />
       <ToastContainer
         position="top-right"
-        autoClose={1000}
+        autoClose={2000}
         // limit={1}
         hideProgressBar={false}
         newestOnTop
@@ -23,7 +23,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         rtl={false}
         pauseOnFocusLoss
         draggable
-        pauseOnHover={false}
+        pauseOnHover={true}
         theme="colored"
       />
     </ContextProvider>

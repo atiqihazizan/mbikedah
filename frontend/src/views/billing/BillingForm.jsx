@@ -181,7 +181,7 @@ export default function BillingForm() {
       if(error?.response?.status === 403) {
         toast.error("Anda tidak mempunyai kebenaran untuk menghantar permohonan ini");
       } else if(error?.response?.status === 422) {
-        const {data} = error?.response;
+        const {data} = error?.response || {};
         setError(data?.errors);
       } else {
         toast.error(error.message || `Ralat semasa ${statusId === 1 ? 'menyimpan draf' : 'menghantar permohonan'}. Sila cuba lagi.`);

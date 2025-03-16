@@ -7,18 +7,12 @@ use Illuminate\Support\Facades\DB;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Facades\Log;
 
 use App\Models\Billing;
 use App\Constants\BillingStatus;
-use App\Constants\UserAbilities;
 use App\Http\Resources\BillingResource;
-use App\Http\Resources\BillingTableResource;
-use App\Http\Resources\BillingDetailResource;
 
 class BillingActivitiesController extends Controller
 {

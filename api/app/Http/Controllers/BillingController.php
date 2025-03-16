@@ -182,7 +182,7 @@ class BillingController extends Controller
       }
 
       if ($validatedData['status_id'] === BillingStatus::HOD_APPROVAL) {
-        $billing->updateStatus(BillingStatus::HOD_APPROVAL, Auth::id(), 'Billing submit after returned');
+        $billing->updateStatus(BillingStatus::HOD_APPROVAL, Auth::id(), 'Permohonan dihantar ke HOD');
       }
 
       // Reset cache
@@ -260,19 +260,12 @@ class BillingController extends Controller
   }
 
   /**
-   * Get billing by ID (with caching).
+   * Get billing by ID.
    */
 
   public function getBillingById($id)
   {
     try {
-      // Try to get from cache
-      $cacheKey = 'billing.' . $id;
-      $cached = Cache::get($cacheKey);
-      if ($cached) {
-        return response()->json($cached)->header('Cache-Control', 'public, max-age=300');
-      }
-
       // Select specific columns
       $billing = Billing::select([
         'id',
@@ -292,7 +285,7 @@ class BillingController extends Controller
       ])
         ->with([
           'department:id,name',
-          'creator:id,name',
+          'creator:id,name,abilities',
           'recipient:id,name',
           'details' => function ($query) {
             $query->select([
@@ -325,10 +318,7 @@ class BillingController extends Controller
 
       $response = new BillingDetailResource($billing);
 
-      // Cache the response
-      Cache::put($cacheKey, $response->response()->getData(), now()->addMinutes(5));
-
-      return $response->response()->header('Cache-Control', 'public, max-age=300');
+      return $response->response();
     } catch (Exception $error) {
       return response()->json([
         'success' => false,

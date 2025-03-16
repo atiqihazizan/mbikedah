@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useStateContext } from "../../contexts/ContextProvider";
 import { format, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
-import { Pencil, Trash2 } from "lucide-react";
+import { EyeIcon, Pencil, Trash2 } from "lucide-react";
 import PageComponent from "../../components/PageComponent";
 import apiClient from "../../axios";
 import { toast } from 'react-toastify';
@@ -77,61 +77,89 @@ function BillingTableActive() {
     }
   };
 
-  const columns = useMemo(() => [
-    {
-      name: "Tarikh Permohonan",
-      render: ({issued_at}) => format(parseISO(issued_at), "dd/MM/yyyy")
-    },
-    {
-      name: "No. Projek",
-      field: "no_project",
-      nClassRow: "px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600"
-    },
-    {
-      name: "Perkara",
-      field: "description"
-    },
-    {
-      name: "Jumlah (RM)",
-      render: ({total_amount}) => parseFloat(total_amount).toLocaleString("en-MY", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })
-    },
-    {
-      name: "Status",
-      render: ({status}) => (
-        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyle(status)}`}>
-          {status}
-        </span>
-      )
-    },
-    {
-      name: "Tarikh Dibuat",
-      render: ({created_at}) => format(parseISO(created_at), "dd/MM/yyyy HH:mm")
-    },
-    {
-      name: "Tindakan",
-      render: (item) => [1,9].includes(item.status_id) && (
-        <div className="flex space-x-2">
-          <Link
-            to={`/billing/${item.id}/edit`}
-            className={`text-indigo-600 hover:text-indigo-900 ${isDeletingId && 'opacity-50'}`}
-            disabled={isDeletingId}
+  const columns = useMemo(
+    () => [
+      {
+        name: "Tarikh Permohonan",
+        render: ({ issued_at }) => format(parseISO(issued_at), "dd/MM/yyyy"),
+      },
+      {
+        name: "No. Projek",
+        field: "no_project",
+        nClassRow:
+          "px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600",
+      },
+      {
+        name: "Perkara",
+        field: "description",
+      },
+      {
+        name: "Jumlah (RM)",
+        render: ({ total_amount }) =>
+          parseFloat(total_amount).toLocaleString("en-MY", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }),
+      },
+      {
+        name: "Status",
+        render: ({ status }) => (
+          <span
+            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyle(
+              status
+            )}`}
           >
-            <Pencil size={18} />
-          </Link>
-          <button
-            onClick={() => handleDelete(item.id)}
-            disabled={isDeletingId}
-            className={`text-red-600 hover:text-red-900 ${isDeletingId === item.id && 'opacity-50'}`}
-          >
-            {isDeletingId === item.id ? <span className="text-sm text-gray-500">Memadam...</span> : <Trash2 size={18} />}
-          </button>
-        </div>
-      )
-    }
-  ], [isDeletingId]);
+            {status}
+          </span>
+        ),
+      },
+      {
+        name: "Tarikh Dibuat",
+        render: ({ created_at }) =>
+          format(parseISO(created_at), "dd/MM/yyyy HH:mm"),
+      },
+      {
+        name: "Tindakan",
+        render: (item) => (
+          <div className="flex space-x-2">
+            {[1, 9].includes(item.status_id) && (
+              <>
+                <Link
+                  to={`/billing/${item.id}/edit`}
+                  className={`text-indigo-600 hover:text-indigo-900 ${
+                    isDeletingId && "opacity-50"
+                  }`}
+                  disabled={isDeletingId}
+                >
+                  <Pencil size={18} />
+                </Link>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  disabled={isDeletingId}
+                  className={`text-red-600 hover:text-red-900 ${
+                    isDeletingId === item.id && "opacity-50"
+                  }`}
+                >
+                  {isDeletingId === item.id ? (
+                    <span className="text-sm text-gray-500">Memadam...</span>
+                  ) : (
+                    <Trash2 size={18} />
+                  )}
+                </button>
+              </>
+            )}
+            <Link
+              to={`/billing/${item.id}/incomplete/show`}
+              className="text-blue-500 hover:text-blue-600 flex items-center"
+            >
+              <EyeIcon size={16} className="mr-1" />
+            </Link>
+          </div>
+        ),
+      },
+    ],
+    [isDeletingId]
+  );
 
   return (
     <PageComponent title="Permohonan Aktif">

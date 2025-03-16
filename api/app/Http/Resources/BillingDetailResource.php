@@ -35,7 +35,8 @@ class BillingDetailResource extends JsonResource
       ],
       'creator' => [
         'id' => $this->created_by,
-        'name' => $this->creator ? $this->creator->name : null
+        'name' => $this->creator ? $this->creator->name : null,
+        'abilities' => $this->creator ? $this->creator->abilities : null
       ],
       'created_at' => $this->created_at,
       'issued_at' => $this->issued_at,
