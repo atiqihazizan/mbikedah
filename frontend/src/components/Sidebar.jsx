@@ -9,10 +9,10 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { navigation } from "../config/navigation";
+import { toast } from "react-toastify";
 import logo from "../assets/logo.png";
 import PropTypes from "prop-types";
 import apiClient from "../axios";
-import { toast } from "react-toastify";
 
 const SidebarContext = createContext();
 
@@ -56,12 +56,6 @@ export default function Sidebar() {
     };
     getMaklumatPengguna();
   }, [userToken]);
-
-  useEffect(() => {
-    if (!currentUser) {
-      navigate("/login");
-    }
-  }, [currentUser, navigate]);
 
   // Filter menu berdasarkan allowed_menus dari user
   const filterNavigation = () => {
