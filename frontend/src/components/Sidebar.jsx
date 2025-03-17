@@ -12,55 +12,23 @@ import { navigation } from "../config/navigation";
 import { toast } from "react-toastify";
 import logo from "../assets/logo.png";
 import PropTypes from "prop-types";
-import apiClient from "../axios";
 
 const SidebarContext = createContext();
 
 export default function Sidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { currentUser, setCurrentUser, userToken, setUserToken } = useStateContext();
+  const { currentUser, logout } = useStateContext();
   const [expanded, setExpanded] = useState(true);
-  const {
-    currentUser: { name, username },
-  } = useStateContext();
-
-  const requestInProgress = useRef(false);
 
   // Clear semua toast apabila tukar page
   useEffect(() => {
     toast.dismiss();
   }, [location.pathname]);
 
-  useEffect(() => {
-    if (!userToken || requestInProgress.current) return;
-
-    const getMaklumatPengguna = async () => {
-      try {
-        requestInProgress.current = true;
-        const { success, user } = await apiClient.get("/auth/me");
-        if (!success || !user) {
-          setCurrentUser({});
-          setUserToken(null);
-          if (user.message) {
-            console.error(user.message);
-          }
-          return;
-        }
-        setCurrentUser(user);
-      } catch (error) {
-        console.error("Ralat semasa mendapatkan maklumat pengguna:", error);
-      } finally {
-        requestInProgress.current = false;
-      }
-    };
-    getMaklumatPengguna();
-  }, [userToken]);
-
   // Filter menu berdasarkan allowed_menus dari user
   const filterNavigation = () => {
     // Jika user adalah admin, tunjuk semua menu
-    if (currentUser.allowed_menus?.includes("all")) {
+    if (currentUser?.allowed_menus?.includes("all")) {
       return navigation;
     }
 
@@ -82,20 +50,8 @@ export default function Sidebar() {
         return false;
       }
       // Jika item adalah menu (type 1), periksa jika menu dibenarkan
-      return currentUser.allowed_menus?.includes(item.menu);
+      return currentUser?.allowed_menus?.includes(item.menu);
     });
-  };
-
-  const logout = async (ev) => {
-    ev.preventDefault();
-    try {
-      await apiClient.post("/auth/logout");
-      setCurrentUser({});
-      setUserToken(null);
-      navigate("/login");
-    } catch (error) {
-      console.error("Ralat semasa log keluar. Sila cuba sebentar lagi.");
-    }
   };
 
   return (
@@ -130,7 +86,7 @@ export default function Sidebar() {
 
           <div className="border-t flex p-3">
             <img
-              src={`https://ui-avatars.com/api/?background=c7d2fe&color=3730a3&bold=true&name=${name}`}
+              src={`https://ui-avatars.com/api/?background=c7d2fe&color=3730a3&bold=true&name=${currentUser?.name||''}`}
               alt=""
               className="w-10 h-10 rounded-md"
             />
@@ -139,9 +95,9 @@ export default function Sidebar() {
                 expanded ? "w-52 ml-3" : "w-0"
               }`}>
               <div className="leading-4">
-                <h4 className="font-semibold">{username}</h4>
+                <h4 className="font-semibold">{currentUser?.username||''}</h4>
                 <span className="text-xs text-gray-600 text-nowrap">
-                  {name}
+                  {currentUser?.name||''}
                 </span>
               </div>
             </div>
