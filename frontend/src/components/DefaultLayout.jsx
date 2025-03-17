@@ -1,6 +1,6 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useStateContext } from "../contexts/ContextProvider";
-import { useEffect, useNavigate } from "react";
+import { useEffect } from "react";
 import Sidebar from "./Sidebar";
 
 export default function DefaultLayout() {
