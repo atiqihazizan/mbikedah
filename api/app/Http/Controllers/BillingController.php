@@ -316,6 +316,15 @@ class BillingController extends Controller
             ->orderBy('new_status', 'desc')
             ->orderBy('created_at', 'desc');
           },
+          'transactions' => function ($query) {
+            $query->select([
+              'id',
+              'billing_id',
+              'bank_id',
+              'amount',
+              'created_at'
+            ])->with('bank:id,bank_name,amount');
+          },
           'history.creator:id,name'
         ])
         ->findOrFail($id);

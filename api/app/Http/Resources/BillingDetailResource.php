@@ -70,6 +70,16 @@ class BillingDetailResource extends JsonResource
           'created_by' => $history->creator ? $history->creator->name : null,
           'created_at' => $history->created_at
         ];
+      }),
+      'transactions' => $this->transactions->map(function ($transaction) {
+        return [
+          'id' => $transaction->id,
+          'bank_id' => $transaction->bank_id,
+          'credit' => $transaction->amount,
+          'bank_name' => $transaction->bank ? $transaction->bank->bank_name : null,
+          'latest_bal' => $transaction->bank ? $transaction->bank->amount : null,
+          'created_at' => $transaction->created_at
+        ];
       })
     ];
   }

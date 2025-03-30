@@ -9,6 +9,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\BillingListController;
 use App\Http\Controllers\BillingRecipientController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\BankController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\UserController;
 
@@ -155,6 +156,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/{id}', [BillingRecipientController::class, 'update']);
     Route::delete('/{id}', [BillingRecipientController::class, 'destroy']);
   });
+
+  /*
+    |--------------------------------------------------------------------------
+    | Bank Routes
+    |--------------------------------------------------------------------------
+    */
+  Route::apiResource('banks', BankController::class);
 
   /*
     |--------------------------------------------------------------------------

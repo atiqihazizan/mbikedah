@@ -6,6 +6,8 @@ export default function TSelect({
 	keyval,
 	error,
 	option,
+	className,
+	wrapperClassName,
 }) {
 	// Pastikan list adalah array
 	const safeList = Array.isArray(list) ? list : [];
@@ -18,9 +20,9 @@ export default function TSelect({
 	}
 
 	return (
-		<div className="flex flex-col w-full">
+		<div className={`flex flex-col w-full ${wrapperClassName || ''}`}>
 			<select 
-				className={`select ${option?.disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+				className={`select ${option?.disabled ? 'bg-gray-100 cursor-not-allowed' : ''} ${className}`}
 				onChange={onChange} 
 				value={data?.[field] || ''}
 				{...option}

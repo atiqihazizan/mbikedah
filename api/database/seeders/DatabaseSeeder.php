@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             BillingRecipientSeeder::class,
             BudgetSeeder::class,
+            BankSeeder::class,
         ]);
     }
 }

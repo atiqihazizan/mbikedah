@@ -25,10 +25,10 @@ trait HasStatus
     $allowedTransitions = [
       BillingStatus::DRAFT => [BillingStatus::HOD_APPROVAL, BillingStatus::CANCELLED],
       BillingStatus::HOD_APPROVAL => [BillingStatus::FINANCE_REVIEW, BillingStatus::REJECTED, BillingStatus::RETURNED],
-      BillingStatus::FINANCE_REVIEW => [BillingStatus::FINANCE_VERIFY, BillingStatus::CANCELLED],
-      BillingStatus::FINANCE_VERIFY => [BillingStatus::FINANCE_APPROVAL, BillingStatus::REJECTED, BillingStatus::RETURNED],
+      BillingStatus::FINANCE_REVIEW => [BillingStatus::FINANCE_VERIFY, BillingStatus::CANCELLED, BillingStatus::RETURNED],
+      BillingStatus::FINANCE_VERIFY => [BillingStatus::FINANCE_APPROVAL, BillingStatus::REJECTED, BillingStatus::CANCELLED],
       BillingStatus::FINANCE_APPROVAL => [BillingStatus::PROCESSING_PAYMENT, BillingStatus::REJECTED, BillingStatus::CANCELLED],
-      BillingStatus::PROCESSING_PAYMENT => [BillingStatus::COMPLETED],
+      BillingStatus::PROCESSING_PAYMENT => [BillingStatus::COMPLETED, BillingStatus::CANCELLED],
       BillingStatus::REJECTED => [],
       BillingStatus::CANCELLED => [],
       BillingStatus::RETURNED => [BillingStatus::DRAFT, BillingStatus::HOD_APPROVAL, BillingStatus::CANCELLED],
@@ -38,7 +38,7 @@ trait HasStatus
     return in_array($newStatus, $allowedTransitions[$this->status_id] ?? []);
   }
 
-  public function updateStatus(int $newStatus, ?int $updatedBy = null, ?string $remarks = null): bool
+  public function updateStatus(int $newStatus, ?int $updatedBy = null, ?string $remarks = null, ?array $transactions = null): bool
   {
     if (!$this->canTransitionTo($newStatus)) {
       return false;
@@ -56,6 +56,19 @@ trait HasStatus
         'created_by' => $updatedBy,
         'remarks' => $remarks
       ]);
+    }
+
+    if ($transactions) {
+      $this->transactions()->delete();
+      foreach ($transactions as $transaction) {
+        $this->transactions()->create([
+          'bank_id' => $transaction['bank_id'],
+          'budget_id' =>null,
+          'transaction_type' => 'credit',
+          'date' => now(),
+          'amount' => $transaction['amount'],
+        ]);
+      }
     }
 
     return true;

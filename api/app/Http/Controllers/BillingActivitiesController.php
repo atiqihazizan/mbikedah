@@ -43,8 +43,11 @@ class BillingActivitiesController extends Controller
     try {
       $this->authorize('process',[$billing, BillingStatus::FINANCE_REVIEW]);
       DB::beginTransaction();
-      $remarks = $request->remarks ?? 'Disemak oleh kewangan';
-      $billing->updateStatus(BillingStatus::FINANCE_VERIFY, Auth::id(), $remarks);
+      $transactions = $request->transactions ?? [];
+      $remarks = $request->remarks ?? ''; //Disemak oleh kewangan
+
+      $billing->updateStatus(BillingStatus::FINANCE_VERIFY, Auth::id(), $remarks, $transactions);
+
       DB::commit();
       return response()->json([
         'success' => true,
@@ -64,7 +67,7 @@ class BillingActivitiesController extends Controller
     try {
       $this->authorize('process',[$billing, BillingStatus::FINANCE_VERIFY]);
       DB::beginTransaction();
-      $remarks = $request->remarks ?? 'Disahkan oleh Kewangan';
+      $remarks = $request->remarks ?? ''; //Disahkan oleh Kewangan
       $billing->updateStatus(BillingStatus::FINANCE_APPROVAL, Auth::id(), $remarks);
       DB::commit();
       return response()->json([
@@ -85,7 +88,7 @@ class BillingActivitiesController extends Controller
     try {
       $this->authorize('process',[$billing, BillingStatus::FINANCE_APPROVAL]);
       DB::beginTransaction();
-      $remarks = $request->remarks ?? 'Diluluskan oleh kewangan';
+      $remarks = $request->remarks ?? ''; //Diluluskan oleh kewangan
       $billing->updateStatus(BillingStatus::PROCESSING_PAYMENT, Auth::id(), $remarks);
       DB::commit();
       return response()->json([
@@ -106,7 +109,7 @@ class BillingActivitiesController extends Controller
     try {
       $this->authorize('process', [$billing, BillingStatus::PROCESSING_PAYMENT]);
       DB::beginTransaction();
-      $remarks = $request->remarks ?? 'Pembayaran diluluskan';
+      $remarks = $request->remarks ?? ''; //Pembayaran diluluskan
       $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), $remarks);
       DB::commit();
       return response()->json([
@@ -127,7 +130,7 @@ class BillingActivitiesController extends Controller
     try {
       $this->authorize('process', $billing,BillingStatus::COMPLETED);
       DB::beginTransaction();
-      $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), 'Payment completed');
+      $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), ''); //Permohonan berjaya selesai
       DB::commit();
       return response()->json(['message' => 'Permohonan berjaya selesai']);
     } catch (AuthorizationException $e) {

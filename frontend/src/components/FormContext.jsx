@@ -75,19 +75,55 @@ function Decimal({
   option,
 }) {
   const { setValue, data, error, disabled } = useContext(FormContext);
+
+  const handleChange = (e) => {
+    const inputValue = e.target.value;
+    
+    // Benarkan input kosong
+    if (inputValue === '') {
+      onChange(e);
+      return;
+    }
+
+    // Validasi format nombor dengan 2 tempat perpuluhan
+    const regex = /^\d*\.?\d{0,2}$/;
+    if (regex.test(inputValue)) {
+      onChange(e);
+    }
+  };
+
   return (
     <Text
-      type="number"
-      option={option}
+      type="text"
+      option={{
+        ...option,
+        inputMode: "decimal",
+        pattern: "[0-9]*[.]?[0-9]{0,2}",
+        onKeyPress: (e) => {
+          // Hanya benarkan nombor, titik perpuluhan dan beberapa special keys
+          if (!/[\d.]/.test(e.key) && 
+              e.key !== 'Backspace' && 
+              e.key !== 'Delete' && 
+              e.key !== 'ArrowLeft' && 
+              e.key !== 'ArrowRight' && 
+              e.key !== 'Tab') {
+            e.preventDefault();
+          }
+          // Prevent lebih dari satu titik perpuluhan
+          if (e.key === '.' && e.target.value.includes('.')) {
+            e.preventDefault();
+          }
+        }
+      }}
       css={css}
       field={field}
       value={value}
-      onChange={onChange}
+      onChange={handleChange}
       holder={holder}
     />
   );
 }
-function TxtNumber({
+function Numeric({
   field,
   value,
   onChange,
@@ -96,14 +132,50 @@ function TxtNumber({
   option,
 }) {
   const { setValue, data, error, disabled } = useContext(FormContext);
+
+  const handleChange = (e) => {
+    const inputValue = e.target.value;
+    
+    // Benarkan input kosong
+    if (inputValue === '') {
+      onChange(e);
+      return;
+    }
+
+    // Validasi format nombor dengan titik perpuluhan
+    const regex = /^\d*\.?\d*$/;
+    if (regex.test(inputValue)) {
+      onChange(e);
+    }
+  };
+
   return (
     <Text
-      type="number"
-      option={option}
+      type="text"
+      option={{
+        ...option,
+        inputMode: "decimal",
+        pattern: "[0-9]*[.]?[0-9]*",
+        onKeyPress: (e) => {
+          // Hanya benarkan nombor, titik perpuluhan dan beberapa special keys
+          if (!/[\d.]/.test(e.key) && 
+              e.key !== 'Backspace' && 
+              e.key !== 'Delete' && 
+              e.key !== 'ArrowLeft' && 
+              e.key !== 'ArrowRight' && 
+              e.key !== 'Tab') {
+            e.preventDefault();
+          }
+          // Prevent lebih dari satu titik perpuluhan
+          if (e.key === '.' && e.target.value.includes('.')) {
+            e.preventDefault();
+          }
+        }
+      }}
       css={css}
       field={field}
       value={value}
-      onChange={onChange}
+      onChange={handleChange}
       holder={holder}
     />
   );
@@ -144,10 +216,11 @@ function FInput({ field, holder = "", type = "text",option }) {
 		/>
 	);
 }
-function FSelect({ field, keyval, listArr, option }) {
+function FSelect({ field, keyval, listArr, option, css }) {
 	const { setValue, data, error, disabled } = useContext(FormContext);
 	return (
 		<TSelect
+			className={css}
 			data={data}
 			setValue={setValue}
 			field={field}
@@ -159,11 +232,11 @@ function FSelect({ field, keyval, listArr, option }) {
 	);
 }
 
-function CSelect({ text, field, keyval, listArr }) {
+function CSelect({ text, field, keyval, listArr, css }) {
 	return (
 		<div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
 			<FLabel text={text} />
-			<FSelect field={field} keyval={keyval} listArr={listArr} />
+			<FSelect field={field} keyval={keyval} listArr={listArr} css={css} />
 		</div>
 	);
 }
@@ -239,7 +312,7 @@ FormC.select = FSelect;
 FormC.text = Text;
 FormC.date = TxtDate;
 FormC.currency = Decimal;
-FormC.number = TxtNumber;
+FormC.number = Numeric;
 FormC.password = Password;
 
 FormC.LText = CText;
