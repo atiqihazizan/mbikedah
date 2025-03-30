@@ -99,15 +99,6 @@ const BillingPaper = () => {
     const fetchBilling = async () => {
       try {
         const { data } = await apiClient.get(`/billings/${idBilling}`);
-        console.log(data);
-
-        data.credits = [
-          // {text: 'BANK MUAMALAT - 02010004544718', total: 2000000.00},
-          // {text: 'BANK MUAMALAT - 02010004544718', total: 2000000.00},
-          // {text: 'BANK MUAMALAT - 02010004544718', total: 2000000.00},
-          // {text: 'BANK MUAMALAT - 02010004544718', total: 2000000.00}
-        ];
-
         setBilling(data);
         setDetails(data?.details || []);
         setTransactions(data?.transactions || []);
