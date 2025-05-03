@@ -89,7 +89,7 @@ function BillingTableFinance() {
           : item.status_name === "Diluluskan" ? "bg-green-100 text-green-800"
           : item.status_name === "Ditolak" ? "bg-red-100 text-red-800"
           : "bg-yellow-100 text-yellow-800"}`}>
-          {item.status_name}
+          {item.status_name.replace(' Kewangan', '')}
         </span>
       )
     },

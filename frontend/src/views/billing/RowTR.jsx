@@ -125,7 +125,7 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets, er
       <td className="!pl-7 !pr-2">
         <FormC.select
           field="budget_id"
-          keyval="id,name"
+          keyval="id,code,name"
           listArr={budgets}
           option={{
             disabled,

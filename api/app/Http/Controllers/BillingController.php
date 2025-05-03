@@ -302,7 +302,7 @@ class BillingController extends Controller
               'total'
             ]);
           },
-          'details.budget:id,name,code',
+          'details.budget:id,name,code,bdgtotal',
           'history' => function ($query) {
             $query->select([
               'id',

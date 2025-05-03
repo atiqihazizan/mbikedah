@@ -57,7 +57,8 @@ class BillingDetailResource extends JsonResource
           'budget' => [
             'id' => $detail->budget_id,
             'name' => $detail->budget ? $detail->budget->name : null,
-            'code' => $detail->budget ? $detail->budget->code : null
+            'code' => $detail->budget ? $detail->budget->code : null,
+            'balance' => $detail->budget ? $detail->budget->bdgtotal : 0
           ]
         ];
       }),

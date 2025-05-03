@@ -12,6 +12,7 @@ import PropTypes from "prop-types";
 import RowTR from "./RowTR";
 import RecipientModal from "./RecipientModal"; // Modified import statement
 import apiClient from "../../axios";
+import Select from "react-select";
 
 export default function BillingForm() {
   const navigate = useNavigate();
@@ -322,22 +323,56 @@ export default function BillingForm() {
                         option={{ disabled: !canEdit }}
                       />
                       <FormC.LText field={"no_project"} text={"No Pesanan"} option={{ readOnly: !canEdit }} />
-                      <FormC.LSelect 
-                        text="Jabatan"
-                        field={"department_id"}
-                        keyval="id,name"
-                        listArr={departments}
-                        option={{ disabled: !canEdit }}
-                      />
+                      <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
+                        <FormC.label text="Jabatan" />
+                        <div className="flex flex-col w-full">
+                          <Select
+                            isDisabled={!canEdit}
+                            value={departments.find(dept => dept.id === parseInt(petition.department_id)) || null}
+                            onChange={(selectedOption) => {
+                              setPetition(prev => ({
+                                ...prev,
+                                department_id: selectedOption ? selectedOption.id : ""
+                              }));
+                            }}
+                            options={departments}
+                            getOptionLabel={(option) => option.name}
+                            getOptionValue={(option) => option.id.toString()}
+                            placeholder="Pilih Jabatan"
+                            className="react-select-container"
+                            classNamePrefix="react-select"
+                          />
+                          {error?.department_id && (
+                            <span className="text-xs mt-2 text-red-600">{error.department_id}</span>
+                          )}
+                        </div>
+                      </div>
                       <div className="flex items-center gap-2">
                         <div className="flex-grow">
-                          <FormC.LSelect 
-                            text="Individu/Syarikat"
-                            field={"recipient_id"}
-                            keyval="id,name"
-                            listArr={recipients}
-                            option={{ disabled: !canEdit }}
-                          />
+                          <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
+                            <FormC.label text="Individu/Syarikat" />
+                            <div className="flex flex-col w-full">
+                              <Select
+                                isDisabled={!canEdit}
+                                value={recipients.find(rec => rec.id === parseInt(petition.recipient_id)) || null}
+                                onChange={(selectedOption) => {
+                                  setPetition(prev => ({
+                                    ...prev,
+                                    recipient_id: selectedOption ? selectedOption.id : ""
+                                  }));
+                                }}
+                                options={recipients}
+                                getOptionLabel={(option) => option.name}
+                                getOptionValue={(option) => option.id.toString()}
+                                placeholder="Pilih Penerima"
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                              />
+                              {error?.recipient_id && (
+                                <span className="text-xs mt-2 text-red-600">{error.recipient_id}</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                         <div className="flex gap-1">
                           {canEdit && (
@@ -387,12 +422,12 @@ export default function BillingForm() {
                         <thead>
                           <tr>
                             <th className="text-start !pl-7 !pr-2">Bajet</th>
-                            <th className="text-start !px-2 w-[30%]">Perkara</th>
+                            <th className="text-start !px-2 w-[20%]">Perkara</th>
                             <th className="text-start !px-2">Rujukan</th>
-                            <th className="text-start !px-2">Kuantiti</th>
-                            <th className="text-start !px-2">Unit</th>
-                            <th className="text-start !px-2">Harga</th>
-                            <th className="text-start !px-2">Jumlah</th>
+                            <th className="text-start !px-2 w-[10%]">Kuantiti</th>
+                            <th className="text-start !px-2 w-[10%]">Unit</th>
+                            <th className="text-start !px-2 w-[10%]">Harga</th>
+                            <th className="text-start !px-2 w-[10%]">Jumlah</th>
                             <th className="text-start !px-2"></th>
                           </tr>
                         </thead>

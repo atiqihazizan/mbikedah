@@ -80,13 +80,14 @@ const ListBank = ({ banks, setTransactions, error, setError, total }) => {
     setTransactions(preTx);
   }, [preTx]);
 
-  // useEffect(() => {
-  //   setGeneralError(error);
-  // }, [error]);
-
   return (
     <div>
-      <p className="text-gray-600 mb-2">Bank Pembayar <span className="text-red-500">*</span></p>
+      <p className="text-gray-600 mb-1">
+        Bank Pembayar <span className="text-red-500">*</span>
+      </p>
+      <p className="text-gray-600 italic text-xs mb-3">
+        Sila tambahkan sekurang-kurangnya satu bank pembayaran.
+      </p>
       <div className="mb-6 flex flex-col gap-2 text-xs">
         <FormC data={preTx}>
             {preTx.map((transaction, index) => (
@@ -180,7 +181,7 @@ const RowTransaction = ({ transaction, onDelete, banks, onAdd }) => {
           <p className="text-red-500 text-xs mt-1">{errors.bank}</p>
         )}
       </div>
-      <div className="flex-1">
+      <div className="flex w-24">
         <FormC.currency
           css="input-sm"
           value={transactionAmountState}

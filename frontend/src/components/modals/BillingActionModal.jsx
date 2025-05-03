@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import PropTypes from "prop-types";
 import apiClient from "../../axios";
 import TButton from "../Core/TButton";
 import BankPaying from "../../views/billing/BankPaying";
+import { formatCurrency } from "../../config/format";
 
 export default function BillingActionModal({
   onClose,
   title,
   message,
   confirmText = "Ya",
-  cancelText = "Tidak",
+  cancelText = "Batal",
   endpoint,
   callBack,
   details,
@@ -21,6 +22,7 @@ export default function BillingActionModal({
 }) {
   const [comment, setComment] = useState("");
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [needComplete, setNeedComplete] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [errors, setErrors] = useState({
     comment: "",
@@ -65,7 +67,7 @@ export default function BillingActionModal({
     }
 
     // Validate comment
-    if (!comment.trim() && ![3, 6].includes(status)) {
+    if (!comment.trim() && ![2, 3, 6].includes(status)) {
       newErrors.comment = "Sila masukkan catatan";
       setErrors(newErrors);
       return;
@@ -79,26 +81,36 @@ export default function BillingActionModal({
         ...(status === 3 && { transactions }),
       });
 
-      console.log(response);
-      if (response.data.success) {
+      if (response.success) {
         toast.success("Berjaya dikemaskini");
         onClose();
         callBack();
       } else {
-        throw new Error(response.data.message || "Ralat sistem");
+        throw new Error(response.message || "Ralat sistem");
       }
     } catch (error) {
       console.error("Error:", error);
       toast.error(
-        error.response?.data?.message || error.message || "Ralat sistem"
+        error.response?.message || error.message || "Ralat sistem"
       );
       newErrors.general =
-        error.response?.data?.message || error.message || "Ralat sistem";
+        error.response?.message || error.message || "Ralat sistem";
       setErrors(newErrors);
     } finally {
       setIsActionLoading(false);
     }
   };
+
+  useEffect(() => {
+    if(actionType === "approve" && [3].includes(status)) {
+      // Nyahdayakan butang confirm jika tiada transaksi
+      const transactionsTotal = transactions.reduce(
+        (sum, tx) => sum + parseFloat(tx.amount || 0),
+        0
+      );
+      setNeedComplete(transactionsTotal < parseFloat(total));
+    }
+  }, [actionType, status, transactions]);
 
   return (
     <div
@@ -122,16 +134,39 @@ export default function BillingActionModal({
 
         {actionType === "approve" && [3].includes(status) && (
           <>
-            <p className="text-gray-600 mb-2">Budget yang digunakan</p>
-            <div className="mb-6 flex flex-col gap-2 text-xs">
-              {details?.map((detail, index) => (
-                <div key={index} className="text-gray-600 grid grid-cols-5">
-                  <p>{detail.budget_code}</p>
-                  <p className="col-span-4 text-wrap">{detail.budget.name}</p>
-                  {/* <p className="text-right">{formatCurrency(detail.total)}</p> */}
-                </div>
-              ))}
-            </div>
+            <p className="text-gray-600 mt-8 mb-2">Budget yang digunakan</p>
+            <table className="w-full text-xs text-left text-gray-600">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 w-3 !pl-0">No.</th>
+                  <th className="px-4 py-2 !pl-0 w-20">Kod</th>
+                  <th className="px-4 py-2 !pl-0">Perkara</th>
+                  <th className="px-4 py-2 !pl-0 w-20 text-right">Amount</th>
+                  <th className="px-4 py-2 !pl-0 w-20 text-right">Baki Bajet</th>
+                </tr>
+              </thead>
+              <tbody>
+                {details?.map((detail, index) => (
+                  <tr key={index}>
+                    <td className="px-4 py-2 !pl-0 text-center">{index + 1}</td>
+                    <td className="px-4 py-2 !pl-0">
+                      <span className="font-bold text-xs" title={detail.budget.name}>{detail.budget_code}</span>
+                    </td>
+                    <td className="px-4 py-2 !pl-0 ">
+                      {detail.description}
+                    </td>
+                    <td className="px-4 py-2 !pl-0 text-right">
+                      {formatCurrency(detail.total)}
+                    </td>
+                    <td className="px-4 py-2 !pl-0 text-right">
+                      {formatCurrency(detail.budget.balance)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <hr className="border-t border-gray-300 my-4 border-dashed" />
 
             <BankPaying
               setTransactions={setTransactions}
@@ -139,6 +174,8 @@ export default function BillingActionModal({
               setError={setErrors}
               total={total}
             />
+
+            <hr className="border-t border-gray-300 my-4 border-dashed" />
           </>
         )}
 
@@ -181,11 +218,16 @@ export default function BillingActionModal({
             {cancelText}
           </TButton>
           <TButton
-            onClick={() => handleConfirm()}
-            disabled={isActionLoading}
+            onClick={() => {
+              if (!(isActionLoading || needComplete)) {
+                handleConfirm();
+              }
+            }}
+            disabled={isActionLoading || needComplete}
             className={`${color} ${
-              isActionLoading ? "opacity-50 cursor-not-allowed" : ""
+              (isActionLoading || needComplete) ? "opacity-50 cursor-not-allowed" : ""
             }`}
+            title={needComplete ? "Sila tambah maklumat bayaran terlebih dahulu" : ""}
           >
             {isActionLoading ? (
               <div className="flex items-center space-x-2">

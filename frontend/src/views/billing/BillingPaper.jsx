@@ -162,7 +162,7 @@ const BillingPaper = () => {
         !isLoading && (
           <div className="flex gap-2">
             <TButton color="light" to={`/billing/${pageback}`}>
-              Kembali
+              Batal
             </TButton>
             {[3, 4, 5, 6].includes(billing?.status_id) && (
               <TButton
@@ -170,7 +170,7 @@ const BillingPaper = () => {
                 className="bg-blue-500 text-white font-bold py-2 px-4 rounded"
               >
                 <PrinterIcon size={16} className="mr-1" />
-                Print
+                Cetak
               </TButton>
             )}
             {((pageback === "hod" && billing?.status_id === 2) ||
@@ -476,7 +476,7 @@ const BillingPaper = () => {
                       <div className="flex flex-col text-start min-h-3">
                         {transactions?.length === 0 && <span>&nbsp;</span>}
                         {transactions?.map((credit, index) => (
-                          <strong key={index} className="text-center">
+                          <strong key={index}>
                             {credit.bank_name}
                           </strong>
                         ))}

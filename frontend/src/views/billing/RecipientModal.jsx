@@ -106,7 +106,7 @@ export default function RecipientModal({ show, onClose, onSaved, recipient = nul
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <div>
           <FormC data={recipientData} setValue={setRecipientData} error={error}>
             <div className="grid gap-4">
               <FormC.LText 
@@ -132,7 +132,6 @@ export default function RecipientModal({ show, onClose, onSaved, recipient = nul
                 option={{ disabled: loading }}
               />
               
-              <div className="grid grid-cols-3 gap-4">
                 <FormC.LText 
                   field="tel" 
                   text="No. Telefon"
@@ -148,7 +147,6 @@ export default function RecipientModal({ show, onClose, onSaved, recipient = nul
                   text="No. Faks"
                   option={{ disabled: loading }}
                 />
-              </div>
             </div>
 
             <div className="flex justify-end gap-2 mt-6">
@@ -161,14 +159,14 @@ export default function RecipientModal({ show, onClose, onSaved, recipient = nul
               </TButton>
               <TButton 
                 color="primary" 
-                type="submit"
+                onClick={handleSubmit}
                 isDisable={loading}
               >
                 {loading ? "Menyimpan..." : (recipient ? "Kemaskini" : "Simpan")}
               </TButton>
             </div>
           </FormC>
-        </form>
+        </div>
       </div>
     </div>
   );
