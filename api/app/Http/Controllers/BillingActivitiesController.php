@@ -18,11 +18,16 @@ class BillingActivitiesController extends Controller
 {
   use AuthorizesRequests;
 
-  public function hodApprove(Billing $billing, Request $request) {
+  public function hodApprove(Request $request, Billing $billing) {
     try {
       $this->authorize('process',[$billing, BillingStatus::HOD_APPROVAL]);
       DB::beginTransaction();
-      $remarks = $request->remarks ?? 'Disahkan oleh HOD';
+      $remarks = $request->remarks ?? ''; //Diluluskan oleh HOD
+      
+      // Tetapkan tarikh kelulusan HOD
+      $billing->hod_approved_at = now();
+      $billing->save();
+      
       $billing->updateStatus(BillingStatus::FINANCE_REVIEW, Auth::id(), $remarks);
       DB::commit();
       return response()->json([
@@ -45,6 +50,10 @@ class BillingActivitiesController extends Controller
       DB::beginTransaction();
       $transactions = $request->transactions ?? [];
       $remarks = $request->remarks ?? ''; //Disemak oleh kewangan
+      
+      // Tetapkan tarikh semakan kewangan
+      $billing->reviewed_at = now();
+      $billing->save();
 
       $billing->updateStatus(BillingStatus::FINANCE_VERIFY, Auth::id(), $remarks, $transactions);
 
@@ -68,6 +77,11 @@ class BillingActivitiesController extends Controller
       $this->authorize('process',[$billing, BillingStatus::FINANCE_VERIFY]);
       DB::beginTransaction();
       $remarks = $request->remarks ?? ''; //Disahkan oleh Kewangan
+      
+      // Tetapkan tarikh pengesahan kewangan
+      $billing->verified_at = now();
+      $billing->save();
+      
       $billing->updateStatus(BillingStatus::FINANCE_APPROVAL, Auth::id(), $remarks);
       DB::commit();
       return response()->json([
@@ -89,6 +103,12 @@ class BillingActivitiesController extends Controller
       $this->authorize('process',[$billing, BillingStatus::FINANCE_APPROVAL]);
       DB::beginTransaction();
       $remarks = $request->remarks ?? ''; //Diluluskan oleh kewangan
+      
+      // Tetapkan tarikh kelulusan kewangan
+      $approved_date = $request->approved_date ?? now();
+      $billing->approved_at = $approved_date;
+      $billing->save();
+      
       $billing->updateStatus(BillingStatus::PROCESSING_PAYMENT, Auth::id(), $remarks);
       DB::commit();
       return response()->json([
@@ -110,6 +130,12 @@ class BillingActivitiesController extends Controller
       $this->authorize('process', [$billing, BillingStatus::PROCESSING_PAYMENT]);
       DB::beginTransaction();
       $remarks = $request->remarks ?? ''; //Pembayaran diluluskan
+      
+      // Tetapkan tarikh pembayaran
+      $payment_date = $request->payment_date ?? now();
+      $billing->paid_at = $payment_date;
+      $billing->save();
+      
       $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), $remarks);
       DB::commit();
       return response()->json([

@@ -70,7 +70,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     proxy: {
       "/api": {
-        target: mode === "development" ? "http://mbiclicks.mbikedah.com.my" : "/",
+        target: mode === "development" ? "https://mbiclicks.mbikedah.com.my" : "/",
         changeOrigin: true,
         secure: false,
         timeout: 30000,  // 30 saat

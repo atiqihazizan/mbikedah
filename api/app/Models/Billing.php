@@ -32,7 +32,16 @@ class Billing extends Model
     'no_project',
     'running_no',
     'is_archived',
-    'recipient_id'
+    'recipient_id',
+    'last_printed_at',
+    'last_printed_by',
+    'print_count',
+    'hod_approved_at',
+    'reviewed_at',
+    'verified_at',
+    'approved_at',
+    'paid_at',
+    'ceo_approved'
   ];
 
   protected $appends = ['status_name', 'is_active'];
@@ -42,7 +51,13 @@ class Billing extends Model
     'issued_at' => 'datetime',
     'payment_due' => 'datetime',
     'status_id' => 'integer',
-    'is_archived' => 'boolean'
+    'is_archived' => 'boolean',
+    'hod_approved_at' => 'datetime',
+    'reviewed_at' => 'datetime',
+    'verified_at' => 'datetime',
+    'approved_at' => 'datetime',
+    'paid_at' => 'datetime',
+    'ceo_approved' => 'boolean'
   ];
 
   /**
@@ -147,5 +162,13 @@ class Billing extends Model
   public static function updateRunningNumberPadding(string $prefix = 'INV', int $padding = 3, int $year = null): void
   {
     BillingSequence::updatePadding($prefix, $padding, $year);
+  }
+
+  /**
+   * Get the user who last printed the billing.
+   */
+  public function lastPrintedBy()
+  {
+    return $this->belongsTo(User::class, 'last_printed_by');
   }
 }

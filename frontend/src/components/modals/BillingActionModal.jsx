@@ -24,9 +24,11 @@ export default function BillingActionModal({
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [needComplete, setNeedComplete] = useState(false);
   const [transactions, setTransactions] = useState([]);
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]); // Format YYYY-MM-DD
   const [errors, setErrors] = useState({
     comment: "",
     transactions: "",
+    date: "",
     general: "",
   });
 
@@ -34,13 +36,14 @@ export default function BillingActionModal({
     let newErrors = {
       comment: "",
       transactions: "",
+      date: "",
       general: "",
     };
 
     // Reset errors
     setErrors(newErrors);
 
-    // Validation for status 3 (Bayaran)
+    // Validation for status 3 (semakan kewangan)
     if (status === 3) {
       // Validate transactions exist
       if (!transactions.length) {
@@ -66,9 +69,16 @@ export default function BillingActionModal({
       }
     }
 
-    // Validate comment
-    if (!comment.trim() && ![2, 3, 6].includes(status)) {
+    // Validate comment - diperlukan untuk penolakan(8), pembatalan(10), dan pemulangan(9)
+    if (!comment.trim() && [8, 9, 10].includes(status)) {
       newErrors.comment = "Sila masukkan catatan";
+      setErrors(newErrors);
+      return;
+    }
+    
+    // Validate payment date for status 5 (Finance Approved) and 6 (Payment Processed)
+    if ([5, 6].includes(status) && !paymentDate) {
+      newErrors.date = "Sila pilih tarikh pembayaran";
       setErrors(newErrors);
       return;
     }
@@ -76,9 +86,18 @@ export default function BillingActionModal({
     try {
       setIsActionLoading(true);
 
+      // Jika status 5 atau 6, tambah tarikh dalam remarks
+      let finalRemarks = comment;
+      if ([5, 6].includes(status) && paymentDate) {
+        const dateLabel = status === 5 ? "Tarikh Diluluskan" : "Tarikh Pembayaran";
+        finalRemarks = `${finalRemarks ? finalRemarks + '\n' : ''}${dateLabel}: ${paymentDate}`;
+      }
+      
       const response = await apiClient.post(endpoint, {
-        remarks: comment,
+        remarks: finalRemarks,
         ...(status === 3 && { transactions }),
+        ...(status === 5 && { approved_date: paymentDate }),
+        ...(status === 6 && { payment_date: paymentDate }),
       });
 
       if (response.success) {
@@ -89,12 +108,12 @@ export default function BillingActionModal({
         throw new Error(response.message || "Ralat sistem");
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error:", error.response?.data);
       toast.error(
-        error.response?.message || error.message || "Ralat sistem"
+        error.response?.data?.message || error.message || "Ralat sistem"
       );
       newErrors.general =
-        error.response?.message || error.message || "Ralat sistem";
+        error.response?.data?.message || error.message || "Ralat sistem";
       setErrors(newErrors);
     } finally {
       setIsActionLoading(false);
@@ -132,6 +151,31 @@ export default function BillingActionModal({
           {title}
         </h2>
 
+        {/* Elemen date untuk status 5 dan 6 */}
+        {actionType === "approve" && [5, 6].includes(status) && (
+          <div className="mb-4">
+            <p className="text-gray-600 mb-2">
+              {status === 5 ? "Tarikh Diluluskan" : "Tarikh Pembayaran"} <span className="text-red-500">*</span>:
+            </p>
+            <input
+              type="date"
+              className={`w-full border ${
+                errors.date ? "border-red-500" : "border-gray-300"
+              } rounded-md p-2`}
+              value={paymentDate}
+              onChange={(e) => {
+                setPaymentDate(e.target.value);
+                setErrors((prev) => ({ ...prev, date: "" }));
+              }}
+              aria-label="Tarikh Pembayaran"
+            />
+            {errors.date && (
+              <p className="text-red-500 text-xs mt-1">{errors.date}</p>
+            )}
+          </div>
+        )}
+        
+        {/* Budget yang digunakan untuk status 3 */}
         {actionType === "approve" && [3].includes(status) && (
           <>
             <p className="text-gray-600 mt-8 mb-2">Budget yang digunakan</p>

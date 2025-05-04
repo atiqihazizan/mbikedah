@@ -42,6 +42,15 @@ class BillingResource extends JsonResource
                 'id' => $this->recipient->id,
                 'name' => $this->recipient->name
             ] : null,
+            'print_count' => $this->print_count,
+            'last_printed_at' => $this->last_printed_at,
+            'last_printed_by_name' => $this->lastPrintedBy ? $this->lastPrintedBy->name : null,
+            'hod_approved_at' => $this->hod_approved_at,
+            'reviewed_at' => $this->reviewed_at,
+            'verified_at' => $this->verified_at,
+            'approved_at' => $this->approved_at,
+            'paid_at' => $this->paid_at,
+            'ceo_approved' => $this->ceo_approved,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
         ];

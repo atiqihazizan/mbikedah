@@ -75,4 +75,19 @@ class BillingPolicy
     }
     return false;
   }
+
+  /**
+   * Determine whether the user can view the billing.
+   * Ini juga digunakan untuk menentukan sama ada pengguna boleh mencetak billing.
+   *
+   * @param  \App\Models\User  $user
+   * @param  \App\Models\Billing  $billing
+   * @return bool
+   */
+  public function view(User $user, Billing $billing): bool
+  {
+    // Semua pengguna yang mempunyai akses ke sistem boleh melihat dan mencetak billing
+    // Tambah syarat tambahan jika perlu
+    return true;
+  }
 }

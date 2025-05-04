@@ -43,6 +43,32 @@ Route::prefix('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Public Test Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('test')->group(function () {
+  Route::get('/ping', function () {
+    return response()->json([
+      'message' => 'Pong!',
+      'timestamp' => now()->toDateTimeString(),
+      'status' => 'success'
+    ]);
+  });
+  
+  Route::get('/info', function () {
+    return response()->json([
+      'app_name' => config('app.name'),
+      'app_version' => '1.0.0',
+      'php_version' => PHP_VERSION,
+      'laravel_version' => app()->version(),
+      'environment' => app()->environment(),
+      'server_time' => now()->toDateTimeString()
+    ]);
+  });
+});
+
+/*
+|--------------------------------------------------------------------------
 | Protected Routes
 |--------------------------------------------------------------------------
 */
@@ -124,6 +150,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
       // History Route
       Route::get('/history', [BillingListController::class, 'getHistory']);
+
+      // Print Tracking Route
+      Route::post('/record-print', [BillingController::class, 'recordPrint']);
 
       // Edit Route
     });

@@ -281,7 +281,16 @@ class BillingController extends Controller
         'created_at',
         'issued_at',
         'payment_due',
-        'is_archived'
+        'is_archived',
+        'print_count',
+        'last_printed_at',
+        'last_printed_by',
+        'hod_approved_at',
+        'reviewed_at',
+        'verified_at',
+        'approved_at',
+        'paid_at',
+        'ceo_approved'
       ])
         ->with([
           'department:id,name',
@@ -337,6 +346,38 @@ class BillingController extends Controller
         'success' => false,
         'message' => 'Error fetching billing',
         'error' => $error->getMessage()
+      ], 500);
+    }
+  }
+
+  /**
+   * Record a print action for a billing.
+   * 
+   * @param Billing $billing
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function recordPrint(Billing $billing)
+  {
+    try {
+      // Pastikan pengguna mempunyai kebenaran
+      $this->authorize('view', $billing);
+      
+      // Kemaskini rekod percetakan
+      $billing->update([
+        'last_printed_at' => now(),
+        'last_printed_by' => Auth::id(),
+        'print_count' => $billing->print_count + 1
+      ]);
+      
+      return response()->json([
+        'success' => true,
+        'message' => 'Rekod percetakan berjaya dikemaskini'
+      ]);
+    } catch (Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Ralat merekodkan percetakan',
+        'error' => $e->getMessage()
       ], 500);
     }
   }

@@ -23,15 +23,15 @@ const BillingPaper = () => {
   const { idBilling, pageback } = useParams();
 
   const endPointsByStatus = {
-    2: { endPoint: "hod-approve", title: "Pengesahan Kelulusan Ketua Jabatan" },
-    3: { endPoint: "finance-review", title: "Pengesahan Semakan Kewangan" },
-    4: { endPoint: "finance-verify", title: "Pengesahan Verifikasi Kewangan" },
-    5: { endPoint: "finance-approve", title: "Pengesahan Kelulusan Kewangan" },
+    2: { endPoint: "hod-approve", title: "Kelulusan Ketua Jabatan" },
+    3: { endPoint: "finance-review", title: "Semakan Kewangan" },
+    4: { endPoint: "finance-verify", title: "Pengesahan Kewangan" },
+    5: { endPoint: "finance-approve", title: "Kelulusan Kewangan" },
     6: {
       endPoint: "process-payment",
-      title: "Pengesahan Pemprosesan Pembayaran",
+      title: "Pemprosesan Pembayaran",
     },
-    7: { endPoint: "paid-complete", title: "Pengesahan Pembayaran Dibuat" },
+    7: { endPoint: "paid-complete", title: "Pembayaran Dibuat" },
   };
 
   const actionButtons = [
@@ -50,7 +50,7 @@ const BillingPaper = () => {
     {
       type: "return",
       icon: Pencil,
-      label: "Kembali",
+      label: "Dikembalikan",
       colorClass: "!bg-yellow-500 hover:bg-yellow-600",
     },
   ];
@@ -130,29 +130,38 @@ const BillingPaper = () => {
     );
   }
 
-  const print = () => {
-    const printContents = document.getElementById("printpage").innerHTML;
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "absolute";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "none";
-    document.body.appendChild(iframe);
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write("<html><head><title>Print</title>");
-    doc.write(
-      '<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">'
-    );
-    doc.write("</head><body>");
-    doc.write(printContents);
-    doc.write("</body></html>");
-    setTimeout(() => {
-      doc.close();
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      document.body.removeChild(iframe);
-    }, 500);
+  const print = async () => {
+    try {
+      // Rekod aktiviti percetakan
+      await apiClient.post(`/billings/${idBilling}/record-print`);
+      
+      // Proses percetakan seperti biasa
+      const printContents = document.getElementById("printpage").innerHTML;
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "absolute";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      document.body.appendChild(iframe);
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write("<html><head><title>Print</title>");
+      doc.write(
+        '<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">'
+      );
+      doc.write("</head><body>");
+      doc.write(printContents);
+      doc.write("</body></html>");
+      setTimeout(() => {
+        doc.close();
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        document.body.removeChild(iframe);
+      }, 500);
+    } catch (error) {
+      console.error("Error recording print:", error);
+      toast.error("Gagal merekodkan aktiviti percetakan: " + (error.response?.data?.message || "Ralat tidak diketahui"));
+    }
   };
 
   return (
@@ -162,9 +171,9 @@ const BillingPaper = () => {
         !isLoading && (
           <div className="flex gap-2">
             <TButton color="light" to={`/billing/${pageback}`}>
-              Batal
+              Kembali
             </TButton>
-            {[3, 4, 5, 6].includes(billing?.status_id) && (
+            {pageback === "finance" && [5].includes(billing?.status_id) && (
               <TButton
                 onClick={print}
                 className="bg-blue-500 text-white font-bold py-2 px-4 rounded"
@@ -175,17 +184,26 @@ const BillingPaper = () => {
             )}
             {((pageback === "hod" && billing?.status_id === 2) ||
               (pageback === "finance" &&
-                [3, 4, 5, 6].includes(billing?.status_id))) &&
-              actionButtons.map(({ type, icon: Icon, label, colorClass }) => (
-                <TButton
-                  key={type}
-                  onClick={() => handleAction(billing.id, type)}
-                  className={colorClass}
-                >
-                  <Icon size={16} className="mr-1" />
-                  {label}
-                </TButton>
-              ))}
+                [3, 4, 5].includes(billing?.status_id))) &&
+              actionButtons
+                .filter(button => {
+                  // Jika status_id adalah 5, hanya paparkan butang approve
+                  if (billing?.status_id === 5) {
+                    return button.type === "approve";
+                  }
+                  // Untuk status lain, paparkan semua butang
+                  return true;
+                })
+                .map(({ type, icon: Icon, label, colorClass }) => (
+                  <TButton
+                    key={type}
+                    onClick={() => handleAction(billing.id, type)}
+                    className={colorClass}
+                  >
+                    <Icon size={16} className="mr-1" />
+                    {label}
+                  </TButton>
+                ))}
           </div>
         )
       }
@@ -271,13 +289,13 @@ const BillingPaper = () => {
                   <col style={{ width: "11cm" }} />
                   <col style={{ width: "15cm" }} />
                   <col style={{ width: "102cm" }} />
-                  <col style={{ width: "47cm" }} />
+                  <col style={{ width: "84cm" }} />
                   <col style={{ width: "49cm" }} />
                   <col style={{ width: "111cm" }} />
-                  <col style={{ width: "100cm" }} />
+                  <col style={{ width: "136cm" }} />
                   <col style={{ width: "41cm" }} />
-                  <col style={{ width: "55cm" }} />
-                  <col style={{ width: "150cm" }} />
+                  <col style={{ width: "60cm" }} />
+                  <col style={{ width: "70cm" }} />
                 </colgroup>
                 <tbody>
                   <tr>
@@ -413,13 +431,13 @@ const BillingPaper = () => {
                       {history?.[0]?.created_by}
                     </td>
                     <td className="text-center">
-                      {formatDate(history?.[0]?.created_at)}
+                      {formatDate(billing?.created_at)}
                     </td>
                     <td className="text-center" colSpan="3">
                       {history?.[1]?.created_by}
                     </td>
                     <td className="text-center">
-                      {formatDate(history?.[1]?.created_at)}
+                      {formatDate(billing?.hod_approved_at)}
                     </td>
                   </tr>
 
@@ -448,7 +466,7 @@ const BillingPaper = () => {
                       {history?.[2]?.created_by}
                     </td>
                     <td className="text-center">
-                      {formatDate(history?.[2]?.created_at)}
+                      {formatDate(billing?.reviewed_at)}
                     </td>
                     <td className="text-center fw-bold" colSpan="3">
                       KOD AKAUN : KREDIT
@@ -461,23 +479,33 @@ const BillingPaper = () => {
                     <td className="text-center fw-bold" colSpan="6">
                       ULASAN
                     </td>
-                    <td className="text-center fw-bold" colSpan="3">
+                    <td className="text-center fw-bold" colSpan="2">
                       NAMA BANK
                     </td>
                     <td className="text-center fw-bold" colSpan="1">
-                      BAKI BANK
+                      KREDIT
+                    </td>
+                    <td className="text-center fw-bold" colSpan="1">
+                      BAKI SEMASA
                     </td>
                   </tr>
                   <tr>
                     <td className="text-center" colSpan="6" rowSpan="2">
                       {history?.[2]?.remarks}
                     </td>
-                    <td className="text-center" colSpan="3">
+                    <td className="text-center" colSpan="2">
                       <div className="flex flex-col text-start min-h-3">
                         {transactions?.length === 0 && <span>&nbsp;</span>}
                         {transactions?.map((credit, index) => (
+                          <strong key={index}>{credit.bank_name}</strong>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="text-center" colSpan="1">
+                      <div className="flex flex-col text-right">
+                        {transactions?.map((credit, index) => (
                           <strong key={index}>
-                            {credit.bank_name}
+                            {formatCurrency(credit.credit)}
                           </strong>
                         ))}
                       </div>
@@ -497,7 +525,7 @@ const BillingPaper = () => {
                       JUMLAH INI
                     </td>
                     <td className="text-right" colSpan="1">
-                      {formatCurrency(billing?.credit_verified || 0)}
+                      {formatCurrency(billing?.total_amount || 0)}
                     </td>
                   </tr>
 
@@ -523,7 +551,7 @@ const BillingPaper = () => {
                       {history?.[3]?.created_by}&nbsp;
                     </td>
                     <td className="text-center">
-                      {formatDate(history?.[3]?.created_at)}
+                      {formatDate(billing?.verified_at)}
                     </td>
                     <td className="text-center" colSpan="4">
                       {history?.[3]?.remarks}
@@ -549,9 +577,9 @@ const BillingPaper = () => {
                   </tr>
                   <tr>
                     <td className="text-center" colSpan="5">
-                      &nbsp;
+                      {billing?.total_amount > 10000 ? "" : history?.[4]?.created_by}&nbsp;
                     </td>
-                    <td className="text-center">&nbsp;</td>
+                    <td className="text-center">{billing?.total_amount > 10000 ? "" : formatDate(billing?.approved_at)}</td>
                     <td className="text-center" colSpan="4" rowSpan="3">
                       &nbsp;
                     </td>
@@ -587,9 +615,9 @@ const BillingPaper = () => {
                   </tr>
                   <tr>
                     <td className="text-center" colSpan="5">
-                      &nbsp;
+                      {billing?.total_amount < 10000 ? "" : history?.[4]?.created_by}&nbsp;
                     </td>
-                    <td className="text-center">&nbsp;</td>
+                    <td className="text-center">{billing?.total_amount < 10000 ? "" : formatDate(billing?.approved_at)}</td>
                     <td className="text-center" colSpan="4" rowSpan="3">
                       &nbsp;
                     </td>
