@@ -115,7 +115,7 @@ function Decimal({
           }
         }
       }}
-      css={css}
+      css={'text-right'}
       field={field}
       value={value}
       onChange={handleChange}
@@ -202,7 +202,7 @@ function Password({
   );
 }
 
-function FInput({ field, holder = "", type = "text",option }) {
+function FInput({ field, holder = "", type = "text",option,inputCss }) {
 	const { setValue, data, error, disabled } = useContext(FormContext);
 	return (
 		<TInput
@@ -213,6 +213,7 @@ function FInput({ field, holder = "", type = "text",option }) {
 			holder={holder}
 			type={type}
 			option={option}
+      inputCss={inputCss}
 		/>
 	);
 }
@@ -257,6 +258,7 @@ function CCurrency({ text, field, holder, option }) {
         field={field || text}
         holder={holder}
         option={option}
+        inputCss="text-right"
       />
     </div>
   );

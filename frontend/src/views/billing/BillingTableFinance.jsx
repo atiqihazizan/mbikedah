@@ -99,16 +99,19 @@ function BillingTableFinance() {
     },
     {
       name: "Tindakan",
-      render: (item) => (
+      render: (item) => {
+        const path = item.status_id < 6 ? `/billing/${item.id}/finance/show` : `/billing/${item.id}/finance/payment`;
+        
+        return (
         <div className="flex space-x-2">
           <Link
-            to={`/billing/${item.id}/finance/show`}
+            to={path}
             className="text-blue-500 hover:text-blue-600 flex items-center"
           >
             <EyeIcon size={16} className="mr-1" /> Papar
           </Link>
         </div>
-      ),
+      )}
     }
   ];
 

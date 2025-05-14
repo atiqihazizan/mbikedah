@@ -323,7 +323,7 @@ export default function BillingForm() {
                         option={{ disabled: !canEdit }}
                       />
                       <FormC.LText field={"no_project"} text={"No Pesanan"} option={{ readOnly: !canEdit }} />
-                      <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
+                      {/* <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
                         <FormC.label text="Jabatan" />
                         <div className="flex flex-col w-full">
                           <Select
@@ -346,7 +346,7 @@ export default function BillingForm() {
                             <span className="text-xs mt-2 text-red-600">{error.department_id}</span>
                           )}
                         </div>
-                      </div>
+                      </div> */}
                       <div className="flex items-center gap-2">
                         <div className="flex-grow">
                           <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
@@ -402,7 +402,7 @@ export default function BillingForm() {
                           )}
                         </div>
                       </div>
-                      <FormC.LText field={"description"} text={"Keterangan Bayaran"} option={{ readOnly: !canEdit }} />
+                      {/* <FormC.LText field={"description"} text={"Keterangan Bayaran"} option={{ readOnly: !canEdit }} /> */}
 
                       <RecipientModal 
                         show={showRecipientModal}
@@ -410,12 +410,12 @@ export default function BillingForm() {
                         onSaved={handleSaveRecipient}
                         recipient={selectedRecipient}
                       />
-                      <FormC.LDate field={"payment_due"} text={"Bayaran Perlu Dibuat Pada"} option={{ disabled: !canEdit }} />
-                      <FormC.LText
+                      {/* <FormC.LDate field={"payment_due"} text={"Bayaran Perlu Dibuat Pada"} option={{ disabled: !canEdit }} /> */}
+                      {/* <FormC.LText
                         field={"total_amount"}
                         text={"Jumlah Bayaran"}
                         option={{ readOnly: true }}
-                      />
+                      /> */}
                     </div>
                     <div className="grid gap-7 mx-[-30px]">
                       <table className="table">
@@ -427,7 +427,7 @@ export default function BillingForm() {
                             <th className="text-start !px-2 w-[10%]">Kuantiti</th>
                             <th className="text-start !px-2 w-[10%]">Unit</th>
                             <th className="text-start !px-2 w-[10%]">Harga</th>
-                            <th className="text-start !px-2 w-[10%]">Jumlah</th>
+                            <th className="text-start !px-2 w-[10%]">Amaunt</th>
                             <th className="text-start !px-2"></th>
                           </tr>
                         </thead>
@@ -447,6 +447,13 @@ export default function BillingForm() {
                             <RowTR FormC={FormC} setChange={setPetition} budgets={budgets} />
                           )}
                         </tbody>
+                        <tfoot>
+                          <tr>
+                            <td colSpan={6} className="text-right font-bold">Jumlah</td>
+                            <td className="text-right font-bold">{petition?.total_amount}</td>
+                            <td></td>
+                          </tr>
+                        </tfoot>
                       </table>
                       <span className="text-xs px-6 mt-2 text-red-600">
                         {error?.details}

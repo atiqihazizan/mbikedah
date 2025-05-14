@@ -3,9 +3,10 @@ import { useStateContext } from "../../contexts/ContextProvider";
 import { format, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
 import { EyeIcon, Pencil, Trash2 } from "lucide-react";
+import { toast } from 'react-toastify';
+import { formatCurrency } from "../../config/format";
 import PageComponent from "../../components/PageComponent";
 import apiClient from "../../axios";
-import { toast } from 'react-toastify';
 import Table from "../../components/TableRow";
 import PulseTable from "../../components/Core/PulseTable";
 
@@ -89,17 +90,15 @@ function BillingTableActive() {
         nClassRow:
           "px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600",
       },
-      {
-        name: "Perkara",
-        field: "description",
-      },
+      // {
+      //   name: "Perkara",
+      //   field: "description",
+      // },
       {
         name: "Jumlah (RM)",
-        render: ({ total_amount }) =>
-          parseFloat(total_amount).toLocaleString("en-MY", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }),
+        nClassRow: "text-right",
+        nClass: "text-right text-gray-500",
+        render: ({ total_amount }) => formatCurrency(total_amount),
       },
       {
         name: "Status",
@@ -121,7 +120,7 @@ function BillingTableActive() {
       {
         name: "Tindakan",
         render: (item) => (
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 justify-end">
             {[1, 9].includes(item.status_id) && (
               <>
                 <Link
@@ -149,10 +148,10 @@ function BillingTableActive() {
               </>
             )}
             <Link
-              to={`/billing/${item.id}/incomplete/show`}
+              to={`/billing/${item.id}/view`}
               className="text-blue-500 hover:text-blue-600 flex items-center"
             >
-              <EyeIcon size={16} className="mr-1" />
+              <EyeIcon size={16} className="mr-1" /> Papar
             </Link>
           </div>
         ),
