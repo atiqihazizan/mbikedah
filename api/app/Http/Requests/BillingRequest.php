@@ -22,14 +22,14 @@ class BillingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'description' => 'required|string|max:255',
+            'description' => 'nullable',
             'no_project' => 'required|string|max:50',
             'recipient_id' => 'required|exists:billing_recipients,id',
             'total_amount' => 'required|numeric|min:0',
             'payment_method' => 'required|in:cheque,online,cash',
             'department_id' => 'required|exists:departments,id',
             'issued_at' => 'required|date',
-            'payment_due' => 'required|date|after:issued_at',
+            // 'payment_due' => 'required|date|after:issued_at',
             'status_id' => 'required|integer|min:1|max:10',
             'details' => 'required|array|min:1',
             'details.*.description' => 'required|string|max:255',
@@ -48,8 +48,6 @@ class BillingRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'description.required' => 'Sila masukkan keterangan billing',
-            'description.max' => 'Keterangan tidak boleh melebihi 255 aksara',
             'no_project.required' => 'Sila masukkan nombor projek',
             'no_project.max' => 'Nombor projek tidak boleh melebihi 50 aksara',
             'recipient_id.required' => 'Sila pilih penerima',
@@ -61,8 +59,8 @@ class BillingRequest extends FormRequest
             'department_id.required' => 'Sila pilih jabatan',
             'department_id.exists' => 'Jabatan yang dipilih tidak sah',
             'issued_at.required' => 'Sila masukkan tarikh bil',
-            'payment_due.required' => 'Sila masukkan tarikh bayaran',
-            'payment_due.after' => 'Tarikh bayaran mestilah selepas tarikh bil',
+            // 'payment_due.required' => 'Sila masukkan tarikh bayaran',
+            // 'payment_due.after' => 'Tarikh bayaran mestilah selepas tarikh bil',
             'status_id.required' => 'Status diperlukan',
             'details.required' => 'Sila masukkan butiran billing',
             'details.min' => 'Sila masukkan sekurang-kurangnya satu butiran',

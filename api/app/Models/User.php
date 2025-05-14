@@ -50,6 +50,14 @@ class User extends Authenticatable
   ];
 
   /**
+   * Get the position that owns the user.
+   */
+  public function position()
+  {
+    return $this->belongsTo(Position::class);
+  }
+
+  /**
    * Get the department that owns the user.
    */
   public function department()

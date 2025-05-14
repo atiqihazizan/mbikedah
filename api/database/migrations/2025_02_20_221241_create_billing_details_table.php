@@ -20,6 +20,7 @@ return new class extends Migration
             $table->varchar('old_budget_code', 50)->nullable();
             $table->string('reference')->nullable();
             $table->string('description');
+            $table->string('purpose')->nullable();
             $table->decimal('price', 12, 2);
             $table->integer('quantity');
             $table->string('unit')->nullable(); 

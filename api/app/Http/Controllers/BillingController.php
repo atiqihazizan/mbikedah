@@ -71,7 +71,7 @@ class BillingController extends Controller
       }
 
       $billing = Billing::create([
-        'description' => $validatedData['description'],
+        // 'description' => $validatedData['description'],
         'no_project' => $validatedData['no_project'],
         'recipient_id' => $validatedData['recipient_id'],
         'total_amount' => $validatedData['total_amount'],
@@ -79,7 +79,7 @@ class BillingController extends Controller
         'department_id' => $departmentId,
         'created_by' => $request->user()->id,
         'issued_at' => $validatedData['issued_at'],
-        'payment_due' => $validatedData['payment_due'],
+        // 'payment_due' => $validatedData['payment_due'],
         'status_id' => $validatedData['status_id'],
         'is_archived' => false
       ]);
@@ -294,7 +294,7 @@ class BillingController extends Controller
       ])
         ->with([
           'department:id,name',
-          'creator:id,name,abilities',
+          'creator:id,name,abilities,position_id',
           'recipient:id,name',
           'details' => function ($query) {
             $query->select([

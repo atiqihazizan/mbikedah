@@ -10,6 +10,7 @@ class BillingDetail extends Model
   protected $fillable = [
     'billing_id',
     'description',
+    'purpose',
     'budget_code',
     'budget_id',
     'old_budget_id',

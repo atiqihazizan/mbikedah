@@ -25,18 +25,13 @@ class BillingDetailResource extends JsonResource
       'status_name' => $this->status_name,
       'department_id' => $this->department_id,
       'recipient_id' => $this->recipient_id,
-      'department' => [
-        'id' => $this->department_id,
-        'name' => $this->department ? $this->department->name : null
-      ],
-      'recipient' => [
-        'id' => $this->recipient_id,
-        'name' => $this->recipient ? $this->recipient->name : null
-      ],
+      'department' => $this->department ? $this->department->name : null,
+      'recipient' => $this->recipient ? $this->recipient->name : null,
       'creator' => [
         'id' => $this->created_by,
         'name' => $this->creator ? $this->creator->name : null,
-        'abilities' => $this->creator ? $this->creator->abilities : null
+        'abilities' => $this->creator ? $this->creator->abilities : null,
+        'position' => $this->creator ? $this->creator->position?->name : null
       ],
       'created_at' => $this->created_at,
       'issued_at' => $this->issued_at,
