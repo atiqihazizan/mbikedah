@@ -99,6 +99,7 @@ const BillingPaper = () => {
     const fetchBilling = async () => {
       try {
         const { data } = await apiClient.get(`/billings/${idBilling}`);
+        // console.log(data);
         setBilling(data);
         setDetails(data?.details || []);
         setTransactions(data?.transactions || []);
@@ -333,7 +334,7 @@ const BillingPaper = () => {
                     <td className="fw-bold th-title" colSpan="4">
                       JABATAN
                     </td>
-                    <td colSpan="6">{billing?.department?.name}</td>
+                    <td colSpan="6">{billing?.department}</td>
                   </tr>
                   <tr>
                     <td className="fw-bold th-title" colSpan="4">
@@ -345,7 +346,7 @@ const BillingPaper = () => {
                     <td className="fw-bold th-title" colSpan="4">
                       NAMA PEMBEKAL/KONTRAKTOR/PENERIMA
                     </td>
-                    <td colSpan="6">{billing?.recipient?.name}</td>
+                    <td colSpan="6">{billing?.recipient}</td>
                   </tr>
 
                   <tr>
@@ -401,16 +402,6 @@ const BillingPaper = () => {
                       </tr>
                     ))}
 
-                  <tr>
-                    <td className="text-center fw-bold" colSpan="10">
-                      TUJUAN/KETERANGAN BAYARAN
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="" colSpan="10">
-                      {billing?.description}
-                    </td>
-                  </tr>
                   <tr>
                     <td className="" colSpan="10">
                       &nbsp;
@@ -529,7 +520,7 @@ const BillingPaper = () => {
                     </td>
                   </tr>
 
-                  <tr>
+                  {/* <tr>
                     <th
                       className="text-center th-block fw-bold bg-opacity-25 bg-dark"
                       colSpan="10"
@@ -632,7 +623,7 @@ const BillingPaper = () => {
                     <td className="text-center" colSpan="6">
                       &nbsp;
                     </td>
-                  </tr>
+                  </tr> */}
                 </tbody>
               </table>
             </div>

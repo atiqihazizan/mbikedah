@@ -16,6 +16,7 @@ class CreateTransactionBudgetsTable extends Migration
             $table->id();
             $table->foreignId('budget_id')->constrained('budgets')->onDelete('cascade');
             $table->decimal('amount', 10, 2);
+            $table->date('date')->nullable();
             $table->timestamps();
         });
     }

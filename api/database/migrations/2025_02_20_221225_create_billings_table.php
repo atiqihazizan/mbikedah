@@ -28,7 +28,7 @@ return new class extends Migration
       $table->string('running_no')->nullable();
       $table->string('no_project')->default('N/A');
       $table->string('description')->nullable();
-      $table->enum('payment_method', ['cheque', 'online', 'cash'])->nullable()->default('online');
+      $table->enum('payment_method', ['cek', 'online', 'tunai'])->nullable()->default('cek');
       $table->boolean('is_archived')->default(false);
       $table->timestamps();
     });

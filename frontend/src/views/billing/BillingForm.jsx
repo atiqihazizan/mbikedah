@@ -8,7 +8,7 @@ import Card from "../../components/Card";
 import FormC from "../../components/FormContext";
 import TButton from "../../components/Core/TButton";
 import PageComponent from "../../components/PageComponent";
-import PropTypes from "prop-types";
+// import PropTypes from "prop-types";
 import RowTR from "./RowTR";
 import RecipientModal from "./RecipientModal"; // Modified import statement
 import apiClient from "../../axios";
@@ -21,7 +21,6 @@ export default function BillingForm() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [recipients, setRecipients] = useState([]);
-  const [departments, setDepartments] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [showRecipientModal, setShowRecipientModal] = useState(false);
   const [selectedRecipient, setSelectedRecipient] = useState(null);
@@ -107,12 +106,6 @@ export default function BillingForm() {
       if (budgetResponse) {
         setBudgets(budgetResponse);
       }
-      // Dapatkan senarai jabatan
-      const {data:departmentsResponse} = await apiClient.get("/departments");
-      if (departmentsResponse) {
-        setDepartments(departmentsResponse);
-      }
-
       // Dapatkan senarai penerima bil
       await fetchRecipients();
     } catch (error) {
@@ -127,7 +120,7 @@ export default function BillingForm() {
   const checkValid = () => {
     return (
       petition?.recipient_id !== "" &&
-      petition?.description !== "" &&
+      // petition?.description !== "" &&
       parseFloat(petition?.total_amount || 0) !== 0 &&
       (petition?.details || []).length !== 0
     );
@@ -138,25 +131,23 @@ export default function BillingForm() {
     setError(null);
     toast.dismiss();
     
-    if (statusId !== 1) { // If not saving as draft, show loading and validate
-      setLoading(true);
-      // Only check validation when submitting to HOD
-      if (!checkValid()) {
-        setLoading(false);
-        throw new Error("Sila lengkapkan semua maklumat yang diperlukan");
-      }
-    }
-  
     try {
+      
+      if (statusId !== 1) { // If not saving as draft, show loading and validate
+        setLoading(true);
+        // Only check validation when submitting to HOD
+        if (!checkValid()) {
+          setLoading(false);
+          throw new Error("Sila lengkapkan semua maklumat yang diperlukan");
+        }
+      }
+
       // URL dan method berdasarkan create/update
       const url = !idform ? "/billings" : `/billings/${idform}`;
       const method = !idform ? "post" : "put";
   
       // Set status berdasarkan parameter
-      const formData = {
-        ...petition,
-        status_id: statusId
-      };
+      const formData = {...petition, status_id: statusId};
   
       // Hantar data ke backend
       const {data} = await apiClient[method](url, formData);
@@ -171,8 +162,6 @@ export default function BillingForm() {
       if (statusId === 1 && flagNew) {
         navigate(`/billing/${newId}/edit`);
       } else if (statusId === 2) {
-        // Immediately navigate away when submitting to HOD
-        // Use replace: true to replace the current route in history
         navigate(`/billing/incomplete`, { replace: true });
       }
       
@@ -185,6 +174,7 @@ export default function BillingForm() {
         const {data} = error?.response || {};
         setError(data?.errors);
       } else {
+        if(error?.response?.data?.message) console.error(error?.response?.data?.message);
         toast.error(error.message || `Ralat semasa ${statusId === 1 ? 'menyimpan draf' : 'menghantar permohonan'}. Sila cuba lagi.`);
       }
       
@@ -253,22 +243,22 @@ export default function BillingForm() {
   const canEdit = [1,9].includes(petition.status_id);
 
   // Jika bukan draft, tunjuk mesej
-  const statusMessage = !canEdit ? (
-    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-      <div className="flex">
-        <div className="flex-shrink-0">
-          <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-        </div>
-        <div className="ml-3">
-          <p className="text-sm text-yellow-700">
-            Bil ini tidak boleh dikemaskini kerana status bukan lagi dalam draft.
-          </p>
-        </div>
-      </div>
-    </div>
-  ) : null;
+  // const statusMessage = !canEdit ? (
+  //   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+  //     <div className="flex">
+  //       <div className="flex-shrink-0">
+  //         <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+  //           <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+  //         </svg>
+  //       </div>
+  //       <div className="ml-3">
+  //         <p className="text-sm text-yellow-700">
+  //           Bil ini tidak boleh dikemaskini kerana status bukan lagi dalam draft.
+  //         </p>
+  //       </div>
+  //     </div>
+  //   </div>
+  // ) : null;
 
   return (
     <PageComponent
@@ -478,11 +468,11 @@ export default function BillingForm() {
     </PageComponent>
   );
 }
-BillingForm.propTypes = {
-  data: PropTypes.object,
-  index: PropTypes.number,
-  onFocus: PropTypes.func,
-  currChange: PropTypes.func,
-  onSave: PropTypes.func,
-  onDelete: PropTypes.func,
-};
+// BillingForm.propTypes = {
+//   data: PropTypes.object,
+//   index: PropTypes.number,
+//   onFocus: PropTypes.func,
+//   currChange: PropTypes.func,
+//   onSave: PropTypes.func,
+//   onDelete: PropTypes.func,
+// };

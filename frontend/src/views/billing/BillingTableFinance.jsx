@@ -84,11 +84,15 @@ function BillingTableFinance() {
     {
       name: "Status",
       render: (item) => (
+        // <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+        //   ${[3, 5, 6].includes(item.status_id) ? "bg-gray-100 text-gray-800"
+        //   : item.status_id === 5 ? "bg-green-100 text-green-800"
+        //   : item.status_id === 6 ? "bg-red-100 text-red-800"
+        //   : "bg-yellow-100 text-yellow-800"}`}>
+        //   {item.status_name.replace(' Kewangan', '')}
+        // </span>
         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-          ${item.status_name === "Draft" ? "bg-gray-100 text-gray-800"
-          : item.status_name === "Diluluskan" ? "bg-green-100 text-green-800"
-          : item.status_name === "Ditolak" ? "bg-red-100 text-red-800"
-          : "bg-yellow-100 text-yellow-800"}`}>
+          ${[3, 4,5, 6].includes(item.status_id) ? "bg-yellow-100 text-yellow-800" : ''}`}>
           {item.status_name.replace(' Kewangan', '')}
         </span>
       )
@@ -100,8 +104,10 @@ function BillingTableFinance() {
     {
       name: "Tindakan",
       render: (item) => {
-        const path = item.status_id < 6 ? `/billing/${item.id}/finance/show` : `/billing/${item.id}/finance/payment`;
-        
+        // const path = item.status_id < 6 ? `/billing/${item.id}/finance/show` : `/billing/${item.id}/finance/payment`;
+        const {status_id} = item;
+        const path = status_id === 3 ? `/billing/${item.id}/check` : `/billing/${item.id}/finance/show`;
+
         return (
         <div className="flex space-x-2">
           <Link

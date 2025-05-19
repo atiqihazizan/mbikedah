@@ -9,6 +9,7 @@ export default function TSelect({
 	className,
 	wrapperClassName,
 	maxLength = 30, // Panjang maksimum label sebelum dipotong
+	onChange,
 }) {
 	// Pastikan list adalah array
 	const safeList = Array.isArray(list) ? list : [];
@@ -19,7 +20,7 @@ export default function TSelect({
 	const oKey = keyvalParts[0] || 'id';
 	const oValParts = keyvalParts.slice(1); // Ambil semua bahagian selepas kunci
 	
-	function onChange(ev) {
+	function handleChange(ev) {
 		setValue({ ...data, [field]: ev.target.value });
 	}
 
@@ -45,7 +46,8 @@ export default function TSelect({
 		const combinedLabel = oValParts.map(part => {
 			// Periksa jika bahagian mengandungi pemisah khas
 			if (part.includes('|')) {
-				const [fieldName, separator] = part.split('|');
+				// const [fieldName, separator] = part.split('|');
+				const [fieldName] = part.split('|');
 				return item?.[fieldName] || '';
 			} else {
 				return item?.[part] || '';
@@ -58,8 +60,8 @@ export default function TSelect({
 	return (
 		<div className={`flex flex-col w-full ${wrapperClassName || ''}`}>
 			<select 
-				className={`select ${option?.disabled ? 'bg-gray-100 cursor-not-allowed' : ''} ${className}`}
-				onChange={onChange} 
+				className={`select ${option?.disabled ? 'bg-gray-100 cursor-not-allowed' : ''} ${className || ''}`}
+				onChange={onChange || handleChange} 
 				value={data?.[field] || ''}
 				{...option}
 			>

@@ -181,14 +181,6 @@ export default function BillingPayment() {
     }
   };
   
-  // Then use it like this:
-  const saveDraft = () => saveForm(1, "Pembayaran berjaya disimpan sebagai draf");
-  const submitPayment = () => saveForm(2, "Pembayaran berjaya dihantar");
-
-  // Function untuk handle form submit - prevent default sahaja
-  function onSubmit(ev) {
-    ev.preventDefault();
-  }
 
   useEffect(() => {
     let isSubscribed = true;
@@ -264,26 +256,7 @@ export default function BillingPayment() {
       title={flagNew ? "Pembayaran Baru" : "Kemaskini Pembayaran"}
       buttons={!loading && (
         <div className="flex gap-2">
-          {!flagNew && (
-            <TButton color="light" to={"/billing-payment/list"}>Kembali</TButton>
-          )}
-          {canEdit && (
-            <>
-              <TButton 
-                color="light" 
-                onClick={saveDraft}
-              >
-                Simpan sebagai Draf
-              </TButton>
-              <TButton 
-                color="green" 
-                onClick={submitPayment}
-                isDisable={loading || !checkValid()}
-              >
-                Hantar Pembayaran
-              </TButton>
-            </>
-          )}
+          <TButton color="light" to={"/billing/finance"}>Kembali</TButton>
         </div>
       )}
     >
@@ -293,152 +266,150 @@ export default function BillingPayment() {
           {!loading && (
             <Card>
               {statusMessage}
-              <form className="" onSubmit={(ev) => onSubmit(ev)}>
-                <Card.Body oClass="flex flex-col gap-7.5">
-                  <FormC data={payment} setValue={setPayment} error={error} disabled={!canEdit}>
-                    <div className="grid gap-7 ">
-                      <FormC.LDate 
-                        field={"payment_date"} 
-                        text={"Tarikh Pembayaran"} 
-                        option={{ disabled: !canEdit }}
-                      />
-                      
-                      <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
-                        <FormC.label text="Bil Yang Dibayar" />
-                        <div className="flex flex-col w-full">
-                          <Select
-                            isDisabled={!canEdit}
-                            value={billings.find(bill => bill.id === parseInt(payment.billing_id)) || null}
-                            onChange={(selectedOption) => {
-                              const billingId = selectedOption ? selectedOption.id : "";
-                              setPayment(prev => ({
-                                ...prev,
-                                billing_id: billingId
-                              }));
-                              updateAmountFromBilling(billingId);
-                            }}
-                            options={billings}
-                            getOptionLabel={(option) => `${option.running_no} - ${option.description} (RM${parseFloat(option.remaining_amount || option.total_amount).toFixed(2)})`}
-                            getOptionValue={(option) => option.id.toString()}
-                            placeholder="Pilih Bil"
-                            className="react-select-container"
-                            classNamePrefix="react-select"
-                          />
-                          {error?.billing_id && (
-                            <span className="text-xs mt-2 text-red-600">{error.billing_id}</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
-                        <FormC.label text="Bank" />
-                        <div className="flex flex-col w-full">
-                          <Select
-                            isDisabled={!canEdit}
-                            value={banks.find(bank => bank.id === parseInt(payment.bank_id)) || null}
-                            onChange={(selectedOption) => {
-                              setPayment(prev => ({
-                                ...prev,
-                                bank_id: selectedOption ? selectedOption.id : ""
-                              }));
-                            }}
-                            options={banks}
-                            getOptionLabel={(option) => `${option.name} - ${option.account_number}`}
-                            getOptionValue={(option) => option.id.toString()}
-                            placeholder="Pilih Bank"
-                            className="react-select-container"
-                            classNamePrefix="react-select"
-                          />
-                          {error?.bank_id && (
-                            <span className="text-xs mt-2 text-red-600">{error.bank_id}</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <FormC.LText field={"reference_no"} text={"No Rujukan Pembayaran"} option={{ readOnly: !canEdit }} />
-                      <FormC.LCurrency field={"amount"} text={"Jumlah Pembayaran"} option={{ readOnly: !canEdit }} />
-                      
-                      {payment.billing_id && (
-                        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
-                          <div className="flex">
-                            <div className="flex-shrink-0">
-                              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                            <div className="ml-3">
-                              <p className="text-sm text-blue-700 font-semibold">
-                                Maklumat Bayaran
-                              </p>
-                              {billings.find(bill => bill.id === parseInt(payment.billing_id)) && (
-                                <div className="mt-2 text-sm text-blue-700">
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div>No. Bil:</div>
-                                    <div>{billings.find(bill => bill.id === parseInt(payment.billing_id)).running_no}</div>
-                                    
-                                    <div>Jumlah Bil:</div>
-                                    <div>RM {parseFloat(billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount).toFixed(2)}</div>
-                                    
-                                    <div>Jumlah Telah Dibayar:</div>
-                                    <div>RM {parseFloat(billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount - (billings.find(bill => bill.id === parseInt(payment.billing_id)).remaining_amount || billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount)).toFixed(2)}</div>
-                                    
-                                    <div>Baki Perlu Dibayar:</div>
-                                    <div>RM {parseFloat(billings.find(bill => bill.id === parseInt(payment.billing_id)).remaining_amount || billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount).toFixed(2)}</div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      <FormC.LText field={"description"} text={"Keterangan Pembayaran"} option={{ readOnly: !canEdit }} />
-                      
-                      <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
-                        <FormC.label text="Bukti Pembayaran" />
-                        <div className="flex flex-col w-full">
-                          {canEdit ? (
-                            <div className="flex items-center gap-2">
-                              <input 
-                                type="file" 
-                                id="proof_file"
-                                className="hidden" 
-                                onChange={handleFileUpload}
-                                accept="image/*,.pdf"
-                              />
-                              <label 
-                                htmlFor="proof_file"
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-md cursor-pointer hover:bg-blue-100"
-                              >
-                                <FaUpload />
-                                <span>Pilih Fail</span>
-                              </label>
-                              {selectedFile && (
-                                <span className="text-sm text-gray-600">
-                                  {selectedFile.name} ({Math.round(selectedFile.size / 1024)} KB)
-                                </span>
-                              )}
-                            </div>
-                          ) : payment.proof_file_url ? (
-                            <a 
-                              href={payment.proof_file_url} 
-                              target="_blank" 
-                              rel="noreferrer"
-                              className="text-blue-600 hover:underline"
-                            >
-                              Lihat Bukti Pembayaran
-                            </a>
-                          ) : (
-                            <span className="text-gray-500">Tiada bukti pembayaran</span>
-                          )}
-                          {error?.proof_file && (
-                            <span className="text-xs mt-2 text-red-600">{error.proof_file}</span>
-                          )}
-                        </div>
+              <Card.Body oClass="flex flex-col gap-7.5">
+                <FormC data={payment} setValue={setPayment} error={error} disabled={!canEdit}>
+                  <div className="grid gap-7 ">
+                    <FormC.LDate 
+                      field={"payment_date"} 
+                      text={"Tarikh Pembayaran"} 
+                      option={{ disabled: !canEdit }}
+                    />
+                    
+                    <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
+                      <FormC.label text="Bil Yang Dibayar" />
+                      <div className="flex flex-col w-full">
+                        <Select
+                          isDisabled={!canEdit}
+                          value={billings.find(bill => bill.id === parseInt(payment.billing_id)) || null}
+                          onChange={(selectedOption) => {
+                            const billingId = selectedOption ? selectedOption.id : "";
+                            setPayment(prev => ({
+                              ...prev,
+                              billing_id: billingId
+                            }));
+                            updateAmountFromBilling(billingId);
+                          }}
+                          options={billings}
+                          getOptionLabel={(option) => `${option.running_no} - ${option.description} (RM${parseFloat(option.remaining_amount || option.total_amount).toFixed(2)})`}
+                          getOptionValue={(option) => option.id.toString()}
+                          placeholder="Pilih Bil"
+                          className="react-select-container"
+                          classNamePrefix="react-select"
+                        />
+                        {error?.billing_id && (
+                          <span className="text-xs mt-2 text-red-600">{error.billing_id}</span>
+                        )}
                       </div>
                     </div>
-                  </FormC>
-                </Card.Body>
-              </form>
+                    
+                    <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
+                      <FormC.label text="Bank" />
+                      <div className="flex flex-col w-full">
+                        <Select
+                          isDisabled={!canEdit}
+                          value={banks.find(bank => bank.id === parseInt(payment.bank_id)) || null}
+                          onChange={(selectedOption) => {
+                            setPayment(prev => ({
+                              ...prev,
+                              bank_id: selectedOption ? selectedOption.id : ""
+                            }));
+                          }}
+                          options={banks}
+                          getOptionLabel={(option) => `${option.name} - ${option.account_number}`}
+                          getOptionValue={(option) => option.id.toString()}
+                          placeholder="Pilih Bank"
+                          className="react-select-container"
+                          classNamePrefix="react-select"
+                        />
+                        {error?.bank_id && (
+                          <span className="text-xs mt-2 text-red-600">{error.bank_id}</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <FormC.LText field={"reference_no"} text={"No Rujukan Pembayaran"} option={{ readOnly: !canEdit }} />
+                    <FormC.LCurrency field={"amount"} text={"Jumlah Pembayaran"} option={{ readOnly: !canEdit }} />
+                    
+                    {payment.billing_id && (
+                      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                        <div className="flex">
+                          <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm text-blue-700 font-semibold">
+                              Maklumat Bayaran
+                            </p>
+                            {billings.find(bill => bill.id === parseInt(payment.billing_id)) && (
+                              <div className="mt-2 text-sm text-blue-700">
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>No. Bil:</div>
+                                  <div>{billings.find(bill => bill.id === parseInt(payment.billing_id)).running_no}</div>
+                                  
+                                  <div>Jumlah Bil:</div>
+                                  <div>RM {parseFloat(billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount).toFixed(2)}</div>
+                                  
+                                  <div>Jumlah Telah Dibayar:</div>
+                                  <div>RM {parseFloat(billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount - (billings.find(bill => bill.id === parseInt(payment.billing_id)).remaining_amount || billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount)).toFixed(2)}</div>
+                                  
+                                  <div>Baki Perlu Dibayar:</div>
+                                  <div>RM {parseFloat(billings.find(bill => bill.id === parseInt(payment.billing_id)).remaining_amount || billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount).toFixed(2)}</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <FormC.LText field={"description"} text={"Keterangan Pembayaran"} option={{ readOnly: !canEdit }} />
+                    
+                    <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
+                      <FormC.label text="Bukti Pembayaran" />
+                      <div className="flex flex-col w-full">
+                        {canEdit ? (
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="file" 
+                              id="proof_file"
+                              className="hidden" 
+                              onChange={handleFileUpload}
+                              accept="image/*,.pdf"
+                            />
+                            <label 
+                              htmlFor="proof_file"
+                              className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-md cursor-pointer hover:bg-blue-100"
+                            >
+                              <FaUpload />
+                              <span>Pilih Fail</span>
+                            </label>
+                            {selectedFile && (
+                              <span className="text-sm text-gray-600">
+                                {selectedFile.name} ({Math.round(selectedFile.size / 1024)} KB)
+                              </span>
+                            )}
+                          </div>
+                        ) : payment.proof_file_url ? (
+                          <a 
+                            href={payment.proof_file_url} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            Lihat Bukti Pembayaran
+                          </a>
+                        ) : (
+                          <span className="text-gray-500">Tiada bukti pembayaran</span>
+                        )}
+                        {error?.proof_file && (
+                          <span className="text-xs mt-2 text-red-600">{error.proof_file}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </FormC>
+              </Card.Body>
             </Card>
           )}
         </div>

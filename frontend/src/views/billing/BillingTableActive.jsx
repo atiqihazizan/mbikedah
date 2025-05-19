@@ -90,10 +90,6 @@ function BillingTableActive() {
         nClassRow:
           "px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600",
       },
-      // {
-      //   name: "Perkara",
-      //   field: "description",
-      // },
       {
         name: "Jumlah (RM)",
         nClassRow: "text-right",
@@ -119,30 +115,33 @@ function BillingTableActive() {
       },
       {
         name: "Tindakan",
+        nClass: "w-24 text-center text-gray-500",
         render: (item) => (
-          <div className="flex space-x-2 justify-end">
+          <div className="flex gap-4 justify-end">
             {[1, 9].includes(item.status_id) && (
               <>
                 <Link
                   to={`/billing/${item.id}/edit`}
-                  className={`text-indigo-600 hover:text-indigo-900 ${
+                  className={`text-indigo-600 hover:text-indigo-900 flex items-center ${
                     isDeletingId && "opacity-50"
                   }`}
                   disabled={isDeletingId}
                 >
-                  <Pencil size={18} />
+                  <Pencil size={18} className="mr-1"/> Edit
                 </Link>
                 <button
                   onClick={() => handleDelete(item.id)}
                   disabled={isDeletingId}
-                  className={`text-red-600 hover:text-red-900 ${
+                  className={`text-red-600 hover:text-red-900 flex items-center ${
                     isDeletingId === item.id && "opacity-50"
                   }`}
                 >
                   {isDeletingId === item.id ? (
                     <span className="text-sm text-gray-500">Memadam...</span>
                   ) : (
-                    <Trash2 size={18} />
+                    <>
+                      <Trash2 size={18} className="mr-1" /> Hapus
+                    </>
                   )}
                 </button>
               </>

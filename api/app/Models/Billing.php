@@ -26,7 +26,6 @@ class Billing extends Model
     'department_id',
     'created_by',
     'status_id',
-    'payment_method',
     'issued_at',
     'payment_due',
     'no_project',
@@ -41,7 +40,8 @@ class Billing extends Model
     'verified_at',
     'approved_at',
     'paid_at',
-    'ceo_approved'
+    'ceo_approved',
+    'payment_method'
   ];
 
   protected $appends = ['status_name', 'is_active'];
@@ -57,7 +57,8 @@ class Billing extends Model
     'verified_at' => 'datetime',
     'approved_at' => 'datetime',
     'paid_at' => 'datetime',
-    'ceo_approved' => 'boolean'
+    'ceo_approved' => 'boolean',
+    'payment_method' => 'string'
   ];
 
   /**

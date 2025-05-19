@@ -52,18 +52,13 @@ class BillingDetailResource extends JsonResource
           'description' => $detail->description,
           'budget_code' => $detail->budget_code,
           'budget_id' => $detail->budget_id,
-          'old_budget_id' => $detail->old_budget_id,
-          'old_budget_code' => $detail->old_budget_code,
           'price' => $detail->price,
           'quantity' => $detail->quantity,
           'reference' => $detail->reference,
           'total' => $detail->total,
-          'budget' => [
-            'id' => $detail->budget_id,
-            'name' => $detail->budget ? $detail->budget->name : null,
-            'code' => $detail->budget ? $detail->budget->code : null,
-            'balance' => $detail->budget ? $detail->budget->bdgtotal : 0
-          ]
+          'accept' => $detail->accept,
+          'approve' => $detail->approve,
+          'reviewed_by' => $detail->reviewed_by
         ];
       }),
       'history' => $this->history->map(function ($history) {

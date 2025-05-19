@@ -115,7 +115,7 @@ function Decimal({
           }
         }
       }}
-      css={'text-right'}
+      css={`text-right ${css}`}
       field={field}
       value={value}
       onChange={handleChange}

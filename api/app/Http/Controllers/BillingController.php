@@ -92,7 +92,8 @@ class BillingController extends Controller
           'budget_id' => $detail['budget_id'],
           'price' => $detail['price'],
           'quantity' => $detail['quantity'],
-          'reference' => $detail['reference'] ?? null
+          'reference' => $detail['reference'] ?? '',
+          'purpose' => $detail['purpose'] ?? '',
         ]);
       }
 
@@ -156,14 +157,14 @@ class BillingController extends Controller
       $isReturn = $billing->status_id === BillingStatus::RETURNED ? true : false;
 
       $billing->update([
-        'description' => $validatedData['description'],
+        // 'description' => $validatedData['description'],
         'no_project' => $validatedData['no_project'],
         'recipient_id' => $validatedData['recipient_id'],
         'total_amount' => $validatedData['total_amount'],
         'payment_method' => $validatedData['payment_method'],
         'department_id' => $validatedData['department_id'],
         'issued_at' => $validatedData['issued_at'],
-        'payment_due' => $validatedData['payment_due'],
+        // 'payment_due' => $validatedData['payment_due'],
         // 'status_id' => $validatedData['status_id']
       ]);
 
@@ -177,7 +178,8 @@ class BillingController extends Controller
           'price' => $detail['price'],
           'quantity' => $detail['quantity'],
           'unit' => $detail['unit'] ?? null,
-          'reference' => $detail['reference'] ?? null
+          'reference' => $detail['reference'] ?? null,
+          'purpose' => $detail['purpose'] ?? '',
         ]);
       }
 
@@ -204,8 +206,8 @@ class BillingController extends Controller
     } catch (ModelNotFoundException $e) {
       return response()->json([
         'success' => false,
-        'message' => 'Billing tidak dijumpai'
-      ], 404);
+        'message' => $e->getMessage()
+      ],404);
     } catch (AuthorizationException $e) {
       return response()->json([
         'success' => false,
@@ -218,7 +220,7 @@ class BillingController extends Controller
         'success' => false,
         'message' => 'Ralat semasa mengemaskini billing',
         'error' => $e->getMessage()
-      ], 500);
+      ]);
     }
   }
 
@@ -303,12 +305,13 @@ class BillingController extends Controller
               'description',
               'budget_code',
               'budget_id',
-              'old_budget_id',
-              'old_budget_code',
               'price',
               'quantity',
               'reference',
-              'total'
+              'total',
+              'accept',
+              'approve',
+              'reviewed_by'
             ]);
           },
           'details.budget:id,name,code,bdgtotal',

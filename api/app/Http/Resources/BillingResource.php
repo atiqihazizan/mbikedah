@@ -20,14 +20,13 @@ class BillingResource extends JsonResource
             'description' => $this->description,
             'total_amount' => $this->total_amount,
             'department_id' => $this->department_id,
-            'department' => $this->department ? [
-                'id' => $this->department->id,
-                'name' => $this->department->name
-            ] : null,
+            'department' => $this->department ? $this->department->name : null,
             'created_by' => $this->created_by,
             'creator' => $this->creator ? [
                 'id' => $this->creator->id,
-                'name' => $this->creator->name
+                'name' => $this->creator->name,
+                'abilities' => $this->creator->abilities,
+                'position' => $this->creator->position?->name
             ] : null,
             'status_id' => $this->status_id,
             'status_name' => BillingStatus::getStatusName($this->status_id),
@@ -38,10 +37,7 @@ class BillingResource extends JsonResource
             'running_no' => $this->running_no,
             'is_archived' => $this->is_archived,
             'recipient_id' => $this->recipient_id,
-            'recipient' => $this->recipient ? [
-                'id' => $this->recipient->id,
-                'name' => $this->recipient->name
-            ] : null,
+            'recipient' => $this->recipient ? $this->recipient->name : null,
             'print_count' => $this->print_count,
             'last_printed_at' => $this->last_printed_at,
             'last_printed_by_name' => $this->lastPrintedBy ? $this->lastPrintedBy->name : null,

@@ -13,17 +13,24 @@ class BillingDetail extends Model
     'purpose',
     'budget_code',
     'budget_id',
-    'old_budget_id',
-    'old_budget_code',
     'price',
     'quantity',
-    'reference'
+    'reference',
+    'unit',
+    'total',
+    'accept',
+    'approve',
+    'reviewed_by'
   ];
 
   protected $casts = [
     'price' => 'decimal:2',
     'quantity' => 'integer',
-    'budget_id' => 'integer'
+    'budget_id' => 'integer',
+    'accept' => 'boolean',
+    'approve' => 'boolean',
+    'reviewed_by' => 'integer',
+    'total' => 'decimal:2'
   ];
 
   /**
@@ -40,5 +47,26 @@ class BillingDetail extends Model
   public function budget(): BelongsTo
   {
     return $this->belongsTo(Budget::class);
+  }
+  
+
+  public function reviewer(): BelongsTo
+  {
+      return $this->belongsTo(User::class, 'reviewed_by');
+  }
+
+  public function scopeAccepted($query)
+  {
+      return $query->where('accept', true);
+  }
+
+  public function scopeApproved($query)
+  {
+      return $query->where('approve', true);
+  }
+
+  public function scopeReviewed($query)
+  {
+      return $query->whereNotNull('reviewed_by');
   }
 }

@@ -15,7 +15,8 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets, er
     quantity: "0",          // Kuantiti (string untuk elak null)
     price: "0.00",          // Harga seunit
     total: "0.00",         // Jumlah (quantity * price)
-    unit: ""                // Unit ukuran
+    unit: "",                // Unit ukuran
+    purpose: ""              // Tujuan
   };
   const [detail, setDetail] = useState(def);
   function onFocus(ev) {
@@ -30,7 +31,7 @@ export default function RowTR({ FormC, data, idx = false, setChange, budgets, er
   }
 
   // Kira amount berdasarkan quantity dan price
-  function currChange(e, field, times) {
+  function currChange(e, field) {
     const val = parseFloat(e.target.value) || 0;
     const newdata = { ...detail };
     newdata[field] = val;

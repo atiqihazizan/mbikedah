@@ -13,6 +13,8 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Models\Billing;
 use App\Constants\BillingStatus;
 use App\Http\Resources\BillingResource;
+use App\Models\Bank;
+use App\Models\Budget;
 
 class BillingActivitiesController extends Controller
 {
@@ -48,14 +50,72 @@ class BillingActivitiesController extends Controller
     try {
       $this->authorize('process',[$billing, BillingStatus::FINANCE_REVIEW]);
       DB::beginTransaction();
+      
+      // Validasi payment_method
+      $paymentMethods = ['cek', 'online', 'tunai'];
+      if (!in_array(strtolower($request->payment_method), $paymentMethods)) {
+          throw new \Exception('Kaedah bayaran tidak sah');
+      }
+      
+      $details = $request->details ?? [];
       $transactions = $request->transactions ?? [];
       $remarks = $request->remarks ?? ''; //Disemak oleh kewangan
+      $total_accept = $request->total_accept ?? 0;
+      $payment_method = strtolower($request->payment_method ?? '');
+
+      if (empty($details)) {
+        throw new \Exception('Tiada butiran bajet yang dipilih');
+      }
+    
+      if (empty($transactions)) {
+        throw new \Exception('Tiada transaksi yang dimasukkan');
+      }
       
       // Tetapkan tarikh semakan kewangan
       $billing->reviewed_at = now();
+      $billing->payment_method = "$payment_method";
       $billing->save();
 
-      $billing->updateStatus(BillingStatus::FINANCE_VERIFY, Auth::id(), $remarks, $transactions);
+      $billing->updateStatus(BillingStatus::FINANCE_VERIFY, Auth::id(), $remarks);
+
+      //1. Update kod bajet
+      foreach ($details as $detail) {
+        $budget = Budget::find($detail['budget_id']);
+        if (!$budget) {
+            throw new \Exception("Bajet tidak ditemui untuk ID: {$detail['budget_id']}");
+        }
+        $billing->details()->where('id', $detail['id'])->update([
+          'budget_id' => $budget->id,
+          'budget_code' => $budget->code,
+          'accept' => 1,
+          'reviewed_by' => Auth::id(),
+        ]);
+      }
+        
+      // 8. Validate total amount
+      // $totalExpenses = $billing->details->sum('total');
+      $totalTransactions = array_sum(array_column($transactions, 'amount'));
+      
+      if ($total_accept !== $totalTransactions) {
+          throw new \Exception("Jumlah pembayar tidak sepadan dengan jumlah yang diterima");
+      }
+
+      //2. add transaksi
+      $billing->transactions()->delete();
+      foreach ($transactions as $transaction) {
+        $bank = Bank::find($transaction['bank_id']);
+        if (!$bank) {
+            throw new \Exception("Bank tidak ditemui untuk ID: {$transaction['bank_id']}");
+        }
+        
+        $billing->transactions()->create([
+          'bank_id' => $bank->id,
+          'budget_id' => null,
+          'transaction_type' => 'credit',
+          'date' => now(),
+          'amount' => $transaction['amount'],
+        ]);
+      }
 
       DB::commit();
       return response()->json([
@@ -69,6 +129,13 @@ class BillingActivitiesController extends Controller
         'success' => false,
         'message' => $e->getMessage()
       ], 403);
+    }
+    catch (Exception $e) {
+      DB::rollBack();
+      return response()->json([
+        'success' => false,
+        'message' => 'Ralat sistem ' . $e->getMessage()
+      ], 500);
     }
   }
 

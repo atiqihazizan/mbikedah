@@ -19,6 +19,8 @@ class CreateTransactionsTable extends Migration
             $table->decimal('amount', 10, 2);
             $table->string('transaction_type'); // e.g., 'credit' or 'debit'
             $table->date('date');
+            $table->date('paid_date')->nullable();
+            $table->string('paid_ref')->nullable();
             $table->string('description')->nullable();
             $table->timestamps();
         });

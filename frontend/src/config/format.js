@@ -17,3 +17,17 @@ export const formatDate = (dateString) => {
 //     year: "numeric",
 //   });
 // }
+
+  // const formatDate = (dateString) => {
+  //   if (!dateString) return "-";
+  //   const options = { day: "numeric", month: "long", year: "numeric" };
+  //   return new Date(dateString).toLocaleDateString("ms-MY", options);
+  // };
+
+  // const formatCurrency = (amount) => {
+  //   return new Intl.NumberFormat("ms-MY", {
+  //     style: "currency",
+  //     currency: "MYR",
+  //     minimumFractionDigits: 2,
+  //   }).format(amount);
+  // };

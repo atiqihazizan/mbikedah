@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import apiClient from "../../axios";
 import { formatCurrency, formatDate } from "../../config/format";
+import PageComponent from "../../components/PageComponent";
+import TButton from "../../components/Core/TButton";
+import Card from "../../components/Card";
 
 const BillingView = () => {
   const { idBilling } = useParams();
@@ -49,82 +52,107 @@ const BillingView = () => {
     );
 
   return (
-    <div className="mx-auto p-6 bg-white rounded-lg shadow-md mt-8">
-      <h2 className="text-2xl font-bold text-center mb-6 text-blue-700">
-        Maklumat Bil
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mb-8">
-        <div>
-          <div className="text-gray-500 text-sm">No Bil</div>
-          <div className="font-semibold">{billing.running_no}</div>
+    
+    <PageComponent
+      title="Butiran Permohonan Bayaran"
+      buttons={!loading && (
+        <div className="flex gap-2">
+          <TButton color="light" to={'/billing/incomplete'}>Kembali</TButton>
+          {/* {canEdit && (
+            <>
+              <TButton 
+                color="light" 
+                onClick={saveDraft}
+                // isDisable={loading || !checkValid()}
+              >
+                Simpan sebagai Draf
+              </TButton>
+              <TButton 
+                color="green" 
+                onClick={submitToHOD}
+                // isDisable={loading || !checkValid() }
+              >
+                Hantar ke Ketua Jabatan
+              </TButton>
+            </>
+          )} */}
         </div>
-        <div>
-          <div className="text-gray-500 text-sm">Tarikh Bil</div>
-          <div className="font-semibold">{formatDate(billing.issued_at)}</div>
-        </div>
-        <div>
-          <div className="text-gray-500 text-sm">Penerima</div>
-          <div className="font-semibold">{billing.recipient}</div>
-        </div>
-        {/* <div>
-          <div className="text-gray-500 text-sm">Jabatan</div>
-          <div className="font-semibold">{billing.department}</div>
-        </div>
-        <div>
-          <div className="text-gray-500 text-sm">Jawatan</div>
-          <div className="font-semibold">{billing.creator.position}</div>
-        </div> */}
-        <div>
-          <div className="text-gray-500 text-sm">Jumlah</div>
-          <div className="font-semibold">{formatCurrency(billing.total_amount)}</div>
-        </div>
-        <div>
-          <div className="text-gray-500 text-sm">Kaedah Bayaran</div>
-          <div className="font-semibold">{billing.payment_method}</div>
-        </div>
-        <div>
-          <div className="text-gray-500 text-sm">Status</div>
-          <span className={`px-3 py-1 font-semibold text-xs shadow ${statusColorMap[billing.status_id]}`}>
-            {billing.status_name}
-          </span>
+      )}
+    >
+
+      <div className="container-fixed py-5">
+        <div className="grid gap-5 lg:gap-7.5 gow">
+          <Card>
+            <Card.Body>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mb-8">
+                <div>
+                  <div className="text-gray-500 text-sm">No Bil</div>
+                  <div className="font-semibold">{billing.running_no}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-sm">Tarikh Bil</div>
+                  <div className="font-semibold">{formatDate(billing.issued_at)}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-sm">Penerima</div>
+                  <div className="font-semibold">{billing.recipient}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-sm">Jumlah</div>
+                  <div className="font-semibold">{formatCurrency(billing.total_amount)}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-sm">Kaedah Bayaran</div>
+                  <div className="font-semibold">{billing.payment_method}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-sm">Status</div>
+                  <span className={`px-3 py-1 font-semibold text-xs shadow ${statusColorMap[billing.status_id]}`}>
+                    {billing.status_name}
+                  </span>
+                </div>
+              </div>
+              <h3 className="text-lg font-bold mb-2 text-blue-600">Senarai Item Bayaran</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm border rounded-lg">
+                  <thead>
+                    <tr className="bg-blue-100 text-blue-700">
+                      <th className="py-2 px-3 border-b">Budget</th>
+                      <th className="py-2 px-3 border-b">Keterangan Butiran</th>
+                      <th className="py-2 px-3 border-b">No. Rujukan</th>
+                      <th className="py-2 px-3 border-b">Bil/Unit</th>
+                      <th className="py-2 px-3 border-b">Kos Seunit</th>
+                      <th className="py-2 px-3 border-b">Jumlah</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {billing.details && billing.details.length > 0 ? (
+                      billing.details.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-blue-50">
+                          <td className="py-2 px-3 border-b">{item?.budget?.code}</td>
+                          <td className="py-2 px-3 border-b">{item?.description}</td>
+                          <td className="py-2 px-3 border-b">{item?.reference}</td>
+                          <td className="py-2 px-3 border-b text-center">{item?.quantity}</td>
+                          <td className="py-2 px-3 border-b text-right">{formatCurrency(item?.price)}</td>
+                          <td className="py-2 px-3 border-b text-right">{formatCurrency(item?.total)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="py-3 text-center text-gray-400">
+                          Tiada item.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              
+            </Card.Body>
+          </Card>
         </div>
       </div>
-      <h3 className="text-lg font-bold mb-2 text-blue-600">Senarai Item Bayaran</h3>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm border rounded-lg">
-          <thead>
-            <tr className="bg-blue-100 text-blue-700">
-              <th className="py-2 px-3 border-b">Budget</th>
-              <th className="py-2 px-3 border-b">Keterangan Butiran</th>
-              <th className="py-2 px-3 border-b">No. Rujukan</th>
-              <th className="py-2 px-3 border-b">Bil/Unit</th>
-              <th className="py-2 px-3 border-b">Kos Seunit</th>
-              <th className="py-2 px-3 border-b">Jumlah</th>
-            </tr>
-          </thead>
-          <tbody>
-            {billing.details && billing.details.length > 0 ? (
-              billing.details.map((item, idx) => (
-                <tr key={idx} className="hover:bg-blue-50">
-                  <td className="py-2 px-3 border-b">{item?.budget?.code}</td>
-                  <td className="py-2 px-3 border-b">{item?.description}</td>
-                  <td className="py-2 px-3 border-b">{item?.reference}</td>
-                  <td className="py-2 px-3 border-b text-center">{item?.quantity}</td>
-                  <td className="py-2 px-3 border-b text-right">{formatCurrency(item?.price)}</td>
-                  <td className="py-2 px-3 border-b text-right">{formatCurrency(item?.total)}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={6} className="py-3 text-center text-gray-400">
-                  Tiada item.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    </PageComponent>
   );
 };
 

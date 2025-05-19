@@ -58,18 +58,18 @@ trait HasStatus
       ]);
     }
 
-    if ($transactions) {
-      $this->transactions()->delete();
-      foreach ($transactions as $transaction) {
-        $this->transactions()->create([
-          'bank_id' => $transaction['bank_id'],
-          'budget_id' =>null,
-          'transaction_type' => 'credit',
-          'date' => now(),
-          'amount' => $transaction['amount'],
-        ]);
-      }
-    }
+    // if ($transactions) {
+    //   $this->transactions()->delete();
+    //   foreach ($transactions as $transaction) {
+    //     $this->transactions()->create([
+    //       'bank_id' => $transaction['bank_id'],
+    //       'budget_id' =>null,
+    //       'transaction_type' => 'credit',
+    //       'date' => now(),
+    //       'amount' => $transaction['amount'],
+    //     ]);
+    //   }
+    // }
 
     return true;
   }
