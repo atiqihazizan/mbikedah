@@ -52,7 +52,6 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
           total_accept: totalAccepted,
           payment_method: billing?.payment_method.toLowerCase() || ''
         };
-        console.log(dataPost);
         await apiClient.post(`/billings/${billing.id}/finance-review`, dataPost);
         toast.success("Bil berjaya diluluskan");
         navigate("/billing/finance");
