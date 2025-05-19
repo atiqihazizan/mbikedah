@@ -289,6 +289,8 @@ const BillingPaper = () => {
                 <colgroup>
                   <col style={{ width: "11cm" }} />
                   <col style={{ width: "15cm" }} />
+                  <col style={{ width: "15cm" }} />
+                  <col style={{ width: "64cm" }} />
                   <col style={{ width: "102cm" }} />
                   <col style={{ width: "84cm" }} />
                   <col style={{ width: "49cm" }} />
@@ -300,72 +302,42 @@ const BillingPaper = () => {
                 </colgroup>
                 <tbody>
                   <tr>
-                    <th className="textCenter thBlock fwBold" colSpan="10">
-                      PERMOHONAN PEMBAYARAN
-                    </th>
+                    <th className="textCenter thBlock fwBold" colSpan="12">PERMOHONAN PEMBAYARAN</th>
                   </tr>
                   <tr>
-                    <td
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN A: MAKLUMAT PERMOHONAN
-                    </td>
+                    <td className="text-center th-block fw-bold bg-opacity-25 bg-dark" colSpan="12">BAHAGIAN A: MAKLUMAT PERMOHONAN</td>
                   </tr>
                   <tr>
-                    <td className="fw-bold th-title" colSpan="4">
-                      TARIKH PERMOHONAN
-                    </td>
-                    <td className="text-center">
-                      {formatDate(billing?.created_at)}
-                    </td>
-                    <td className="text-center fw-bold">NO. SIRI</td>
-                    <td className="" colSpan="4">
-                      {billing?.running_no}
-                    </td>
+                    <td className="fw-bold th-title" colSpan="6">TARIKH PERMOHONAN</td>
+                    <td className="text-left" colSpan="4">{formatDate(billing?.created_at)}</td>
+                    <td className="text-center fw-bold" >NO. SIRI</td>
+                    <td className="" colSpan="4">{billing?.running_no}</td>
                   </tr>
                   <tr>
-                    <td className="fw-bold th-title" colSpan="4">
-                      PERMOHONAN OLEH
-                    </td>
+                    <td className="fw-bold th-title" colSpan="6">PERMOHONAN OLEH</td>
                     <td colSpan="6">{billing?.creator?.name}</td>
                   </tr>
                   <tr>
-                    <td className="fw-bold th-title" colSpan="4">
-                      JABATAN
-                    </td>
+                    <td className="fw-bold th-title" colSpan="6">JABATAN</td>
                     <td colSpan="6">{billing?.department}</td>
                   </tr>
                   <tr>
-                    <td className="fw-bold th-title" colSpan="4">
-                      NO. PROJEK
-                    </td>
+                    <td className="fw-bold th-title" colSpan="6">NO. PROJEK</td>
                     <td colSpan="6">{billing?.no_project}</td>
                   </tr>
                   <tr>
-                    <td className="fw-bold th-title" colSpan="4">
-                      NAMA PEMBEKAL/KONTRAKTOR/PENERIMA
-                    </td>
+                    <td className="fw-bold th-title" colSpan="6">NAMA PEMBEKAL/KONTRAKTOR/PENERIMA</td>
                     <td colSpan="6">{billing?.recipient}</td>
                   </tr>
 
                   <tr>
-                    <th
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN B: MAKLUMAT KEPERLUAN
-                    </th>
+                    <th className="text-center th-block fw-bold bg-opacity-25 bg-dark" colSpan="12">BAHAGIAN B: MAKLUMAT KEPERLUAN</th>
                   </tr>
                   <tr>
                     <td className="text-center th-detail fw-bold">BIL</td>
-                    <td className="text-center th-detail fw-bold">KOD BAJET</td>
-                    <td className="text-center th-detail fw-bold" colSpan="4">
-                      BUTIR BEKALAN/PERKHIDMATAN
-                    </td>
-                    <td className="text-center th-detail fw-bold">
-                      NO. RUJUKAN/INBOIS
-                    </td>
+                    <td className="text-center th-detail fw-bold" colSpan="3">KOD BAJET</td>
+                    <td className="text-center th-detail fw-bold" colSpan="4">BUTIR BEKALAN/PERKHIDMATAN</td>
+                    <td className="text-center th-detail fw-bold">NO. RUJUKAN/INBOIS</td>
                     <td className="text-center th-detail fw-bold">BIL/UNIT</td>
                     <td className="text-center th-detail fw-bold">KOS/UNIT</td>
                     <td className="text-center th-detail fw-bold">JUMLAH</td>
@@ -374,26 +346,22 @@ const BillingPaper = () => {
                   {details?.map((detail, index) => (
                     <tr key={index}>
                       <td className="text-center">{index + 1}</td>
-                      <td className="text-center">{detail.budget?.code}</td>
+                      <td className="text-center" colSpan="3">{detail.budget_code}</td>
                       <td colSpan="4">{detail.description}</td>
                       <td>{detail.reference || ""}</td>
                       <td className="text-center">{detail.quantity}</td>
-                      <td className="text-right">
-                        {formatCurrency(detail.price)}
-                      </td>
-                      <td className="text-right">
-                        {formatCurrency(detail.total)}
-                      </td>
+                      <td className="text-right">{formatCurrency(detail.price)}</td>
+                      <td className="text-right">{formatCurrency(detail.total)}</td>
                     </tr>
                   ))}
 
                   {/* Tambah baris kosong untuk mencapai 10 baris */}
-                  {Array(10 - details?.length - transactions?.length)
+                  {Array(15 - details?.length - transactions?.length)
                     .fill(0)
                     .map((_, index) => (
                       <tr key={index}>
                         <td className="text-center">&nbsp;</td>
-                        <td className="text-center">&nbsp;</td>
+                        <td colSpan="3">&nbsp;</td>
                         <td colSpan="4">&nbsp;</td>
                         <td>&nbsp;</td>
                         <td className="text-center">&nbsp;</td>
@@ -403,227 +371,70 @@ const BillingPaper = () => {
                     ))}
 
                   <tr>
-                    <td className="" colSpan="10">
-                      &nbsp;
-                    </td>
+                    <td className="" colSpan="12">&nbsp;</td>
+                  </tr>
+                  
+                  <tr>
+                    <th className="!text-left fw-bold bg-opacity-25 bg-dark" colSpan="8">C: PERAKUAN KETUA JABATAN</th>
+                    <th className="!text-left fw-bold bg-opacity-25 bg-dark" colSpan="4">D: SEMAKAN BAHAGIAN KEWANGAN</th>
                   </tr>
                   <tr>
-                    <td className="text-center fw-bold" colSpan="5">
-                      DISEDIAKAN OLEH
-                    </td>
-                    <td className="text-center fw-bold">TARIKH</td>
-                    <td className="text-center fw-bold" colSpan="3">
-                      DISAHKAN OLEH KETUA JABATAN
-                    </td>
-                    <td className="text-center fw-bold">TARIKH</td>
-                  </tr>
-                  <tr>
-                    <td className="text-center" colSpan="5">
-                      {history?.[0]?.created_by}
-                    </td>
-                    <td className="text-center">
-                      {formatDate(billing?.created_at)}
-                    </td>
-                    <td className="text-center" colSpan="3">
-                      {history?.[1]?.created_by}
-                    </td>
-                    <td className="text-center">
-                      {formatDate(billing?.hod_approved_at)}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <th
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN C: SEMAKAN OLEH JABATAN KEWANGAN
-                    </th>
-                  </tr>
-                  <tr>
-                    <td className="text-center fw-bold" colSpan="5">
-                      DISEMAK OLEH PEGAWAI KEWANGAN
-                    </td>
-                    <td className="text-center fw-bold">TARIKH</td>
-                    <td className="text-center fw-bold" colSpan="3">
-                      KOD AKAUN : DEBIT
-                    </td>
-                    <td className="text-center" colSpan="1">
-                      {billing?.debit_account_codes?.join(", ")}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center" colSpan="5">
-                      {history?.[2]?.created_by}
-                    </td>
-                    <td className="text-center">
-                      {formatDate(billing?.reviewed_at)}
-                    </td>
-                    <td className="text-center fw-bold" colSpan="3">
-                      KOD AKAUN : KREDIT
-                    </td>
-                    <td className="text-center" colSpan="1">
-                      {billing?.credit_account_code}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center fw-bold" colSpan="6">
-                      ULASAN
-                    </td>
-                    <td className="text-center fw-bold" colSpan="2">
-                      NAMA BANK
-                    </td>
-                    <td className="text-center fw-bold" colSpan="1">
-                      KREDIT
-                    </td>
-                    <td className="text-center fw-bold" colSpan="1">
-                      BAKI SEMASA
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center" colSpan="6" rowSpan="2">
-                      {history?.[2]?.remarks}
-                    </td>
-                    <td className="text-center" colSpan="2">
-                      <div className="flex flex-col text-start min-h-3">
-                        {transactions?.length === 0 && <span>&nbsp;</span>}
-                        {transactions?.map((credit, index) => (
-                          <strong key={index}>{credit.bank_name}</strong>
-                        ))}
+                    <td className="text-left" colSpan="8">
+                      <div className="flex flex-col py-2 gap-y-1">
+                        <div className="flex gap-2">
+                          <span className="font-medium w-14">NAMA</span>
+                          <span>{history?.[0]?.created_by}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="font-medium w-14">JAWATAN</span>
+                          <span></span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="font-medium w-14">TARIKH</span>
+                          <span>{formatDate(history?.[0]?.created_at)}</span>
+                        </div>
                       </div>
                     </td>
-                    <td className="text-center" colSpan="1">
-                      <div className="flex flex-col text-right">
-                        {transactions?.map((credit, index) => (
-                          <strong key={index}>
-                            {formatCurrency(credit.credit)}
-                          </strong>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="text-right" colSpan="1">
-                      <div className="flex flex-col text-right">
-                        {transactions?.map((credit, index) => (
-                          <strong key={index}>
-                            {formatCurrency(credit.latest_bal)}
-                          </strong>
-                        ))}
+                    <td className="text-left" colSpan="4">
+                      <div className="flex flex-col py-2 gap-y-1">
+                        <div className="flex gap-2">
+                          <span className="font-medium w-14">NAMA</span>
+                          <span>{history?.[1]?.created_by}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="font-medium w-14">JAWATAN</span>
+                          <span></span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="font-medium w-14">TARIKH</span>
+                          <span>{formatDate(history?.[1]?.created_at)}</span>
+                        </div>
                       </div>
                     </td>
                   </tr>
+
                   <tr>
-                    <td className="text-center fw-bold" colSpan="3">
-                      JUMLAH INI
-                    </td>
-                    <td className="text-right" colSpan="1">
-                      {formatCurrency(billing?.total_amount || 0)}
+                    <th className="!text-left fw-bold bg-opacity-25 bg-dark" colSpan="12">E: KELULUSAN KETUA PEGAWAI</th>
+                  </tr>
+                  <tr>
+                    <td className="text-left" colSpan="12">
+                      <div className="flex flex-col py-2 gap-y-1">
+                        <div className="flex gap-2">
+                          <span className="font-medium w-14">NAMA</span>
+                          <span>{history?.[0]?.created_by}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="font-medium w-14">JAWATAN</span>
+                          <span></span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="font-medium w-14">TARIKH</span>
+                          <span>{formatDate(history?.[0]?.created_at)}</span>
+                        </div>
+                      </div>
                     </td>
                   </tr>
 
-                  {/* <tr>
-                    <th
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN D: PENGESAHAN JABATAN KEWANGAN
-                    </th>
-                  </tr>
-                  <tr>
-                    <td className="text-center fw-bold" colSpan="5">
-                      DISAHKAN OLEH JABATAN KEWANGAN
-                    </td>
-                    <td className="text-center fw-bold">TARIKH</td>
-                    <td className="text-center fw-bold" colSpan="4">
-                      ULASAN
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center" colSpan="5">
-                      {history?.[3]?.created_by}&nbsp;
-                    </td>
-                    <td className="text-center">
-                      {formatDate(billing?.verified_at)}
-                    </td>
-                    <td className="text-center" colSpan="4">
-                      {history?.[3]?.remarks}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <th
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN E: KELULUSAN KETUA JABATAN KEWANGAN
-                    </th>
-                  </tr>
-                  <tr>
-                    <td className="text-center fw-bold" colSpan="5">
-                      DILULUSKAN OLEH KETUA JABATAN KEWANGAN
-                    </td>
-                    <td className="text-center fw-bold">TARIKH</td>
-                    <td className="text-center fw-bold" colSpan="4">
-                      TANDATANGAN
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center" colSpan="5">
-                      {billing?.total_amount > 10000 ? "" : history?.[4]?.created_by}&nbsp;
-                    </td>
-                    <td className="text-center">{billing?.total_amount > 10000 ? "" : formatDate(billing?.approved_at)}</td>
-                    <td className="text-center" colSpan="4" rowSpan="3">
-                      &nbsp;
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td className="text-center fw-bold" colSpan="6">
-                      ULASAN
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center" colSpan="6">
-                      &nbsp;
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <th
-                      className="text-center th-block fw-bold bg-opacity-25 bg-dark"
-                      colSpan="10"
-                    >
-                      BAHAGIAN F: KELULUSAN KETUA PEGAWAI EKSEKUTIF
-                    </th>
-                  </tr>
-                  <tr>
-                    <td className="text-center fw-bold" colSpan="5">
-                      DILULUSKAN OLEH KETUA PEGAWAI EKSEKUTIF
-                    </td>
-                    <td className="text-center fw-bold">TARIKH</td>
-                    <td className="text-center fw-bold" colSpan="4">
-                      TANDATANGAN
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center" colSpan="5">
-                      {billing?.total_amount < 10000 ? "" : history?.[4]?.created_by}&nbsp;
-                    </td>
-                    <td className="text-center">{billing?.total_amount < 10000 ? "" : formatDate(billing?.approved_at)}</td>
-                    <td className="text-center" colSpan="4" rowSpan="3">
-                      &nbsp;
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td className="text-center fw-bold" colSpan="6">
-                      ULASAN
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center" colSpan="6">
-                      &nbsp;
-                    </td>
-                  </tr> */}
                 </tbody>
               </table>
             </div>
