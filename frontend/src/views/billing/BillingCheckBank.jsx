@@ -83,7 +83,7 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
 
   useEffect(()=>{
     setBilling({...billing, transactions: transactions});
-  },[transactions])
+  },[transactions,billing,setBilling])
 
   return (
     <div className="my-8">
