@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStateContext } from "../../contexts/ContextProvider";
 import { FaPlus, FaEdit } from "react-icons/fa";
@@ -32,18 +32,21 @@ export default function BillingForm() {
     date.setDate(date.getDate() + 30);
     return date.toISOString().slice(0, 10);
   };
-  const defaultDetail = {
-    budget_id: "",           // ID bajet
-    budget_code: "",         // Kod bajet
-    description: "",         // Keterangan
-    reference: "",          // No rujukan
-    quantity: "0",          // Kuantiti (string untuk elak null)
-    price: "0.00",          // Harga seunit
-    total: "0.00",         // Jumlah (quantity * price)
-    unit: "",                // Unit ukuran
-    purpose: ""     
-  }
-  const defaultPetition = {
+  const defaultDetail = useMemo(() => {
+      return {
+      budget_id: "",           // ID bajet
+      budget_code: "",         // Kod bajet
+      description: "",         // Keterangan
+      reference: "",          // No rujukan
+      quantity: "0",          // Kuantiti (string untuk elak null)
+      price: "0.00",          // Harga seunit
+      total: "0.00",         // Jumlah (quantity * price)
+      unit: "",                // Unit ukuran
+      purpose: ""     
+    }
+  }, []);
+  const defaultPetition = useMemo(() => {
+    return {
     issued_at: new Date().toISOString().slice(0, 10),    // Tarikh bil
     no_project: "N/A",                                    // No projek
     recipient_id: "",                                    // ID penerima
@@ -57,6 +60,7 @@ export default function BillingForm() {
     created_by: "",                                     // ID pengguna
     details: [defaultDetail],                                          // Senarai item bayaran
   };
+}, [currentUser, defaultDetail]);
 
   const [petition, setPetition] = useState(defaultPetition);
 
@@ -189,11 +193,13 @@ export default function BillingForm() {
         const {data} = await apiClient.get(`/billings/${idform}`);
         if (data) setPetition({...data,issued_at: data.issued_at?.slice(0, 10),payment_due: data.payment_due?.slice(0, 10)})
       } 
-      else setPetition(defaultPetition);
+      else {
+        setPetition(defaultPetition);
+      }
     };
 
     initBilling();
-  }, [idform]);
+  }, [idform, defaultPetition]);
 
   const canEdit = [1,9].includes(petition.status_id);
 
@@ -277,7 +283,7 @@ export default function BillingForm() {
                             <th className="text-center !px-2">Rujukan (Jika ada)</th>
                             <th className="text-center !px-2">Kuantiti</th>
                             <th className="text-end !px-2">Harga</th>
-                            <th className="text-end !px-2 text-right">Amaunt</th>
+                            <th className="text-end !px-2">Amaunt</th>
                             <th className="text-start !px-2"></th>
                           </tr>
                         </thead>
