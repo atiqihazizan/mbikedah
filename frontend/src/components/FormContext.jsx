@@ -16,16 +16,8 @@ function FLabel({ text, oCLass = "max-w-56" }) {
 	return <label className={`form-label ${oCLass}`}>{text}</label>;
 }
 
-function Text({
-  field,
-  value,
-  onChange,
-  holder = "",
-  type = "text",
-  css,
-  option,
-}) {
-  const { setValue, data, error, disabled } = useContext(FormContext);
+function Text({field,value,onChange,holder = "",type = "text",css,option}) {
+  const { error, disabled } = useContext(FormContext);
   const newCss = ["input"];
   if (css) newCss.push(css);
   return (
@@ -45,47 +37,40 @@ function Text({
     </div>
   );
 }
-function TxtDate({
-  field,
-  value,
-  onChange,
-  holder = "",
-  css,
-  option,
-}) {
-  const { setValue, data, error, disabled } = useContext(FormContext);
+function TextArea({field, value, onChange, holder = "", css, option, rows = 4}) {
+  const { error, disabled } = useContext(FormContext);
+  const newCss = ["textarea"];
+  if (css) newCss.push(css);
+  
   return (
-    <Text
-      type="date"
-      option={option}
-      css={css}
-      field={field}
-      value={value}
-      onChange={onChange}
-      holder={holder}
-    />
+    <div className="flex flex-col w-full">
+      <textarea
+        className={newCss.join(" ")}
+        placeholder={holder}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        rows={rows}
+        {...option}
+      />
+      {error?.[field] && (
+        <span className="text-xs mt-2 text-red-600">{error?.[field]}</span>
+      )}
+    </div>
   );
 }
-function Decimal({
-  field,
-  value,
-  onChange,
-  holder = "",
-  css,
-  option,
-}) {
-  const { setValue, data, error, disabled } = useContext(FormContext);
+function TxtDate({field,value,onChange,holder = "",css,option}) {
+  // const { setValue, data, error, disabled } = useContext(FormContext);
+  return (<Text type="date" option={option} css={css} field={field} value={value} onChange={onChange} holder={holder}/>);
+}
 
+function Decimal({field,value,onChange,holder = "",css,option}) {
   const handleChange = (e) => {
     const inputValue = e.target.value;
-    
-    // Benarkan input kosong
     if (inputValue === '') {
       onChange(e);
       return;
     }
-
-    // Validasi format nombor dengan 2 tempat perpuluhan
     const regex = /^\d*\.?\d{0,2}$/;
     if (regex.test(inputValue)) {
       onChange(e);
@@ -115,7 +100,7 @@ function Decimal({
           }
         }
       }}
-      css={`text-right ${css}`}
+      css={`text-right ${css || '123'}`}
       field={field}
       value={value}
       onChange={handleChange}
@@ -123,15 +108,8 @@ function Decimal({
     />
   );
 }
-function Numeric({
-  field,
-  value,
-  onChange,
-  holder = "",
-  css,
-  option,
-}) {
-  const { setValue, data, error, disabled } = useContext(FormContext);
+function Numeric({field,value,onChange,holder = "",css,option}) {
+  // const { setValue, data, error, disabled } = useContext(FormContext);
 
   const handleChange = (e) => {
     const inputValue = e.target.value;
@@ -180,43 +158,40 @@ function Numeric({
     />
   );
 }
-function Password({
-  field,
-  value,
-  onChange,
-  holder = "",
-  css,
-  option,
-}) {
-  const { setValue, data, error, disabled } = useContext(FormContext);
+function Password({ field,value,onChange,holder = "",css,option }) {
+  // const { setValue, data, error, disabled } = useContext(FormContext);
+  return (<Text type="password" option={option} css={css} field={field} value={value} onChange={onChange} holder={holder}/>);
+}
+
+function FInput({ field, holder = "", type = "text",option,inputCss }) {
+	const { setValue, data, error } = useContext(FormContext);
+	return (<TInput data={data} field={field} setValue={setValue} error={error} holder={holder} type={type} option={option} inputCss={inputCss}/>);
+}
+
+function FTextArea({ field, value, holder = "", rows = 4, option, css, onChange }) {
+  const { data, setValue } = useContext(FormContext);
+  
+  // Fungsi handleChange yang langsung menggunakan nilai
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    const newData = { ...data, [field]: newValue };
+    setValue(newData);
+    if (onChange) onChange(e);
+  };
+
   return (
-    <Text
-      type="password"
-      option={option}
-      css={css}
+    <TextArea
       field={field}
       value={value}
-      onChange={onChange}
+      onChange={handleChange}
       holder={holder}
+      css={css}
+      option={option}
+      rows={rows}
     />
   );
 }
 
-function FInput({ field, holder = "", type = "text",option,inputCss }) {
-	const { setValue, data, error, disabled } = useContext(FormContext);
-	return (
-		<TInput
-			data={data}
-			field={field}
-			setValue={setValue}
-			error={error}
-			holder={holder}
-			type={type}
-			option={option}
-      inputCss={inputCss}
-		/>
-	);
-}
 function FSelect({ field, keyval, listArr, option, css }) {
 	const { setValue, data, error, disabled } = useContext(FormContext);
 	return (
@@ -228,6 +203,8 @@ function FSelect({ field, keyval, listArr, option, css }) {
 			keyval={keyval}
 			error={error}
 			list={listArr}
+      maxLength={null}
+      placeholder={option?.placeholder || "Pilih"}
 			option={{ ...option, disabled: option?.disabled || disabled }}
 		/>
 	);
@@ -284,7 +261,7 @@ function ColPassword({ text, field, holder }) {
     </div>
   );
 }
-function CDate({ text, field, holder, onChange }) {
+function CDate({ text, field, holder }) {
 	return (
     <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
       <FLabel text={text} />
@@ -292,7 +269,7 @@ function CDate({ text, field, holder, onChange }) {
     </div>
   );
 }
-function CBButton({ save = true, cancel = false ,saveOpt={}}) {
+function CBButton({ save = true, saveOpt={}}) {
 	return (
 		<div className="flex justify-end">
 			{save && (
@@ -307,9 +284,20 @@ function CBButton({ save = true, cancel = false ,saveOpt={}}) {
 		</div>
 	);
 }
+
+// function CTextArea({ text, field, holder, rows, css }) {
+//   return (
+//       <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
+//           <FLabel text={text} />
+//           <FTextArea field={field} holder={holder} rows={rows} css={css} />
+//       </div>
+//   );
+// }
+
 FormC.label = FLabel;
 FormC.input = FInput;
 FormC.select = FSelect;
+FormC.textarea = FTextArea;
 
 FormC.text = Text;
 FormC.date = TxtDate;

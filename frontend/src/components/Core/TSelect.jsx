@@ -9,6 +9,7 @@ export default function TSelect({
 	className,
 	wrapperClassName,
 	maxLength = 30, // Panjang maksimum label sebelum dipotong
+	placeholder = "Pilih",
 	onChange,
 }) {
 	// Pastikan list adalah array
@@ -27,6 +28,7 @@ export default function TSelect({
 	// Fungsi untuk memotong teks yang terlalu panjang
 	function truncateText(text, maxLen = maxLength) {
 		if (!text) return '';
+		if (maxLen === null) return text;
 		return text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
 	}
 
@@ -65,7 +67,7 @@ export default function TSelect({
 				value={data?.[field] || ''}
 				{...option}
 			>
-				<option value="">Pilih</option>
+				<option value="">{placeholder}</option>
 				{safeList.map((item, index) => {
 					// Pastikan nilai wujud
 					const value = item?.[oKey];

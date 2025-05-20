@@ -233,7 +233,7 @@ const BillingPaper = () => {
           style={{
             backgroundColor: "#fff",
             width: "210mm",
-            // height: "297mm",
+            height: "297mm",
             padding: "10mm",
             boxShadow: "0 0 10px rgba(0,0,0,0.5)",
             margin: "auto",
@@ -305,7 +305,7 @@ const BillingPaper = () => {
                     <th className="textCenter thBlock fwBold" colSpan="12">PERMOHONAN PEMBAYARAN</th>
                   </tr>
                   <tr>
-                    <td className="text-center th-block fw-bold bg-opacity-25 bg-dark" colSpan="12">BAHAGIAN A: MAKLUMAT PERMOHONAN</td>
+                    <th className="!text-left th-block fw-bold bg-opacity-25 bg-dark" colSpan="12">A: MAKLUMAT PERMOHONAN</th>
                   </tr>
                   <tr>
                     <td className="fw-bold th-title" colSpan="6">TARIKH PERMOHONAN</td>
@@ -331,7 +331,7 @@ const BillingPaper = () => {
                   </tr>
 
                   <tr>
-                    <th className="text-center th-block fw-bold bg-opacity-25 bg-dark" colSpan="12">BAHAGIAN B: MAKLUMAT KEPERLUAN</th>
+                    <th className="!text-left th-block fw-bold bg-opacity-25 bg-dark" colSpan="12">B: MAKLUMAT KEPERLUAN</th>
                   </tr>
                   <tr>
                     <td className="text-center th-detail fw-bold">BIL</td>

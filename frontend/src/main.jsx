@@ -21,7 +21,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         newestOnTop
         closeOnClick
         rtl={false}
-        pauseOnFocusLoss
+        // pauseOnFocusLoss
         draggable
         pauseOnHover={true}
         theme="colored"
