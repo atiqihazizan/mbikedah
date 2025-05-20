@@ -183,10 +183,6 @@ export default function BillingForm() {
     return () => {isSubscribed = false};
   }, []);
 
-  // useEffect(() => {
-  //   setPetition({...petition,department_id: currentUser?.is_admin ? '0' : (currentUser?.department_id || '0')});
-  // }, [currentUser]);
-
   useEffect(() => {
     const initBilling = async () => {
       if (idform) {
@@ -218,7 +214,7 @@ export default function BillingForm() {
         </div>
       )}
     >
-      <div className="container-fixed py-5">
+      <div className="container py-5">
         <div className="grid gap-5 lg:gap-7.5 gow">
           {loading && <Pulse />}
           {!loading && (
@@ -238,39 +234,35 @@ export default function BillingForm() {
                       />
                       <FormC.LText field={"no_project"} text={"No Pesanan"} option={{ readOnly: !canEdit }} />
                       <div className="flex items-center gap-2">
-                        <div className="flex-grow">
-                          <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
-                            <FormC.label text="Individu/Syarikat" />
-                            <div className="flex flex-col w-full">
-                              <Select
-                                isDisabled={!canEdit}
-                                value={recipients.find(rec => rec.id === parseInt(petition.recipient_id)) || null}
-                                onChange={(selectedOption) => {setPetition(prev => ({...prev,recipient_id: selectedOption ? selectedOption.id : ""}));}}
-                                options={recipients}
-                                getOptionLabel={(option) => option.name}
-                                getOptionValue={(option) => option.id.toString()}
-                                placeholder="Pilih Penerima"
-                                className="react-select-container"
-                                classNamePrefix="react-select"
-                              />
-                              {error?.recipient_id && (<span className="text-xs mt-2 text-red-600">{error.recipient_id}</span>)}
-                            </div>
+                        <FormC.label text="Individu/Syarikat" />
+                        <div className="flex flex-col w-full">
+                          <div className="flex flex-row gap-2.5">
+                            <Select
+                              isDisabled={!canEdit}
+                              value={recipients.find(rec => rec.id === parseInt(petition.recipient_id)) || null}
+                              onChange={(selectedOption) => {setPetition(prev => ({...prev,recipient_id: selectedOption ? selectedOption.id : ""}));}}
+                              options={recipients}
+                              getOptionLabel={(option) => option.name}
+                              getOptionValue={(option) => option.id.toString()}
+                              placeholder="Pilih Penerima"
+                              className="react-select-container w-full"
+                              classNamePrefix="react-select"
+                            />
+                            {canEdit && (
+                              <>
+                                <TButton color="light" onClick={handleAddRecipient} className="!py-1" title="Tambah Penerima Baru"><FaPlus className="w-4 h-4" /></TButton>
+                                {petition.recipient_id && (
+                                  <TButton color="light" onClick={() => {
+                                      const recipient = recipients.find(r => r.id === parseInt(petition.recipient_id));
+                                      if (recipient) handleEditRecipient(recipient);
+                                    }} className="p-2" title="Kemaskini Penerima">
+                                    <FaEdit className="w-4 h-4" />
+                                  </TButton>
+                                )}
+                              </>
+                            )}
                           </div>
-                        </div>
-                        <div className="flex gap-1">
-                          {canEdit && (
-                            <>
-                              <TButton color="light" onClick={handleAddRecipient} className="p-2" title="Tambah Penerima Baru"><FaPlus className="w-4 h-4" /></TButton>
-                              {petition.recipient_id && (
-                                <TButton color="light" onClick={() => {
-                                    const recipient = recipients.find(r => r.id === parseInt(petition.recipient_id));
-                                    if (recipient) handleEditRecipient(recipient);
-                                  }} className="p-2" title="Kemaskini Penerima">
-                                  <FaEdit className="w-4 h-4" />
-                                </TButton>
-                              )}
-                            </>
-                          )}
+                          {error?.recipient_id && (<span className="text-xs mt-2 text-red-600">{error.recipient_id}</span>)}
                         </div>
                       </div>
                       <RecipientModal show={showRecipientModal} onClose={() => setShowRecipientModal(false)} onSaved={handleSaveRecipient} recipient={selectedRecipient}/>
@@ -279,9 +271,11 @@ export default function BillingForm() {
                       <table className="table">
                         <thead>
                           <tr>
-                            <th className="text-start !pl-7 !pr-2">Perkara</th>
-                            <th className="text-center !px-2">Rujukan (Jika ada)</th>
+                            <th className="text-start !pl-7 !pr-2">Kod Bajet</th>
+                            <th className="text-start !pl-2 !pr-2">Perkara</th>
+                            <th className="text-left !px-2">Rujukan</th>
                             <th className="text-center !px-2">Kuantiti</th>
+                            <th className="text-left !px-2">Unit</th>
                             <th className="text-end !px-2">Harga</th>
                             <th className="text-end !px-2">Amaunt</th>
                             <th className="text-start !px-2"></th>
@@ -304,13 +298,13 @@ export default function BillingForm() {
                         </tbody>
                         <tfoot>
                           <tr>
-                            <td colSpan={4} className="text-right font-bold">Jumlah</td>
+                            <td colSpan={6} className="text-right font-bold">Jumlah</td>
                             <td className="text-right font-bold !px-2">{formatCurrency(petition?.total_amount || '0.00')}</td>
                             <td></td>
                           </tr>
                         </tfoot>
                       </table>
-                      <span className="text-xs px-6 mt-2 text-red-600">{error?.details}</span>
+                      {error?.details && (<span className="text-xs px-6 mt-2 text-red-600">{error?.details}</span>)}
                     </div>
 
                   </FormC>

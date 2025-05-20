@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import apiClient from "../../axios";
 import { formatCurrency, formatDate } from "../../config/format";
+import apiClient from "../../axios";
 import PageComponent from "../../components/PageComponent";
 import TButton from "../../components/Core/TButton";
 import Card from "../../components/Card";
@@ -39,17 +39,9 @@ const BillingView = () => {
   }, [idBilling]);
 
   if (loading)
-    return (
-      <div className="flex justify-center items-center min-h-[200px] text-gray-500">
-        Memuatkan maklumat bil...
-      </div>
-    );
+    return <div className="flex justify-center items-center min-h-[200px] text-gray-500">Memuatkan maklumat bil...</div>;
   if (!billing)
-    return (
-      <div className="flex justify-center items-center min-h-[200px] text-red-500">
-        Maklumat bil tidak dijumpai.
-      </div>
-    );
+    return <div className="flex justify-center items-center min-h-[200px] text-red-500">Maklumat bil tidak dijumpai.</div>;
 
   return (
     
@@ -117,29 +109,37 @@ const BillingView = () => {
                 <table className="min-w-full text-sm border rounded-lg">
                   <thead>
                     <tr className="bg-blue-100 text-blue-700">
-                      <th className="py-2 px-3 border-b">Budget</th>
-                      <th className="py-2 px-3 border-b">Keterangan Butiran</th>
-                      <th className="py-2 px-3 border-b">No. Rujukan</th>
+                      <th className="py-2 px-3 border-b text-left">Budget</th>
+                      <th className="py-2 px-3 border-b text-left">Keterangan Butiran</th>
+                      <th className="py-2 px-3 border-b text-left">No. Rujukan</th>
                       <th className="py-2 px-3 border-b">Bil/Unit</th>
-                      <th className="py-2 px-3 border-b">Kos Seunit</th>
-                      <th className="py-2 px-3 border-b">Jumlah</th>
+                      <th className="py-2 px-3 border-b text-right">Kos Seunit</th>
+                      <th className="py-2 px-3 border-b text-right">Jumlah</th>
+                      <th className="py-2 px-3 border-b text-center">Kewangan Terima</th>
                     </tr>
                   </thead>
                   <tbody>
                     {billing.details && billing.details.length > 0 ? (
                       billing.details.map((item, idx) => (
-                        <tr key={idx} className="hover:bg-blue-50">
-                          <td className="py-2 px-3 border-b">{item?.budget?.code}</td>
+                        <tr key={idx} className={`hover:bg-blue-50 ${!item.accept ? 'line-through text-gray-400' : ''}`}>
+                          <td className="py-2 px-3 border-b">{item?.budget_code}</td>
                           <td className="py-2 px-3 border-b">{item?.description}</td>
                           <td className="py-2 px-3 border-b">{item?.reference}</td>
                           <td className="py-2 px-3 border-b text-center">{item?.quantity}</td>
                           <td className="py-2 px-3 border-b text-right">{formatCurrency(item?.price)}</td>
                           <td className="py-2 px-3 border-b text-right">{formatCurrency(item?.total)}</td>
+                          <td className="py-2 px-3 border-b text-center">
+                            {item?.accept ? (
+                              <span className="text-green-500">Diterima</span>
+                            ) : (
+                              <span className="text-red-500">Tidak Diterima</span>
+                            )}
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="py-3 text-center text-gray-400">
+                        <td colSpan={7} className="py-3 text-center text-gray-400">
                           Tiada item.
                         </td>
                       </tr>

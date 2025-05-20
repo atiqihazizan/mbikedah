@@ -55,59 +55,57 @@ export default function BillingFormDetailsRows({ FormC, data, def, idx = false, 
   return (
     <>
     <tr>
-      <td className="!pl-7 !pr-2 align-top">
-        <div className="flex flex-col gap-y-2">
-          <FormC.select
-            field="budget_id"
-            keyval="id,code,name"
-            listArr={budgets}
-            option={{
-              placeholder: "Pilih bajet *",
-              disabled,
-              value: detail?.budget_id || '',
-              onChange: (e) => {
-                const selectedBudget = budgets.find(b => b.id === parseInt(e.target.value));
-                const newData = {...detail,budget_id: e.target.value,budget_code: selectedBudget?.code || ''};
-                setDetail(newData);
-                onUpdate(newData);
-              }
-            }}
-          />
-          <FormC.textarea 
-            field="description" 
-            holder="Keterangan *" 
-            rows={2} 
-            value={detail?.description || ''}
-            option={{ disabled }} 
-            onChange={(e) => inputChange(e, "description")}
-          />
-        </div>
+      <td className="!pl-7 !pr-2 align-top w-[140px]">
+        <FormC.select
+          field="budget_id"
+          keyval="id,code,name"
+          listArr={budgets}
+          option={{
+            placeholder: "Pilih bajet",
+            disabled,
+            value: detail?.budget_id || '',
+            onChange: (e) => {
+              const selectedBudget = budgets.find(b => b.id === parseInt(e.target.value));
+              const newData = {...detail,budget_id: e.target.value,budget_code: selectedBudget?.code || ''};
+              setDetail(newData);
+              onUpdate(newData);
+            }
+          }}
+        />
         {error?.[`details.${idx}.budget_id`] && (<span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.budget_id`]}</span>)}
+      </td>
+      <td className="!pl-2 !pr-2 align-top">
+        <FormC.textarea field="description" 
+          rows={1} 
+          value={detail?.description || ''}
+          option={{ disabled }} 
+          onChange={(e) => inputChange(e, "description")}
+        />
         {error?.[`details.${idx}.description`] && (<span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.description`]}</span>)}
       </td>
-      <td className="!px-2 w-[150px] align-top">
-        <FormC.text value={detail?.reference || ''} onChange={(e) => inputChange(e, "reference")} holder="No rujukan (Jika ada)" option={{ disabled }} />
+      <td className="!px-2 w-[250px] align-top">
+        <FormC.text value={detail?.reference || ''} onChange={(e) => inputChange(e, "reference")}  option={{ disabled }} />
+      </td>
+      <td className="!px-2 w-[130px] align-top">
+        <FormC.number value={detail?.quantity || '0'} css="text-center" onChange={(e) => currChange(e, "quantity", "price")} option={{disabled,onFocus: onFocus}} />
+        {error?.[`details.${idx}.quantity`] && (<span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.quantity`]}</span>)}
       </td>
       <td className="!px-2 w-[150px] align-top">
-        <div className="flex flex-col gap-y-2">
-          <FormC.number value={detail?.quantity || '0'} onChange={(e) => currChange(e, "quantity", "price")} option={{disabled,placeholder: "Kuantiti",onFocus: onFocus}} />
-          <FormC.text value={detail?.unit || ''} onChange={(e) => inputChange(e, "unit")} option={{disabled,placeholder: "Unit"}} />
-        </div>
-        {error?.[`details.${idx}.quantity`] && (<span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.quantity`]}</span>)}
+        <FormC.text value={detail?.unit || ''} onChange={(e) => inputChange(e, "unit")} option={{disabled}} />
         {error?.[`details.${idx}.unit`] && (<span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.unit`]}</span>)}
       </td>
-      <td className="!px-2 w-[150px] align-top">
+      <td className="!px-2 w-[120px] align-top">
         <FormC.currency value={detail?.price || '0.00'} onChange={(e) => currChange(e, "price", "quantity")} option={{disabled,placeholder: "Harga",onFocus: onFocus}} />
         {error?.[`details.${idx}.price`] && (<span className="text-xs mt-2 text-red-600">{error?.[`details.${idx}.price`]}</span>)}
       </td>
-      <td className="!px-2 w-[150px] text-end align-top">{formatCurrency(detail?.total || '0.00')}</td>
+      <td className="!px-2 w-[120px] text-end">{formatCurrency(detail?.total || '0.00')}</td>
       <td className="!pl-0 !pr-7 w-[80px] align-top text-end">
           {idx > 0 && !disabled && (<a className="btn btn-xs btn-icon text-danger-700" onClick={onDelete}><Trash2Icon /></a>)}
       </td>
     </tr>
     { (idx === dataLen) && (
     <tr>
-      <td colSpan={7} className="!pl-7 !pr-2 w-[150px]">
+      <td colSpan={8} className="!pl-7 !pr-2 w-[150px]">
         <a className="text-primary-600 hover:text-primary-900 italic font-semibold" onClick={onSave}>Tambah Item</a>
       </td>
     </tr>

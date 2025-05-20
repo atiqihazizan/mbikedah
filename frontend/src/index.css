@@ -72,3 +72,13 @@ select option {
 .react-select-container .react-select__single-value--is-disabled {
     @apply text-gray-500;
 }
+
+.table thead th {
+    background-color: #eeeeee !important;
+}
+.table th:first-child {
+    border-top-left-radius: 0 !important;
+}
+.table th:last-child {
+    border-top-right-radius: 0 !important;
+}
