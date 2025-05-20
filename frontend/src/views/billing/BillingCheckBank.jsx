@@ -86,7 +86,7 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
   },[transactions])
 
   return (
-    <div className="mt-8">
+    <div className="my-8">
       {/* Payment Method */}
       
       <h2 className="text-lg font-medium text-gray-900 mb-4">Butiran Pembayar</h2>

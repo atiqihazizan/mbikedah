@@ -1,4 +1,3 @@
-import TAlertIcon from '../../components/Core/TAlertIcon';
 import { formatDate } from '../../config/format';
 
 const BillingCheckInfo = ({ billing }) => {
@@ -16,19 +15,6 @@ const BillingCheckInfo = ({ billing }) => {
 
   return (
     <div>
-      {/* Status Badge */}
-      <div className="px-6 py-4 bg-yellow-50 border-b border-yellow-200">
-        <div className="flex items-center">
-          <div className="flex-shrink-0"><TAlertIcon /></div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-yellow-800">Sila semak butiran bil di bawah</h3>
-            <div className="mt-2 text-sm text-yellow-700">
-              <p>Pastikan semua maklumat adalah betul sebelum meluluskan bil ini.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Bill Details */}
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>

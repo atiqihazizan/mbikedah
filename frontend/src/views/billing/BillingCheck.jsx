@@ -10,6 +10,7 @@ import TLoadingSpinner from "../../components/Core/TLoadingSpinner";
 import BillingCheckBudget from "./BillingCheckBudget";
 import { formatDate } from "../../config/format";
 import BillingCheckInfo from "./BillingCheckInfo";
+import TAlertIcon from "../../components/Core/TAlertIcon";
 
 export default function BillingCheck() {
   const { idBilling } = useParams();
@@ -88,8 +89,21 @@ export default function BillingCheck() {
           </div>
         </div>
       </div>
+      
+      {/* Status Badge */}
+      <div className="px-6 py-4 bg-yellow-50 border-b border-yellow-200">
+        <div className="flex items-center">
+          <div className="flex-shrink-0"><TAlertIcon /></div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-yellow-800">Sila semak butiran bil di bawah</h3>
+            <div className="mt-2 text-sm text-yellow-700">
+              <p>Pastikan semua maklumat adalah betul sebelum meluluskan bil ini.</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <div className="px-6 py-6 h-[calc(100vh-92px)] overflow-y-auto relative">
+      <div className="container h-[calc(100vh-170px)] overflow-y-auto">
         <BillingCheckInfo billing={billing} />
         <BillingCheckBudget billing={billing} setBilling={setBilling} budgets={budgets} processing={processing} />
         <BillingCheckBank billing={billing} setBilling={setBilling} banks={banks} processing={processing} setProcessing={setProcessing} />
