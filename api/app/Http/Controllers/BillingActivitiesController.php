@@ -27,6 +27,7 @@ class BillingActivitiesController extends Controller
       $remarks = $request->remarks ?? ''; //Diluluskan oleh HOD
       
       // Tetapkan tarikh kelulusan HOD
+      $billing->hod_approved_by = Auth::id();
       $billing->hod_approved_at = now();
       $billing->save();
       
@@ -72,6 +73,7 @@ class BillingActivitiesController extends Controller
       }
       
       // Tetapkan tarikh semakan kewangan
+      $billing->reviewed_by = Auth::id();
       $billing->reviewed_at = now();
       $billing->payment_method = "$payment_method";
       $billing->save();
@@ -149,10 +151,12 @@ class BillingActivitiesController extends Controller
       $remarks = $request->remarks ?? ''; //Disahkan oleh Kewangan
       
       // Tetapkan tarikh pengesahan kewangan
+      $billing->verified_by = Auth::id();
       $billing->verified_at = now();
       $billing->save();
-      
-      $billing->updateStatus(BillingStatus::FINANCE_APPROVAL, Auth::id(), $remarks);
+      DB::commit();
+
+      $billing->updateStatus(BillingStatus::PROCESSING_PAYMENT, Auth::id(), $remarks);
       DB::commit();
       return response()->json([
         'success' => true,
@@ -177,6 +181,7 @@ class BillingActivitiesController extends Controller
       // Tetapkan tarikh kelulusan kewangan
       $approved_date = $request->approved_date ?? now();
       $billing->approved_at = $approved_date;
+      $billing->approved_by = Auth::id();
       $billing->save();
       
       $billing->updateStatus(BillingStatus::PROCESSING_PAYMENT, Auth::id(), $remarks);
@@ -204,6 +209,7 @@ class BillingActivitiesController extends Controller
       // Tetapkan tarikh pembayaran
       $payment_date = $request->payment_date ?? now();
       $billing->paid_at = $payment_date;
+      $billing->paid_by = Auth::id();
       $billing->save();
       
       $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), $remarks);

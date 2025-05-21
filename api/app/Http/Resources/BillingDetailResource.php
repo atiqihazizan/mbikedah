@@ -43,6 +43,7 @@ class BillingDetailResource extends JsonResource
       'hod_approved_at' => $this->hod_approved_at,
       'reviewed_at' => $this->reviewed_at,
       'verified_at' => $this->verified_at,
+      'verified_by' => $this->verified_by,
       'approved_at' => $this->approved_at,
       'paid_at' => $this->paid_at,
       'ceo_approved' => $this->ceo_approved,

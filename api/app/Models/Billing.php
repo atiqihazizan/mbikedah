@@ -36,10 +36,15 @@ class Billing extends Model
     'last_printed_by',
     'print_count',
     'hod_approved_at',
+    'hod_approved_by',
     'reviewed_at',
+    'reviewed_by',
     'verified_at',
+    'verified_by',
     'approved_at',
+    'approved_by',
     'paid_at',
+    'paid_by',
     'ceo_approved',
     'payment_method'
   ];

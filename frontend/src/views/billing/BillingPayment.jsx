@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStateContext } from "../../contexts/ContextProvider";
-import { FaPlus, FaUpload } from "react-icons/fa";
+import { FaUpload } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Pulse from "../../components/Core/Pulse";
 import Card from "../../components/Card";
@@ -14,15 +14,14 @@ import Select from "react-select";
 
 export default function BillingPayment() {
   const navigate = useNavigate();
-  const { idform } = useParams();
+  const { idBilling:idform } = useParams();
   const { currentUser } = useStateContext();
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [billings, setBillings] = useState([]);
   const [banks, setBanks] = useState([]);
-  const [showFileUpload, setShowFileUpload] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  
+
   const flagNew = idform == undefined ? true : false;
 
   // Default values untuk payment
@@ -53,11 +52,8 @@ export default function BillingPayment() {
 
   const fetchBillings = async () => {
     try {
-      // Dapatkan senarai bil yang belum dibayar sepenuhnya
-      const {data} = await apiClient.get("/billings/unpaid");
-      if (data) {
-        setBillings(data);
-      }
+      const { data } = await apiClient.get(`/billings/${idform}`);
+      setBillings(data);
     } catch (error) {
       console.error('Ralat semasa mendapatkan senarai bil:', error);
       toast.error(error.message || 'Ralat mendapatkan senarai bil. Sila cuba sebentar lagi.');
@@ -68,9 +64,7 @@ export default function BillingPayment() {
     try {
       // Dapatkan senarai bank
       const {data} = await apiClient.get("/banks");
-      if (data) {
-        setBanks(data);
-      }
+      if (data) {setBanks(data);}
     } catch (error) {
       console.error('Ralat semasa mendapatkan senarai bank:', error);
       toast.error(error.message || 'Ralat mendapatkan senarai bank. Sila cuba sebentar lagi.');
@@ -241,7 +235,7 @@ export default function BillingPayment() {
 
   // Function untuk mengemaskini jumlah pembayaran berdasarkan bil yang dipilih
   const updateAmountFromBilling = (billingId) => {
-    const selectedBilling = billings.find(b => b.id === parseInt(billingId));
+    const selectedBilling = billings?.find(b => b.id === parseInt(billingId));
     if (selectedBilling) {
       const remainingAmount = parseFloat(selectedBilling.remaining_amount || selectedBilling.total_amount || 0).toFixed(2);
       setPayment(prev => ({
@@ -280,13 +274,10 @@ export default function BillingPayment() {
                       <div className="flex flex-col w-full">
                         <Select
                           isDisabled={!canEdit}
-                          value={billings.find(bill => bill.id === parseInt(payment.billing_id)) || null}
+                          value={null}
                           onChange={(selectedOption) => {
                             const billingId = selectedOption ? selectedOption.id : "";
-                            setPayment(prev => ({
-                              ...prev,
-                              billing_id: billingId
-                            }));
+                            setPayment(prev => ({...prev, billing_id: billingId}));
                             updateAmountFromBilling(billingId);
                           }}
                           options={billings}
@@ -307,12 +298,9 @@ export default function BillingPayment() {
                       <div className="flex flex-col w-full">
                         <Select
                           isDisabled={!canEdit}
-                          value={banks.find(bank => bank.id === parseInt(payment.bank_id)) || null}
+                          value={banks?.find(bank => bank.id === parseInt(payment.bank_id)) || null}
                           onChange={(selectedOption) => {
-                            setPayment(prev => ({
-                              ...prev,
-                              bank_id: selectedOption ? selectedOption.id : ""
-                            }));
+                            setPayment(prev => ({...prev, bank_id: selectedOption ? selectedOption.id : ""}));
                           }}
                           options={banks}
                           getOptionLabel={(option) => `${option.name} - ${option.account_number}`}
@@ -342,20 +330,20 @@ export default function BillingPayment() {
                             <p className="text-sm text-blue-700 font-semibold">
                               Maklumat Bayaran
                             </p>
-                            {billings.find(bill => bill.id === parseInt(payment.billing_id)) && (
+                            {billings?.find(bill => bill.id === parseInt(payment.billing_id)) && (
                               <div className="mt-2 text-sm text-blue-700">
                                 <div className="grid grid-cols-2 gap-2">
                                   <div>No. Bil:</div>
-                                  <div>{billings.find(bill => bill.id === parseInt(payment.billing_id)).running_no}</div>
+                                  <div>{billings?.find(bill => bill.id === parseInt(payment.billing_id)).running_no}</div>
                                   
                                   <div>Jumlah Bil:</div>
-                                  <div>RM {parseFloat(billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount).toFixed(2)}</div>
+                                  <div>RM {parseFloat(billings?.find(bill => bill.id === parseInt(payment.billing_id)).total_amount).toFixed(2)}</div>
                                   
                                   <div>Jumlah Telah Dibayar:</div>
-                                  <div>RM {parseFloat(billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount - (billings.find(bill => bill.id === parseInt(payment.billing_id)).remaining_amount || billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount)).toFixed(2)}</div>
+                                  <div>RM {parseFloat(billings?.find(bill => bill.id === parseInt(payment.billing_id)).total_amount - (billings?.find(bill => bill.id === parseInt(payment.billing_id)).remaining_amount || billings?.find(bill => bill.id === parseInt(payment.billing_id)).total_amount)).toFixed(2)}</div>
                                   
                                   <div>Baki Perlu Dibayar:</div>
-                                  <div>RM {parseFloat(billings.find(bill => bill.id === parseInt(payment.billing_id)).remaining_amount || billings.find(bill => bill.id === parseInt(payment.billing_id)).total_amount).toFixed(2)}</div>
+                                  <div>RM {parseFloat(billings?.find(bill => bill.id === parseInt(payment.billing_id)).remaining_amount || billings?.find(bill => bill.id === parseInt(payment.billing_id)).total_amount).toFixed(2)}</div>
                                 </div>
                               </div>
                             )}

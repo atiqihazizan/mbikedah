@@ -120,7 +120,7 @@ const BillingView = () => {
                   <tbody>
                     {billing.details && billing.details.length > 0 ? (
                       billing.details.map((item, idx) => (
-                        <tr key={idx} className={`hover:bg-blue-50 ${!item.accept === 0 ? 'line-through text-gray-400' : ''}`}>
+                        <tr key={idx} className={`hover:bg-blue-50 ${item.accept === 0 ? 'line-through text-gray-400' : ''}`}>
                           <td className="py-2 px-3 border-b">{item?.budget_code}</td>
                           <td className="py-2 px-3 border-b">{item?.description}</td>
                           <td className="py-2 px-3 border-b">{item?.reference}</td>
@@ -131,9 +131,9 @@ const BillingView = () => {
                             {item?.accept === -1 ? (
                               <span className="text-yellow-500">Belum Disemak</span>
                             ) : item?.accept === 1 ? (
-                              <span className="text-green-500">Disemak</span>
+                              <span className="text-green-500">Diterima</span>
                             ) : (
-                              <span className="text-red-500"><s>Tidak Diterima</s></span>
+                              <span className="text-red-500">Tidak Diterima</span>
                             )}
                           </td>
                         </tr>

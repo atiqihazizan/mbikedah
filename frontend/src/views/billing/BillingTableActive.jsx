@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useStateContext } from "../../contexts/ContextProvider";
 import { format, parseISO } from "date-fns";
-import { Link } from "react-router-dom";
 import { EyeIcon, Pencil, Trash2 } from "lucide-react";
 import { toast } from 'react-toastify';
 import { formatCurrency } from "../../config/format";
@@ -9,6 +8,7 @@ import PageComponent from "../../components/PageComponent";
 import apiClient from "../../axios";
 import Table from "../../components/TableRow";
 import PulseTable from "../../components/Core/PulseTable";
+import TButton from "../../components/Core/TButton";
 
 function BillingTableActive() {
   const { setCountActive } = useStateContext();
@@ -56,9 +56,7 @@ function BillingTableActive() {
     if(isLoading) return;
     mounted.current = true;
     loadData();
-    return () => {
-      mounted.current = false;
-    };
+    return () => {mounted.current = false;};
   }, []);
 
   const handleDelete = async (id) => {
@@ -80,78 +78,29 @@ function BillingTableActive() {
 
   const columns = useMemo(
     () => [
-      {
-        name: "Tarikh Permohonan",
-        render: ({ issued_at }) => format(parseISO(issued_at), "dd/MM/yyyy"),
-      },
-      {
-        name: "No. Projek",
-        field: "no_project",
-        nClassRow:
-          "px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600",
-      },
-      {
-        name: "Jumlah (RM)",
-        nClassRow: "text-right",
-        nClass: "text-right text-gray-500",
-        render: ({ total_amount }) => formatCurrency(total_amount),
-      },
-      {
-        name: "Status",
-        render: ({ status }) => (
-          <span
-            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyle(
-              status
-            )}`}
-          >
-            {status}
-          </span>
-        ),
-      },
-      {
-        name: "Tarikh Dibuat",
-        render: ({ created_at }) =>
-          format(parseISO(created_at), "dd/MM/yyyy HH:mm"),
-      },
+      {name: "Tarikh Permohonan",render: ({ issued_at }) => format(parseISO(issued_at), "dd/MM/yyyy")},
+      {name: "No. Projek",field: "no_project",nClassRow:"px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600"},
+      {name: "Jumlah (RM)", nClassRow: "text-right text-gray-500",nClass: "text-right text-xs font-medium text-gray-500",render: ({ total_amount }) => formatCurrency(total_amount)},
+      {name: "Status",render: ({ status }) => <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyle(status)}`}>{status}</span>},
+      {name: "Tarikh Dibuat",render: ({ created_at }) => format(parseISO(created_at), "dd/MM/yyyy HH:mm")},
       {
         name: "Tindakan",
-        nClass: "w-24 text-center text-gray-500",
+        nClass: "text-center text-gray-500 ",
         render: (item) => (
           <div className="flex gap-4 justify-end">
             {[1, 9].includes(item.status_id) && (
               <>
-                <Link
-                  to={`/billing/${item.id}/edit`}
-                  className={`text-indigo-600 hover:text-indigo-900 flex items-center ${
-                    isDeletingId && "opacity-50"
-                  }`}
-                  disabled={isDeletingId}
-                >
+                <TButton to={`/billing/${item.id}/edit`} nClasses={`text-indigo-600 hover:text-indigo-900 flex items-center ${isDeletingId && "opacity-50"}`} disabled={isDeletingId}>
                   <Pencil size={18} className="mr-1"/> Edit
-                </Link>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  disabled={isDeletingId}
-                  className={`text-red-600 hover:text-red-900 flex items-center ${
-                    isDeletingId === item.id && "opacity-50"
-                  }`}
-                >
-                  {isDeletingId === item.id ? (
-                    <span className="text-sm text-gray-500">Memadam...</span>
-                  ) : (
-                    <>
-                      <Trash2 size={18} className="mr-1" /> Hapus
-                    </>
-                  )}
-                </button>
+                </TButton>
+                <TButton onClick={() => handleDelete(item.id)} disabled={isDeletingId} nClasses={`text-red-600 hover:text-red-900 flex items-center ${isDeletingId === item.id && "opacity-50"}`}>
+                  <Trash2 size={18} className="mr-1" /> Hapus
+                </TButton>
               </>
             )}
-            <Link
-              to={`/billing/${item.id}/view`}
-              className="text-blue-500 hover:text-blue-600 flex items-center"
-            >
-              <EyeIcon size={16} className="mr-1" /> Papar
-            </Link>
+            <TButton to={`/billing/${item.id}/view`} nClasses="text-blue-500 hover:text-blue-600 flex items-center" circle link>
+              <EyeIcon size={18} className="mr-1"/> Papar
+            </TButton>
           </div>
         ),
       },

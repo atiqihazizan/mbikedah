@@ -7,7 +7,7 @@ import TButton from '../../components/Core/TButton';
 import TSpinner from '../../components/Core/TSpinner';
 import apiClient from '../../axios';
 
-const BillingVerifyBank = ({billing,processing,setProcessing}) => {
+const BillingVerifyBank = ({billing,processing}) => {
   const navigate = useNavigate();
   const transactions = useMemo(() => billing?.transactions || [], [billing?.transactions]);
   const totalAccepted = useMemo(() => billing?.details?.filter(detail => detail.accept).reduce((sum, detail) => sum + parseFloat(detail.total || 0), 0) || 0, [billing?.details]);
@@ -16,15 +16,12 @@ const BillingVerifyBank = ({billing,processing,setProcessing}) => {
     const reason = window.prompt("Adakah anda pasti untuk mengesahkan bil ini?\nNyatakan ulasan jika ada:");
     if(reason === null) return;
     try {
-      setProcessing(true);
       await apiClient.post(`/billings/${billing.id}/finance-verify`, {remarks: reason});
-      toast.success("Bil berjaya diluluskan");
+      toast.success("Bil berjaya disahkan");
       navigate("/billing/finance");
     } catch (error) {
       console.error("Error approving billing:", error.response.data.message);
-      toast.error("Gagal meluluskan bil");
-    } finally {
-      setProcessing(false);
+      toast.error("Tidak berjaya disahkan");
     }
   };
 
@@ -32,15 +29,12 @@ const BillingVerifyBank = ({billing,processing,setProcessing}) => {
     const reason = window.prompt("Sila nyatakan sebab penolakan:");
     if (reason) {
       try {
-        setProcessing(true);
         await apiClient.post(`/billings/${billing.id}/reject`, { reason });
         toast.success("Bil berjaya ditolak");
         navigate("/billing/finance");
       } catch (error) {
         console.error("Error rejecting billing:", error);
-        toast.error("Gagal menolak bil");
-      } finally {
-        setProcessing(false);
+        toast.error("Tidak berjaya ditolak");
       }
     }
   };

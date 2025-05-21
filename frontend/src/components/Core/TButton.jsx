@@ -41,61 +41,27 @@ function TButton({
 		if (isDisable || onChecking) color = "waiting";
 		switch (color) {
 			case "indigo":
-				classes = [
-					...classes,
-					"bg-indigo-600",
-					"hover:bg-indigo-700",
-					"focus:ring-indigo-500",
-				];
-				break;
+				classes = [...classes,"bg-indigo-600","hover:bg-indigo-700","focus:ring-indigo-500"];break;
 			case "red":
-				classes = [
-					...classes,
-					"bg-red-600",
-					"hover:bg-red-700",
-					"focus:ring-red-500",
-				];
-				break;
+				classes = [...classes,"bg-red-600","hover:bg-red-700","focus:ring-red-500"];break;
 			case "green":
-				classes = [
-					...classes,
-					"bg-emerald-600",
-					"hover:bg-emerald-700",
-					"focus:ring-emerald-500",
-				];
-				break;
+				classes = [...classes,"bg-emerald-600","hover:bg-emerald-700","focus:ring-emerald-500"];break;
 			case "primary":
-				classes = [...classes, "btn", "btn-primary"];
-				break;
+				classes = [...classes,"btn","btn-primary"];break;
 			case "danger":
-				classes = [...classes, "btn", "btn-danger"];
+				classes = [...classes,"btn","btn-danger"];
 				break;
 			case "light":
-				classes = [...classes, "btn", "btn-light"];
-				break;
+				classes = [...classes,"btn","btn-light"];break;
 			case "primary-dark":
-				classes = [...classes, "btn", "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"];
-				break;
+				classes = [...classes,"btn","inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"];break;
 			case "waiting":
-				classes = [
-					...classes,
-					"bg-gray-300",
-					"hover:bg-gray-400",
-					"focus:ring-gray-600",
-				];
+				classes = [...classes,"bg-gray-300","hover:bg-gray-400","focus:ring-gray-600"];break;
 		}
 	}
 
 	if (circle) {
-		classes = [
-			...classes,
-			"h-8",
-			"w-8",
-			"items-center",
-			"justify-center",
-			"rounded-full",
-			"text-sm",
-		];
+		classes = [...classes,"h-8","w-8","items-center","justify-center","rounded-full","text-sm"];
 	} else {
 		classes = [...classes, "p-0", "py-2", "px-4", "rounded-md"];
 	}

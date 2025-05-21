@@ -31,7 +31,7 @@ const router = createBrowserRouter([
       { path: "/billing/hod", element: <BillingTableHOD /> },
       { path: "/billing/finance", element: <BillingTableFinance /> },
       { path: "/billing/:idBilling/:pageback/show", element: <BillingPaper /> },
-      { path: "/billing/:idBilling/:pageback/payment", element: <BillingPayment /> },
+      { path: "/billing/:idBilling/payment", element: <BillingPayment /> },
       { path: "/billing/:idBilling/view", element: <BillingView /> },
       { path: "/billing/:idBilling/check", element: <BillingCheck /> },
       { path: "/billing/:idBilling/verify", element: <BillingVerify /> },

@@ -3,11 +3,11 @@ import { useStateContext } from "../../contexts/ContextProvider";
 import { format, parseISO } from "date-fns";
 import { EyeIcon } from "lucide-react";
 import { toast } from "react-toastify";
-import { Link } from "react-router-dom";
 import PageComponent from "../../components/PageComponent";
 import apiClient from "../../axios";
 import Table from "../../components/TableRow";
 import PulseTable from "../../components/Core/PulseTable";
+import TButton from "../../components/Core/TButton";
 
 function BillingTableFinance() {
   const { setCountActive } = useStateContext();
@@ -50,26 +50,10 @@ function BillingTableFinance() {
   };
 
   const columns = [
-    {
-      name: "Tarikh Permohonan",
-      field: "issued_at",
-      render: (item) => item.issued_at ? format(parseISO(item.issued_at), "dd/MM/yyyy") : "-"
-    },
-    {
-      name: "Pemohon",
-      field: "created_by",
-      nClassRow: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-    },
-    {
-      name: "No. Projek",
-      field: "no_project",
-      nClassRow: "px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600"
-    },
-    {
-      name: "Perkara",
-      field: "description",
-      nClassRow: "px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-    },
+    {name: "Tarikh Permohonan", field: "issued_at", render: (item) => item.issued_at ? format(parseISO(item.issued_at), "dd/MM/yyyy") : "-"},
+    {name: "Pemohon", field: "created_by",nClassRow: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"},
+    {name: "No. Projek", field: "no_project", nClassRow: "px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600"},
+    {name: "Perkara", field: "description", nClassRow: "px-6 py-4 whitespace-nowrap text-sm text-gray-900"},
     {
       name: "Jumlah (RM)",
       render: (item) => (
@@ -84,38 +68,30 @@ function BillingTableFinance() {
     {
       name: "Status",
       render: (item) => (
-        // <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-        //   ${[3, 5, 6].includes(item.status_id) ? "bg-gray-100 text-gray-800"
-        //   : item.status_id === 5 ? "bg-green-100 text-green-800"
-        //   : item.status_id === 6 ? "bg-red-100 text-red-800"
-        //   : "bg-yellow-100 text-yellow-800"}`}>
-        //   {item.status_name.replace(' Kewangan', '')}
-        // </span>
         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
           ${[3, 4,5, 6].includes(item.status_id) ? "bg-yellow-100 text-yellow-800" : ''}`}>
           {item.status_name.replace(' Kewangan', '')}
         </span>
       )
     },
-    {
-      name: "Tarikh Dibuat",
-      render: (item) => item.created_at ? format(parseISO(item.created_at), "dd/MM/yyyy HH:mm") : "-"
-    },
+    {name: "Tarikh Dibuat",render: (item) => item.created_at ? format(parseISO(item.created_at), "dd/MM/yyyy HH:mm") : "-"},
     {
       name: "Tindakan",
       render: (item) => {
-        // const path = item.status_id < 6 ? `/billing/${item.id}/finance/show` : `/billing/${item.id}/finance/payment`;
         const {status_id} = item;
-        const path = status_id === 3 ? `/billing/${item.id}/check` : `/billing/${item.id}/verify`;
+        const paths = {
+          3: 'check',
+          4: 'verify',
+          6: 'payment',
+        };
+        const path = `/billing/${item.id}/${paths[status_id] || 'view'}`;
+
 
         return (
         <div className="flex space-x-2">
-          <Link
-            to={path}
-            className="text-blue-500 hover:text-blue-600 flex items-center"
-          >
-            <EyeIcon size={16} className="mr-1" /> Papar
-          </Link>
+          <TButton to={path} variant="link" size="sm" color="blue" startIcon={<EyeIcon size={16} className="mr-1" />}>
+            Papar
+          </TButton>
         </div>
       )}
     }
