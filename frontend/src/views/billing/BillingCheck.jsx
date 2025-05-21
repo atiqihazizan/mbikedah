@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Printer, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import PageComponent from "../../components/PageComponent";
 import apiClient from "../../axios";
@@ -21,43 +21,28 @@ export default function BillingCheck() {
   const [banks, setBanks] = useState([]);
   const [processing, setProcessing] = useState(false);
 
-  const fetchBilling = async () => {
+  const fetchAllData = useCallback(async () => {
     try {
-      const { data } = await apiClient.get(`/billings/${idBilling}`);
-      setBilling(data);
+      const [billingRes, budgetsRes, banksRes] = await Promise.all([
+        apiClient.get(`/billings/${idBilling}`),
+        apiClient.get("/budgets"),
+        apiClient.get("/banks")
+      ]);
+
+      setBilling(billingRes.data);
+      setBudgets(budgetsRes.data);
+      setBanks(banksRes);
     } catch (error) {
-      console.error("Error fetching billing:", error);
-      toast.error("Gagal memuat data bil");
+      console.error("Error fetching data:", error);
+      toast.error("Gagal memuat data");
     } finally {
       setLoading(false);
     }
-  };
-  
-  const fetchBudgets = async () => {
-    try {
-      const { data } = await apiClient.get("/budgets");
-      setBudgets(data);
-    } catch (error) {
-      console.error("Error fetching budgets:", error);
-      toast.error("Gagal memuat data bajet");
-    }
-  };
-
-  const fetchBanks = async () => {
-    try {
-      const data = await apiClient.get("/banks");
-      setBanks(data);
-    } catch (error) {
-      console.error("Error fetching banks:", error);
-      toast.error("Gagal memuat data bank");
-    }
-  };
+  }, [idBilling]);
   
   useEffect(() => {
-    fetchBilling();
-    fetchBudgets();
-    fetchBanks();
-  }, [idBilling]);
+    fetchAllData();
+  }, [fetchAllData]);
 
   if (loading) {
     return (<TLoadingSpinner position={TLoadingSpinner.Position.CENTER} />);
@@ -84,7 +69,7 @@ export default function BillingCheck() {
             <p className="mt-1 text-sm text-gray-500">Dicipta pada: {formatDate(billing.created_at)}</p>
           </div>
           <div className="flex space-x-3">
-            <TButton onClick={() => window.print()} color="light" ><Printer className="w-4 h-4 mr-2" /> Cetak</TButton>
+            {/* <TButton onClick={() => window.print()} color="light" ><Printer className="w-4 h-4 mr-2" /> Cetak</TButton> */}
             <TButton onClick={() => navigate("/billing/finance")} color="primary-dark" ><ChevronLeft className="w-4 h-4 mr-2" /> Kembali</TButton>
           </div>
         </div>

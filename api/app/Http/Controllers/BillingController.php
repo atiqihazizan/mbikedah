@@ -75,7 +75,7 @@ class BillingController extends Controller
         'no_project' => $validatedData['no_project'],
         'recipient_id' => $validatedData['recipient_id'],
         'total_amount' => $validatedData['total_amount'],
-        'payment_method' => $validatedData['payment_method'] ?? 'online',
+        'payment_method' => $validatedData['payment_method'] ?? 'cek',
         'department_id' => $departmentId,
         'created_by' => $request->user()->id,
         'issued_at' => $validatedData['issued_at'],
@@ -94,6 +94,7 @@ class BillingController extends Controller
           'quantity' => $detail['quantity'],
           'reference' => $detail['reference'] ?? '',
           'purpose' => $detail['purpose'] ?? '',
+          'accept' => -1,
         ]);
       }
 
@@ -180,6 +181,7 @@ class BillingController extends Controller
           'unit' => $detail['unit'] ?? null,
           'reference' => $detail['reference'] ?? null,
           'purpose' => $detail['purpose'] ?? '',
+          'accept' => -1,
         ]);
       }
 
@@ -337,7 +339,7 @@ class BillingController extends Controller
               'created_at'
             ])->with('bank:id,bank_name,amount');
           },
-          'history.creator:id,name'
+          'history.creator:id,name,position_id'
         ])
         ->findOrFail($id);
 

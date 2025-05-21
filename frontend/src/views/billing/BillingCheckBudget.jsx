@@ -12,7 +12,7 @@ const BillingCheckBudget = ({ billing, setBilling, budgets,processing }) => {
     return budget ? budget.bdgtotal : 0;
   };
   const handleAcceptChange = (e, item) => {
-    setBilling({...billing,details: billing.details.map(d => d.id === parseInt(item.id) ? { ...d, accept: e.target.checked } : d)});
+    setBilling({...billing,details: billing.details.map(d => d.id === parseInt(item.id) ? { ...d, accept: e.target.checked ? 1 : 0 } : d)});
   };
   return (
     <div className="mt-8">
@@ -44,7 +44,7 @@ const BillingCheckBudget = ({ billing, setBilling, budgets,processing }) => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{formatCurrency(item.price)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">{formatCurrency(item.total)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                  <TCheck className="m-auto" id="accept-item" name="accept-item" checked={item.accept} onChange={(e) => handleAcceptChange(e, item)} disabled={processing}/>
+                  <TCheck className="m-auto" id="accept-item" name="accept-item" checked={item.accept === 1} onChange={(e) => handleAcceptChange(e, item)} disabled={processing}/>
                 </td>
               </tr>
             ))}

@@ -58,7 +58,9 @@ class BillingDetailResource extends JsonResource
           'total' => $detail->total,
           'accept' => $detail->accept,
           'approve' => $detail->approve,
-          'reviewed_by' => $detail->reviewed_by
+          'reviewed_by' => $detail->reviewed_by,
+          'budget_bal' => $detail->budget ? $detail->budget->bdgtotal : 0,
+          'budget_name' => $detail->budget ? $detail->budget->name : null,
         ];
       }),
       'history' => $this->history->map(function ($history) {
@@ -68,7 +70,8 @@ class BillingDetailResource extends JsonResource
           'new_status' => $history->new_status,
           'remarks' => $history->remarks,
           'created_by' => $history->creator ? $history->creator->name : null,
-          'created_at' => $history->created_at
+          'created_at' => $history->created_at,
+          'position' => $history->creator ? $history->creator->position?->name : null
         ];
       }),
       'transactions' => $this->transactions->map(function ($transaction) {

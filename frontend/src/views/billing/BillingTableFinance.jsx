@@ -106,7 +106,7 @@ function BillingTableFinance() {
       render: (item) => {
         // const path = item.status_id < 6 ? `/billing/${item.id}/finance/show` : `/billing/${item.id}/finance/payment`;
         const {status_id} = item;
-        const path = status_id === 3 ? `/billing/${item.id}/check` : `/billing/${item.id}/finance/show`;
+        const path = status_id === 3 ? `/billing/${item.id}/check` : `/billing/${item.id}/verify`;
 
         return (
         <div className="flex space-x-2">

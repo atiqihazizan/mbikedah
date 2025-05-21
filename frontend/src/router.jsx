@@ -15,6 +15,7 @@ import BillingPaper from "./views/billing/BillingPaper";
 import BillingView from "./views/billing/BillingView";
 import BillingPayment from "./views/billing/BillingPayment";
 import BillingCheck from "./views/billing/BillingCheck";
+import BillingVerify from "./views/billing/BillingVerify";
 
 const router = createBrowserRouter([
 	{
@@ -33,6 +34,7 @@ const router = createBrowserRouter([
       { path: "/billing/:idBilling/:pageback/payment", element: <BillingPayment /> },
       { path: "/billing/:idBilling/view", element: <BillingView /> },
       { path: "/billing/:idBilling/check", element: <BillingCheck /> },
+      { path: "/billing/:idBilling/verify", element: <BillingVerify /> },
 		],
 	},
 	{

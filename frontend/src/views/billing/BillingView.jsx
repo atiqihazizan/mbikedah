@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { formatCurrency, formatDate } from "../../config/format";
 import apiClient from "../../axios";
@@ -10,6 +10,7 @@ const BillingView = () => {
   const { idBilling } = useParams();
   const [billing, setBilling] = useState(null);
   const [loading, setLoading] = useState(true);
+  const total = useMemo(() => billing?.details?.filter(d => d.accept === 1).reduce((total, item) => total + item.total, 0) || 0, [billing?.details]);
   const statusColorMap = {
     1: "bg-gray-300 text-gray-800",      // Draf
     2: "bg-yellow-200 text-yellow-800",  // Kelulusan HOD
@@ -27,7 +28,6 @@ const BillingView = () => {
     const fetchBilling = async () => {
       try {
         const { data } = await apiClient.get(`/billings/${idBilling}`);
-        console.log(data)
         setBilling(data);
       } catch (error) {
         setBilling(null);
@@ -44,7 +44,6 @@ const BillingView = () => {
     return <div className="flex justify-center items-center min-h-[200px] text-red-500">Maklumat bil tidak dijumpai.</div>;
 
   return (
-    
     <PageComponent
       title="Butiran Permohonan Bayaran"
       buttons={!loading && (
@@ -72,7 +71,7 @@ const BillingView = () => {
       )}
     >
 
-      <div className="container-fixed py-5">
+      <div className="container py-5">
         <div className="grid gap-5 lg:gap-7.5 gow">
           <Card>
             <Card.Body>
@@ -91,7 +90,7 @@ const BillingView = () => {
                 </div>
                 <div>
                   <div className="text-gray-500 text-sm">Jumlah</div>
-                  <div className="font-semibold">{formatCurrency(billing.total_amount)}</div>
+                  <div className="font-semibold">{formatCurrency(total)}</div>
                 </div>
                 <div>
                   <div className="text-gray-500 text-sm">Kaedah Bayaran</div>
@@ -121,7 +120,7 @@ const BillingView = () => {
                   <tbody>
                     {billing.details && billing.details.length > 0 ? (
                       billing.details.map((item, idx) => (
-                        <tr key={idx} className={`hover:bg-blue-50 ${!item.accept ? 'line-through text-gray-400' : ''}`}>
+                        <tr key={idx} className={`hover:bg-blue-50 ${!item.accept === 0 ? 'line-through text-gray-400' : ''}`}>
                           <td className="py-2 px-3 border-b">{item?.budget_code}</td>
                           <td className="py-2 px-3 border-b">{item?.description}</td>
                           <td className="py-2 px-3 border-b">{item?.reference}</td>
@@ -129,10 +128,12 @@ const BillingView = () => {
                           <td className="py-2 px-3 border-b text-right">{formatCurrency(item?.price)}</td>
                           <td className="py-2 px-3 border-b text-right">{formatCurrency(item?.total)}</td>
                           <td className="py-2 px-3 border-b text-center">
-                            {item?.accept ? (
-                              <span className="text-green-500">Diterima</span>
+                            {item?.accept === -1 ? (
+                              <span className="text-yellow-500">Belum Disemak</span>
+                            ) : item?.accept === 1 ? (
+                              <span className="text-green-500">Disemak</span>
                             ) : (
-                              <span className="text-red-500">Tidak Diterima</span>
+                              <span className="text-red-500"><s>Tidak Diterima</s></span>
                             )}
                           </td>
                         </tr>

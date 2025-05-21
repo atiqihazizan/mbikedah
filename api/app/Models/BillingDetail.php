@@ -27,7 +27,7 @@ class BillingDetail extends Model
     'price' => 'decimal:2',
     'quantity' => 'integer',
     'budget_id' => 'integer',
-    'accept' => 'boolean',
+    'accept' => 'integer',
     'approve' => 'boolean',
     'reviewed_by' => 'integer',
     'total' => 'decimal:2'
@@ -57,7 +57,7 @@ class BillingDetail extends Model
 
   public function scopeAccepted($query)
   {
-      return $query->where('accept', true);
+      return $query->where('accept', 1);
   }
 
   public function scopeApproved($query)

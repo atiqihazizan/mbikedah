@@ -7,6 +7,15 @@ export const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('ms-MY');
 };
 
+export const formatTitle = (str) => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 // function formatDate(dateString) {
 //   if (!dateString) return "";
 //   const date = new Date(dateString);

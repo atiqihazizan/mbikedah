@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 import PropTypes from "prop-types";
 import apiClient from "../../axios";
 import TButton from "../Core/TButton";
-import BankPaying from "../../views/billing/BankPaying";
+// import BankPaying from "../../views/billing/BankPaying";
 import { formatCurrency } from "../../config/format";
 
 export default function BillingActionModal({
@@ -212,12 +212,12 @@ export default function BillingActionModal({
 
             <hr className="border-t border-gray-300 my-4 border-dashed" />
 
-            <BankPaying
+            {/* <BankPaying
               setTransactions={setTransactions}
               error={errors}
               setError={setErrors}
               total={total}
-            />
+            /> */}
 
             <hr className="border-t border-gray-300 my-4 border-dashed" />
           </>

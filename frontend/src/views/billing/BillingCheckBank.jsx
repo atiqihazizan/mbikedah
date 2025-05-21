@@ -14,7 +14,7 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
   const [transactions, setTransactions] = useState(billing?.transactions || []);
   const [totalExpenses] = useState(billing?.total_amount || 0);
   const totalAmount = useMemo(() => transactions.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0), [transactions]);
-  const totalAccepted = useMemo(() => billing?.details?.filter(detail => detail.accept).reduce((sum, detail) => sum + parseFloat(detail.total || 0), 0) || 0, [billing?.details]);
+  const totalAccepted = useMemo(() => billing?.details?.filter(detail => detail.accept === 1).reduce((sum, detail) => sum + parseFloat(detail.total || 0), 0) || 0, [billing?.details]);
   const paymentMethods = [
     { value: 'cek', label: 'Cek' },
     { value: 'online', label: 'Online' },
@@ -22,33 +22,17 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
   ];
 
   const handleApprove = async () => {
-    if(totalAccepted === 0){
-      toast.error("Tiada butiran perbelanjaan yang dipilih");
-      return;
-    }
-
-    if(billing?.transactions?.length === 0){
-      toast.error("Maklumat pembayar belum dimasukkan");
-      return;
-    }
-
-    if(billing?.payment_method === ""){
-      toast.error("Kaedah bayaran belum dipilih");
-      return;
-    }
-
-    if(totalAmount !== totalAccepted){
-      toast.error("Jumlah pembayar tidak sepadan dengan jumlah yang diterima");
-      return;
-    }
-
+    if(totalAccepted === 0) return toast.error("Tiada butiran perbelanjaan yang dipilih");
+    if(billing?.transactions?.length === 0) return toast.error("Maklumat pembayar belum dimasukkan");
+    if(billing?.payment_method === "") return toast.error("Kaedah bayaran belum dipilih");
+    if(totalAmount !== totalAccepted) return toast.error("Jumlah pembayar tidak sepadan dengan jumlah yang diterima");
     if (window.confirm("Adakah anda pasti untuk meluluskan bil ini?")) {
       try {
         setProcessing(true);
         const dataPost = {
           remarks: "", 
           transactions: billing?.transactions,
-          details: billing?.details?.filter(detail => detail.accept),
+          details: billing?.details?.filter(detail => detail.accept === 1),
           total_accept: totalAccepted,
           payment_method: billing?.payment_method.toLowerCase() || ''
         };
@@ -83,7 +67,7 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
 
   useEffect(()=>{
     setBilling({...billing, transactions: transactions});
-  },[transactions,billing,setBilling])
+  },[transactions])
 
   return (
     <div className="my-8">
@@ -124,7 +108,9 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
       </div>
       
       <div className="sm:col-span-1">
-        <dt className="text-sm font-medium text-gray-500">Kaedah Bayaran</dt>
+        {/* <dt className="text-sm font-medium text-gray-500">Kaedah Bayaran</dt> */}
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Kaedah Bayaran</h2>
+
         <dd className="mt-1">
         <TSelect 
           list={paymentMethods}  
@@ -142,7 +128,7 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
         <TButton onClick={() => navigate("/billing/finance")} color="light" className="px-4 py-2">Batal</TButton>
         <TButton onClick={handleReject} disabled={processing} color="red" className="px-4 py-2"><X className="w-4 h-4 mr-2" /> Tolak</TButton>
         <TButton onClick={handleApprove} disabled={processing} color="green" className="px-4 py-2">
-          <Check className="w-4 h-4 mr-2" />Lulus {processing && <TSpinner className="-mr-1 ml-2" />}
+          <Check className="w-4 h-4 mr-2" />Semakan {processing && <TSpinner className="-mr-1 ml-2" />}
         </TButton>
       </div>
     </div>

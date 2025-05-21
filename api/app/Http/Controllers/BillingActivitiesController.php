@@ -79,6 +79,9 @@ class BillingActivitiesController extends Controller
       $billing->updateStatus(BillingStatus::FINANCE_VERIFY, Auth::id(), $remarks);
 
       //1. Update kod bajet
+      // Set semua accept ke 0 terlebih dahulu
+      $billing->details()->update(['accept' => 0]);
+      
       foreach ($details as $detail) {
         $budget = Budget::find($detail['budget_id']);
         if (!$budget) {
