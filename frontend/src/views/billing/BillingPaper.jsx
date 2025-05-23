@@ -95,7 +95,6 @@ const BillingPaper = () => {
     const fetchBilling = async () => {
       try {
         const { data } = await apiClient.get(`/billings/${idBilling}`);
-        console.log(data);
         setBilling(data);
         setDetails(data?.details.filter(detail => detail.accept) || []);
         setHistory(data?.history?.filter((h) => h.old_status > 0)?.sort((a, b) => a.old_status - b.old_status) || []);
@@ -384,7 +383,7 @@ const BillingPaper = () => {
                         <span className="font-medium mb-2">BAYARAN DARIPADA BANK</span>
                         {billing?.transactions?.map((tx,index)=>(
                           <div key={index} className="flex justify-between">
-                            <strong>{tx.bank_name}</strong> <span>{formatCurrency(tx.credit)}</span>
+                            <strong>{tx.bank_name}</strong> <span>{formatCurrency(tx.amount)}</span>
                           </div>
                         ))}
                       </div>

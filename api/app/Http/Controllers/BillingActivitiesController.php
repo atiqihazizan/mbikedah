@@ -54,9 +54,7 @@ class BillingActivitiesController extends Controller
       
       // Validasi payment_method
       $paymentMethods = ['cek', 'online', 'tunai'];
-      if (!in_array(strtolower($request->payment_method), $paymentMethods)) {
-          throw new \Exception('Kaedah bayaran tidak sah');
-      }
+      if (!in_array(strtolower($request->payment_method), $paymentMethods)) {throw new \Exception('Kaedah bayaran tidak sah');}
       
       $details = $request->details ?? [];
       $transactions = $request->transactions ?? [];
@@ -64,18 +62,14 @@ class BillingActivitiesController extends Controller
       $total_accept = $request->total_accept ?? 0;
       $payment_method = strtolower($request->payment_method ?? '');
 
-      if (empty($details)) {
-        throw new \Exception('Tiada butiran bajet yang dipilih');
-      }
-    
-      if (empty($transactions)) {
-        throw new \Exception('Tiada transaksi yang dimasukkan');
-      }
+      if (empty($details)) {throw new \Exception('Tiada butiran bajet yang dipilih');}
+      if (empty($transactions)) {throw new \Exception('Tiada transaksi yang dimasukkan');}
       
       // Tetapkan tarikh semakan kewangan
       $billing->reviewed_by = Auth::id();
       $billing->reviewed_at = now();
       $billing->payment_method = "$payment_method";
+      $billing->total_amount = $total_accept;
       $billing->save();
 
       $billing->updateStatus(BillingStatus::FINANCE_VERIFY, Auth::id(), $remarks);
@@ -86,9 +80,7 @@ class BillingActivitiesController extends Controller
       
       foreach ($details as $detail) {
         $budget = Budget::find($detail['budget_id']);
-        if (!$budget) {
-            throw new \Exception("Bajet tidak ditemui untuk ID: {$detail['budget_id']}");
-        }
+        if (!$budget) {throw new \Exception("Bajet tidak ditemui untuk ID: {$detail['budget_id']}");}
         $billing->details()->where('id', $detail['id'])->update([
           'budget_id' => $budget->id,
           'budget_code' => $budget->code,
@@ -101,17 +93,13 @@ class BillingActivitiesController extends Controller
       // $totalExpenses = $billing->details->sum('total');
       $totalTransactions = array_sum(array_column($transactions, 'amount'));
       
-      if ($total_accept !== $totalTransactions) {
-          throw new \Exception("Jumlah pembayar tidak sepadan dengan jumlah yang diterima");
-      }
+      if ($total_accept !== $totalTransactions) {throw new \Exception("Jumlah pembayaran tidak sama dengan jumlah permohonan");}
 
       //2. add transaksi
       $billing->transactions()->delete();
       foreach ($transactions as $transaction) {
         $bank = Bank::find($transaction['bank_id']);
-        if (!$bank) {
-            throw new \Exception("Bank tidak ditemui untuk ID: {$transaction['bank_id']}");
-        }
+        if (!$bank) {throw new \Exception("Bank tidak ditemui untuk ID: {$transaction['bank_id']}");}
         
         $billing->transactions()->create([
           'bank_id' => $bank->id,
@@ -149,13 +137,9 @@ class BillingActivitiesController extends Controller
       $this->authorize('process',[$billing, BillingStatus::FINANCE_VERIFY]);
       DB::beginTransaction();
       $remarks = $request->remarks ?? ''; //Disahkan oleh Kewangan
-      
-      // Tetapkan tarikh pengesahan kewangan
       $billing->verified_by = Auth::id();
       $billing->verified_at = now();
       $billing->save();
-      DB::commit();
-
       $billing->updateStatus(BillingStatus::PROCESSING_PAYMENT, Auth::id(), $remarks);
       DB::commit();
       return response()->json([
@@ -205,10 +189,47 @@ class BillingActivitiesController extends Controller
       $this->authorize('process', [$billing, BillingStatus::PROCESSING_PAYMENT]);
       DB::beginTransaction();
       $remarks = $request->remarks ?? ''; //Pembayaran diluluskan
+      $transactions = $request->transactions ?? [];
       
+      $billing->details()->update(['approve' => 1]);
+      
+      // Get all existing transaction IDs
+      $existingTransactionIds = $billing->transactions()->pluck('id')->toArray();
+      $newTransactionIds = array_column($transactions, 'id');
+
+      // Delete transactions that are not in the request
+      $billing->transactions()->whereIn('id', array_diff($existingTransactionIds, $newTransactionIds))->delete();
+
+      // Handle transactions
+      foreach ($transactions as $transaction) {
+        // Cari transaksi yang wujud berdasarkan ID
+        $existingTransaction = $billing->transactions()->where('id', $transaction['id'])->first();
+        
+        if ($existingTransaction) {
+          // Update transaksi yang wujud
+          $existingTransaction->update([
+            'paid_date' => $transaction['paid_date'],
+            'paid_ref' => $transaction['paid_ref'],
+            'amount' => $transaction['amount'],
+            'bank_id' => $transaction['bank_id'],
+          ]);
+        } else {
+          // Create transaksi baru
+          $billing->transactions()->create([
+            'bank_id' => $transaction['bank_id'],
+            'billing_id' => $billing->id,
+            'date' => $billing->issued_at,
+            'budget_id' => null,
+            'transaction_type' => $transaction['transaction_type'] ?? 'credit',
+            'paid_date' => $transaction['paid_date'],
+            'paid_ref' => $transaction['paid_ref'],
+            'amount' => $transaction['amount'],
+          ]);
+        }
+      }
+
       // Tetapkan tarikh pembayaran
-      $payment_date = $request->payment_date ?? now();
-      $billing->paid_at = $payment_date;
+      $billing->paid_at = now();
       $billing->paid_by = Auth::id();
       $billing->save();
       
@@ -228,21 +249,21 @@ class BillingActivitiesController extends Controller
     }
   }
 
-  public function completeBilling(Billing $billing) {
-    try {
-      $this->authorize('process', $billing,BillingStatus::COMPLETED);
-      DB::beginTransaction();
-      $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), ''); //Permohonan berjaya selesai
-      DB::commit();
-      return response()->json(['message' => 'Permohonan berjaya selesai']);
-    } catch (AuthorizationException $e) {
-      DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => $e->getMessage()
-      ], 403);
-    }
-  }
+  // public function completeBilling(Billing $billing) {
+  //   try {
+  //     $this->authorize('process', $billing,BillingStatus::COMPLETED);
+  //     DB::beginTransaction();
+  //     $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), ''); //Permohonan berjaya selesai
+  //     DB::commit();
+  //     return response()->json(['message' => 'Permohonan berjaya selesai']);
+  //   } catch (AuthorizationException $e) {
+  //     DB::rollBack();
+  //     return response()->json([
+  //       'success' => false,
+  //       'message' => $e->getMessage()
+  //     ], 403);
+  //   }
+  // }
 
   public function rejectBilling(Request $request, Billing $billing) {
     try {
@@ -258,6 +279,27 @@ class BillingActivitiesController extends Controller
         ], 422);
       }
       DB::beginTransaction();
+
+      $billing->approved_hod = 0;
+      $billing->hod_approved_at = null;
+      $billing->review_by = 0;
+      $billing->reviewed_at = null;
+      $billing->verified_by = 0;
+      $billing->verified_at = null;
+      $billing->approved_by = 0;
+      $billing->approved_at = null;
+      $billing->paid_by = 0;
+      $billing->paid_at = null;
+      $billing->ceo_approved = 0;
+      $billing->save();
+      //reset transactions
+      $billing->transactions()->delete();
+      //reset details
+      $billing->details()->update([
+        'approve' => 0,
+        'accept' => -1,
+        'reviewed_by' => 0,
+      ]);
       $billing->updateStatus(BillingStatus::REJECTED, Auth::id(), $request->remarks);
       DB::commit();
       return response()->json([
@@ -295,6 +337,28 @@ class BillingActivitiesController extends Controller
         ], 422);
       }
       DB::beginTransaction();
+      
+      $billing->approved_hod = 0;
+      $billing->hod_approved_at = null;
+      $billing->review_by = 0;
+      $billing->reviewed_at = null;
+      $billing->verified_by = 0;
+      $billing->verified_at = null;
+      $billing->approved_by = 0;
+      $billing->approved_at = null;
+      $billing->paid_by = 0;
+      $billing->paid_at = null;
+      $billing->ceo_approved = 0;
+      $billing->save();
+      //reset transactions
+      $billing->transactions()->delete();
+      //reset details
+      $billing->details()->update([
+        'approve' => 0,
+        'accept' => -1,
+        'reviewed_by' => 0,
+      ]);
+
       $billing->updateStatus(BillingStatus::RETURNED, Auth::id(), $request->remarks);
       DB::commit();
       return response()->json([
@@ -332,6 +396,28 @@ class BillingActivitiesController extends Controller
         ], 422);
       }
       DB::beginTransaction();
+      
+      $billing->approved_hod = 0;
+      $billing->hod_approved_at = null;
+      $billing->review_by = 0;
+      $billing->reviewed_at = null;
+      $billing->verified_by = 0;
+      $billing->verified_at = null;
+      $billing->approved_by = 0;
+      $billing->approved_at = null;
+      $billing->paid_by = 0;
+      $billing->paid_at = null;
+      $billing->ceo_approved = 0;
+      $billing->save();
+      //reset transactions
+      $billing->transactions()->delete();
+      //reset details
+      $billing->details()->update([
+        'approve' => 0,
+        'accept' => -1,
+        'reviewed_by' => 0,
+      ]);
+
       $billing->updateStatus(BillingStatus::CANCELLED, Auth::id(), $request->remarks);
       DB::commit();
       return response()->json([

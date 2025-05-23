@@ -85,15 +85,12 @@ function BillingTableFinance() {
           6: 'payment',
         };
         const path = `/billing/${item.id}/${paths[status_id] || 'view'}`;
-
-
         return (
-        <div className="flex space-x-2">
-          <TButton to={path} variant="link" size="sm" color="blue" startIcon={<EyeIcon size={16} className="mr-1" />}>
-            Papar
-          </TButton>
-        </div>
-      )}
+        <TButton to={path} link color="blue">
+          <EyeIcon size={18} className="mr-1"/> Papar
+        </TButton>
+        )
+      }
     }
   ];
 

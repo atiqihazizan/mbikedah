@@ -79,10 +79,12 @@ class BillingDetailResource extends JsonResource
         return [
           'id' => $transaction->id,
           'bank_id' => $transaction->bank_id,
-          'credit' => $transaction->amount,
+          'amount' => $transaction->amount,
           'bank_name' => $transaction->bank ? $transaction->bank->bank_name : null,
-          'latest_bal' => $transaction->bank ? $transaction->bank->amount : null,
-          'created_at' => $transaction->created_at
+          'balance' => $transaction->bank ? $transaction->bank->amount : null,
+          'created_at' => $transaction->created_at,
+          'paid_date' => $transaction->paid_date,
+          'paid_ref' => $transaction->paid_ref,
         ];
       })
     ];

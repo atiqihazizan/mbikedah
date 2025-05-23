@@ -25,7 +25,7 @@ class BillingStatus
       self::FINANCE_VERIFY => 'Pengesahan Kewangan',
       self::FINANCE_APPROVAL => 'Kelulusan Kewangan',
       self::PROCESSING_PAYMENT => 'Diproses',
-      self::COMPLETED => 'Selesai',
+      self::COMPLETED => 'Permohonan Dibayar',
       self::REJECTED => 'Ditolak',
       self::RETURNED => 'Dikembalikan',
       self::CANCELLED => 'Dibatalkan',

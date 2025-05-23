@@ -58,8 +58,8 @@ const BillingVerifyBank = ({billing,processing}) => {
                 <tr key={index}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-top">{transaction.bank_name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right align-top">{formatCurrency(transaction?.latest_bal || 0)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right align-top">{formatCurrency(transaction?.credit || 0)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right align-top">{formatCurrency(transaction?.balance || 0)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right align-top">{formatCurrency(transaction?.amount || 0)}</td>
                 </tr>
               )
             })}

@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useStateContext } from "../../contexts/ContextProvider";
 import { format, parseISO } from "date-fns";
-import { Link } from "react-router-dom";
 import { EyeIcon } from "lucide-react";
 import PageComponent from "../../components/PageComponent";
 import Table from "../../components/TableRow";
 import apiClient from "../../axios";
 import { toast } from "react-toastify";
+import TButton from "../../components/Core/TButton";
 
 function BillingTableArchive() {
   const { setCountActive } = useStateContext();
@@ -60,16 +60,7 @@ function BillingTableArchive() {
     },
     {
       name: "Tindakan",
-      render: (item) => (
-        <div className="flex space-x-2">
-          <Link
-            to={`/billing/${item.id}/archive/show`}
-            className="text-blue-500 hover:text-blue-600 flex items-center"
-          >
-            <EyeIcon size={16} className="mr-1" />
-          </Link>
-        </div>
-      ),
+      render: (item) => (<TButton to={`/billing/${item.id}/view`} color="blue" link><EyeIcon size={18} className="mr-1"/> Papar</TButton>),
     },
   ];
 

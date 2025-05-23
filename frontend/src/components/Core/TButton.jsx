@@ -34,6 +34,9 @@ function TButton({
 			case "red":
 				classes = [...classes, "text-red-500", "focus:border-red-500"];
 				break;
+			case "blue":
+				classes = [...classes, "text-blue-500","hover:text-blue-600"];
+				break;
 		}
 	} else {
 		classes = [...classes, "text-white", "focus:ring-2", "focus:fing-offset-2"];
