@@ -184,6 +184,51 @@ class BillingActivitiesController extends Controller
     }
   }
 
+  /**
+   * Update budget actuals based on billing details
+   */
+  private function updateBudgetActuals(Billing $billing)
+  {
+    // Dapatkan semua details yang telah diluluskan
+    $approvedDetails = $billing->details()->where('approve', true)->get();
+    
+    // Kumpulkan jumlah per budget_id dan bulan
+    $budgetData = [];
+    $month = $billing->paid_at ? $billing->paid_at->format('n') : now()->month;
+    
+    foreach ($approvedDetails as $detail) {
+      if (!$detail->budget_id) continue;
+      
+      $budgetData[$detail->budget_id] = ($budgetData[$detail->budget_id] ?? 0) + $detail->total;
+    }
+    
+    // Update setiap budget
+    foreach ($budgetData as $budgetId => $amount) {
+      $budget = Budget::find($budgetId);
+      if (!$budget) continue;
+      
+      // Dapatkan current actual untuk bulan tersebut
+      $monthField = 'act' . $month;
+      $currentActual = $budget->$monthField;
+      
+      // Update actual untuk bulan tersebut
+      $budget->$monthField = $currentActual + $amount;
+      
+      // Kira semula acttotal
+      $actTotal = 0;
+      for ($i = 1; $i <= 12; $i++) {
+        $actField = 'act' . $i;
+        $actTotal += $budget->$actField;
+      }
+      
+      // Update acttotal dan balance
+      $budget->acttotal = $actTotal;
+      $budget->balance = $budget->bdgtotal - $actTotal;
+      
+      $budget->save();
+    }
+  }
+
   public function processPayment(Request $request, Billing $billing) {
     try {
       $this->authorize('process', [$billing, BillingStatus::PROCESSING_PAYMENT]);
@@ -232,6 +277,9 @@ class BillingActivitiesController extends Controller
       $billing->paid_at = now();
       $billing->paid_by = Auth::id();
       $billing->save();
+      
+      // Panggil fungsi untuk update budget actuals
+      $this->updateBudgetActuals($billing);
       
       $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), $remarks);
       DB::commit();

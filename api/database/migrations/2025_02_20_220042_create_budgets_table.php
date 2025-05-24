@@ -47,6 +47,7 @@ return new class extends Migration
             $table->decimal('act11', 8, 2)->default(0);
             $table->decimal('act12', 8, 2)->default(0);
             $table->decimal('acttotal', 8, 2)->default(0);
+            $table->decimal('balance', 8, 2)->default(0);
             $table->timestamps();
         });
     }

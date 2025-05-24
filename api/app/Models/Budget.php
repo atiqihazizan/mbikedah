@@ -28,7 +28,21 @@ class Budget extends Model
     'bdg10',
     'bdg11',
     'bdg12',
-    'bdgtotal'
+    'bdgtotal',
+    'act1',
+    'act2',
+    'act3',
+    'act4',
+    'act5',
+    'act6',
+    'act7',
+    'act8',
+    'act9',
+    'act10',
+    'act11',
+    'act12',
+    'acttotal',
+    'balance'
   ];
 
   public function department()
@@ -70,6 +84,6 @@ class Budget extends Model
   public function getBalance()
   {
     // return $this->getTotalBudget() - $this->getTotalSpending();
-    return $this->bdgtotal;
+    return $this->balance;
   }
 }
