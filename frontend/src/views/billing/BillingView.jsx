@@ -48,7 +48,7 @@ const BillingView = () => {
       title="Butiran Permohonan Bayaran"
       buttons={!loading && (
         <div className="flex gap-2">
-          <TButton color="light" to={'/billing/incomplete'}>Kembali</TButton>
+          <TButton color="light" to={'/billing/dashboard'}>Kembali</TButton>
           {/* {canEdit && (
             <>
               <TButton 

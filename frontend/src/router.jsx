@@ -1,10 +1,11 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import DefaultLayout from "./components/DefaultLayout";
-import Dashboard from "./views/Dashboard";
+import RootLoading from "./components/RootLoading";
 import GuestLayout from "./components/GuestLayout";
 import Login from "./views/Login";
 import Signup from "./views/Signup";
+import NotFound from "./views/NotFound"; // Import komponen NotFound
 
 import BillingForm from "./views/billing/BillingForm";
 import BillingTableActive from "./views/billing/BillingTableActive";
@@ -22,29 +23,42 @@ const router = createBrowserRouter([
 		path: "/",
 		element: <DefaultLayout />,
 		children: [
-			{ path: "/dashboard", element: <Navigate to="/" /> },
-			{ path: "/", element: <Dashboard /> },
-      { path: "/billing/incomplete", element: <BillingTableActive /> },
-			{ path: "/billing/archive", element: <BillingTableArchive /> },
-			{ path: "/billing/form", element: <BillingForm /> },
-			{ path: "/billing/:idform/edit", element: <BillingForm /> },
-      { path: "/billing/hod", element: <BillingTableHOD /> },
-      { path: "/billing/finance", element: <BillingTableFinance /> },
-      { path: "/billing/:idBilling/:pageback/show", element: <BillingPaper /> },
-      { path: "/billing/:idBilling/payment", element: <BillingPayment /> },
-      { path: "/billing/:idBilling/view", element: <BillingView /> },
-      { path: "/billing/:idBilling/check", element: <BillingCheck /> },
-      { path: "/billing/:idBilling/verify", element: <BillingVerify /> },
+			// Root path will be handled by RootLoading with auto-redirect
+			{ path: "", element: <RootLoading /> },
+			
+			// Pemohon specific routes
+			{ path: "billing/dashboard", element: <BillingTableActive /> },
+			{ path: "billing/archive", element: <BillingTableArchive /> },
+			{ path: "billing/create", element: <BillingForm /> },
+			{ path: "billing/:idform/edit", element: <BillingForm /> },
+			
+			// HOD specific routes
+			{ path: "billing/hod", element: <BillingTableHOD /> },
+			
+			// Finance specific routes
+			{ path: "billing/finance", element: <BillingTableFinance /> },
+			
+			// Shared routes (accessible by all roles)
+			{ path: "billing/:idBilling/:pageback/show", element: <BillingPaper /> },
+			{ path: "billing/:idBilling/payment", element: <BillingPayment /> },
+			{ path: "billing/:idBilling/view", element: <BillingView /> },
+			{ path: "billing/:idBilling/check", element: <BillingCheck /> },
+			{ path: "billing/:idBilling/verify", element: <BillingVerify /> },
 		],
 	},
 	{
 		path: "/",
 		element: <GuestLayout />,
 		children: [
-			{ path: "/login", element: <Login /> },
-			{ path: "/signup", element: <Signup /> },
+			{ path: "login", element: <Login /> },
+			{ path: "signup", element: <Signup /> },
 		],
 	},
+	// Catch-all route untuk halaman yang tidak ditemukan
+	{
+		path: "*",
+		element: <NotFound />
+	}
 ]);
 
 export default router;

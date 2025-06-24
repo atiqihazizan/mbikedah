@@ -1,0 +1,466 @@
+/* tab-labels.css - Enhanced styles untuk tab dengan labels */
+
+/* Tab container dengan label support */
+.tab-container-with-labels {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Individual tab dengan label */
+.tab-with-label {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.tab-with-label:hover {
+  transform: translateY(-2px);
+}
+
+/* Tab button enhanced untuk labels */
+.tab-button-enhanced {
+  position: relative;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  width: 100%;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-button-enhanced:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.tab-button-enhanced:focus {
+  outline: none;
+  ring: 3px;
+  ring-color: rgba(59, 130, 246, 0.5);
+}
+
+/* Active tab states */
+.tab-button-enhanced.active {
+  transform: scale(1.05);
+  z-index: 2;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.tab-button-enhanced.active.purple {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  border-color: #8b5cf6;
+  color: white;
+}
+
+.tab-button-enhanced.active.blue {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: #3b82f6;
+  color: white;
+}
+
+.tab-button-enhanced.active.green {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #10b981;
+  color: white;
+}
+
+/* Tab icon styling */
+.tab-icon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+  transition: transform 0.3s ease;
+}
+
+.tab-button-enhanced:hover .tab-icon {
+  transform: scale(1.1);
+}
+
+.tab-button-enhanced.active .tab-icon {
+  transform: scale(1.2);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Tab title styling */
+.tab-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.tab-button-enhanced.active .tab-title {
+  color: white;
+}
+
+/* Label container */
+.tab-label-container {
+  margin-top: 12px;
+  padding: 0 8px;
+  text-align: center;
+  min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Main label */
+.tab-main-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+  transition: all 0.3s ease;
+}
+
+.tab-main-label.active {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.tab-main-label.inactive {
+  color: #6b7280;
+}
+
+/* Sub label */
+.tab-sub-label {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  margin-top: 4px;
+  transition: all 0.3s ease;
+}
+
+.tab-sub-label.active {
+  color: #4b5563;
+}
+
+.tab-sub-label.inactive {
+  color: #9ca3af;
+}
+
+/* Notification label */
+.tab-notification-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  margin-top: 4px;
+  padding: 2px 6px;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 10px;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+/* .tab-notification-label.urgent {
+  background: #dc2626;
+  color: white;
+  animation: pulse 2s infinite;
+} */
+
+/* Notification badge pada tab */
+.tab-notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  animation: bounce 1s infinite;
+  z-index: 3;
+}
+
+/* Navigation arrows */
+.tab-nav-arrow {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 50px;
+}
+
+.tab-nav-arrow:hover {
+  background: #f9fafb;
+  color: #374151;
+  border-color: #d1d5db;
+  transform: scale(1.05);
+}
+
+.tab-nav-arrow:active {
+  transform: scale(0.95);
+}
+
+/* Grid layout untuk tabs */
+.tabs-grid {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.tabs-grid.two-tabs {
+  grid-template-columns: 1fr 1fr;
+}
+
+.tabs-grid.three-tabs {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.tabs-grid.four-tabs {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Section header */
+.tab-section-header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #f3f4f6;
+}
+
+.tab-section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.tab-section-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Footer info */
+.tab-footer-info {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.tab-footer-active {
+  color: #374151;
+  font-weight: 500;
+}
+
+.tab-footer-notification {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .tabs-grid.four-tabs {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .tab-button-enhanced {
+    min-height: 80px;
+    padding: 12px;
+  }
+  
+  .tab-icon {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .tabs-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .tab-container-with-labels {
+    padding: 16px;
+  }
+  
+  .tab-button-enhanced {
+    min-height: 70px;
+    padding: 10px;
+    flex-direction: row;
+    text-align: left;
+  }
+  
+  .tab-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0;
+    margin-right: 12px;
+  }
+  
+  .tab-content-mobile {
+    flex: 1;
+  }
+  
+  .tab-label-container {
+    margin-top: 0;
+    text-align: left;
+    min-height: auto;
+  }
+  
+  .tab-nav-arrow {
+    display: none;
+  }
+  
+  .tab-section-header {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-title {
+    font-size: 0.8125rem;
+  }
+  
+  .tab-main-label {
+    font-size: 0.6875rem;
+  }
+  
+  .tab-sub-label {
+    font-size: 0.625rem;
+  }
+  
+  .tab-button-enhanced {
+    padding: 8px;
+    min-height: 60px;
+  }
+}
+
+/* Animation keyframes */
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+/* @keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+} */
+
+/* Focus and accessibility */
+.tab-button-enhanced:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .tab-button-enhanced {
+    border-width: 3px;
+  }
+  
+  .tab-button-enhanced.active {
+    border-color: #000;
+  }
+  
+  .tab-main-label,
+  .tab-sub-label {
+    font-weight: 600;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tab-button-enhanced,
+  .tab-icon,
+  .tab-main-label,
+  .tab-sub-label,
+  .tab-notification-badge {
+    transition: none;
+    animation: none;
+  }
+  
+  .tab-button-enhanced:hover {
+    transform: none;
+  }
+  
+  .tab-button-enhanced.active {
+    transform: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .tab-container-with-labels {
+    display: none;
+  }
+}
+
+/* Custom scrollbar untuk tab container */
+.tab-container-with-labels::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.tab-container-with-labels::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.tab-container-with-labels::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.tab-container-with-labels::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Loading state untuk tabs */
+.tab-loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.tab-loading .tab-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -132,7 +132,7 @@ export default function BillingForm() {
       if (statusId === 1 && flagNew) {
         navigate(`/billing/${newId}/edit`);
       } else if (statusId === 2) {
-        navigate(`/billing/incomplete`, { replace: true });
+        navigate(`/billing/dashboard`, { replace: true });
       }
       
       return { success: true, data };
@@ -204,7 +204,7 @@ export default function BillingForm() {
       title={flagNew ? "Permohonan Bayaran" : "Kemaskini Permohonan"}
       buttons={!loading && (
         <div className="flex gap-2">
-          {!flagNew && (<TButton color="light" to={'/billing/incomplete'}>Kembali</TButton>)}
+          {!flagNew && (<TButton color="light" to={'/billing/dashboard'}>Kembali</TButton>)}
           {canEdit && (
             <>
               <TButton color="light" onClick={saveDraft}>Simpan sebagai Draf</TButton>

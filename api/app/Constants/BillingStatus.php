@@ -20,7 +20,7 @@ class BillingStatus
   {
     return match ($statusId) {
       self::DRAFT => 'Draf',
-      self::HOD_APPROVAL => 'Kelulusan HOD',
+      self::HOD_APPROVAL => 'Menunggu Kelulusan',
       self::FINANCE_REVIEW => 'Semakan Kewangan',
       self::FINANCE_VERIFY => 'Pengesahan Kewangan',
       self::FINANCE_APPROVAL => 'Kelulusan Kewangan',

@@ -80,7 +80,8 @@ class BillingController extends Controller
         'created_by' => $request->user()->id,
         'issued_at' => $validatedData['issued_at'],
         // 'payment_due' => $validatedData['payment_due'],
-        'status_id' => $validatedData['status_id'],
+        // 'status_id' => $validatedData['status_id'],
+        'status_id' => BillingStatus::DRAFT,
         'is_archived' => false
       ]);
 

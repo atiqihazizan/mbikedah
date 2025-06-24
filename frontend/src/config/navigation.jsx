@@ -11,18 +11,26 @@ import {
 
 
 export const navigation = [
+  // Dashboard
+  { 
+    text: "Dashboard", 
+    to: "/dashboard", 
+    icon: <FilePlus size={20} />,
+    type: 1,
+    menu: "dashboard.view" // Tambahkan permission khusus untuk dashboard
+  },
   // Permohonan Bayaran
   { text: "Permohonan Bayaran", to: "", type: 0 },
   {
     text: "Permohonan Baru",
-    to: "/billing/form",
+    to: "/billing/create",
     icon: <FilePlus size={20} />,
     type: 1,
     menu: "billing.create"
   },
   {
     text: "Masih Aktif",
-    to: "/billing/incomplete",
+    to: "/billing/dashboard",
     icon: <FolderOpen size={20} />,
     type: 1,
     menu: "billing.incomplete"

@@ -16,17 +16,17 @@ class UserAbilities
     // Admin boleh akses semua menu
     1 => ['all'],
     // Pemohon
-    2 => ['billing.create', 'billing.incomplete', 'billing.archive'],
+    2 => ['dashboard.view', 'billing.create', 'billing.incomplete', 'billing.archive'],
     // Ketua Jabatan
-    3 => ['billing.hod'],
+    3 => ['dashboard.view', 'billing.hod'],
     // Penyemak Kewangan
-    4 => ['billing.finance'],
+    4 => ['dashboard.view', 'billing.finance'],
     // Pengesah Kewangan
-    5 => ['billing.finance'],
+    5 => ['dashboard.view', 'billing.finance'],
     // Pelulus Kewangan
-    6 => ['billing.finance'],
+    6 => ['dashboard.view', 'billing.finance'],
     // Pembayar
-    7 => ['billing.finance'],
+    7 => ['dashboard.view', 'billing.finance'],
   ];
 
   public static function getAbilitiesName()

@@ -70,7 +70,7 @@ export default function BillingCheck() {
           </div>
           <div className="flex space-x-3">
             {/* <TButton onClick={() => window.print()} color="light" ><Printer className="w-4 h-4 mr-2" /> Cetak</TButton> */}
-            <TButton onClick={() => navigate("/billing/finance")} color="primary-dark" ><ChevronLeft className="w-4 h-4 mr-2" /> Kembali</TButton>
+            <TButton onClick={() => navigate("/billing/finance")} color="light" ><ChevronLeft className="w-4 h-4 mr-2" /> Kembali</TButton>
           </div>
         </div>
       </div>
@@ -87,8 +87,7 @@ export default function BillingCheck() {
           </div>
         </div>
       </div>
-
-      <div className="container h-[calc(100vh-170px)] overflow-y-auto">
+      <div className="px-8 h-[calc(100vh-298px)] overflow-y-auto">
         <BillingCheckInfo billing={billing} />
         <BillingCheckBudget billing={billing} setBilling={setBilling} budgets={budgets} processing={processing} />
         <BillingCheckBank billing={billing} setBilling={setBilling} banks={banks} processing={processing} setProcessing={setProcessing} />
@@ -96,89 +95,3 @@ export default function BillingCheck() {
     </div>
   );
 }
-
-
-// {
-//   "id": 3,
-//   "running_no": "INV008",
-//   "no_project": "N/A",
-//   "total_amount": "6.00",
-//   "payment_method": "online",
-//   "status_name": "Semakan Kewangan",
-//   "department": "KEWANGAN & PERAKAUNAN",
-//   "recipient": "Pejabat Tanah Langkawi",
-//   "creator": {
-//       "name": "NOORUL HUSNA BINTI HARUN",
-//       "position": "EKSEKUTIF"
-//   },
-//   "created_at": "2025-05-13T03:38:41.000000Z",
-//   "issued_at": "2025-05-13T00:00:00.000000Z",
-//   "hod_approved_at": "2025-05-15T00:00:00.000000Z",
-//   "reviewed_at": null,
-//   "details": [
-//       {
-//           "description": "sadfsdf",
-//           "budget_code": "2000/000",
-//           "budget_id": 3,
-//           "price": "3.00",
-//           "quantity": 2,
-//           "reference": null,
-//           "total": "6.00",
-//           "budget": {
-//               "name": "ASET BUKAN SEMASA",
-//               "code": "2000/000",
-//               "balance": "1000.00"
-//           }
-//       }
-//   ],
-// }
-
-
-// {
-//   "id": 3,
-//   "running_no": "INV008",
-//   "no_project": "N/A",
-//   "total_amount": "6.00",
-//   "payment_method": "online",
-//   "status_id": 3,
-//   "status_name": "Semakan Kewangan",
-//   "department": "KEWANGAN & PERAKAUNAN",
-//   "recipient": "Pejabat Tanah Langkawi",
-//   "creator": {
-//       "id": 11,
-//       "name": "NOORUL HUSNA BINTI HARUN",
-//       "position": "EKSEKUTIF"
-//   },
-//   "created_at": "2025-05-13T03:38:41.000000Z",
-//   "issued_at": "2025-05-13T00:00:00.000000Z",
-//   "print_count": 0,
-//   "last_printed_at": null,
-//   "last_printed_by_name": null,
-//   "hod_approved_at": "2025-05-15T00:00:00.000000Z",
-//   "reviewed_at": null,
-//   "verified_at": null,
-//   "approved_at": null,
-//   "paid_at": null,
-//   "ceo_approved": false,
-//   "details": [
-//       {
-//           "id": 19,
-//           "description": "sadfsdf",
-//           "budget_code": "2000/000",
-//           "budget_id": 3,
-//           "old_budget_id": 0,
-//           "old_budget_code": null,
-//           "price": "3.00",
-//           "quantity": 2,
-//           "reference": null,
-//           "total": "6.00",
-//           "budget": {
-//               "id": 3,
-//               "name": "ASET BUKAN SEMASA",
-//               "code": "2000/000",
-//               "balance": "1000.00"
-//           }
-//       }
-//   ],
-//   "transactions": []
-// }

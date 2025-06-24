@@ -6,19 +6,18 @@ import {
 } from "lucide-react";
 import { useStateContext } from "../contexts/ContextProvider";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { navigation } from "../config/navigation";
 import { toast } from "react-toastify";
 import logo from "../assets/logo.png";
-import PropTypes from "prop-types";
 
 const SidebarContext = createContext();
 
 export default function Sidebar() {
   const location = useLocation();
   const { currentUser, logout } = useStateContext();
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   // Clear semua toast apabila tukar page
   useEffect(() => {
@@ -27,30 +26,23 @@ export default function Sidebar() {
 
   // Filter menu berdasarkan allowed_menus dari user
   const filterNavigation = () => {
-    // Jika user adalah admin, tunjuk semua menu
     if (currentUser?.allowed_menus?.includes("all")) {
       return navigation;
     }
-
-    // Jika bukan admin, filter menu berdasarkan allowed_menus
+  
     return navigation.filter((item) => {
-      // Jika item adalah header (type 0), periksa jika ada child menu yang dibenarkan
       if (item.type === 0) {
         const nextIndex = navigation.indexOf(item) + 1;
-        // Cari menu selepas header sehingga jumpa header seterusnya
         for (
           let i = nextIndex;
           i < navigation.length && navigation[i].type !== 0;
           i++
         ) {
-          if (currentUser?.allowed_menus?.includes(navigation[i].menu)) {
-            return true;
-          }
+          if (currentUser?.allowed_menus?.includes(navigation[i]?.menu)) return true;
         }
         return false;
       }
-      // Jika item adalah menu (type 1), periksa jika menu dibenarkan
-      return currentUser?.allowed_menus?.includes(item.menu);
+      return currentUser?.allowed_menus?.includes(item?.menu);
     });
   };
 
@@ -189,12 +181,3 @@ function SidebarItem({ icon, text, to, type, badgeCount }) {
     </li>
   );
 }
-SidebarItem.propTypes = {
-  icon: PropTypes.element,
-  text: PropTypes.string.isRequired,
-  to: PropTypes.string.isRequired,
-  type: PropTypes.number,
-  active: PropTypes.bool,
-  alert: PropTypes.bool,
-  badgeCount: PropTypes.number,
-};

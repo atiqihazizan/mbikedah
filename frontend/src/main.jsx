@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import "./index.css";
 import "./assets/vendors/keenicons/styles.bundle.css";
 import "./assets/css/styles.css";
+import "./assets/css/dashboard-tabs.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

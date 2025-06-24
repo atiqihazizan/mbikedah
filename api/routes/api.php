@@ -1,34 +1,35 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BankController;
 use App\Http\Controllers\BillingActivitiesController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\BillingDashboardController;
 use App\Http\Controllers\BillingListController;
 use App\Http\Controllers\BillingRecipientController;
 use App\Http\Controllers\BudgetController;
-use App\Http\Controllers\BankController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\UserController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Route;
 
 /*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
-*/
+ * |--------------------------------------------------------------------------
+ * | API Routes
+ * |--------------------------------------------------------------------------
+ * |
+ * | Here is where you can register API routes for your application. These
+ * | routes are loaded by the RouteServiceProvider and all of them will
+ * | be assigned to the "api" middleware group. Make something great!
+ * |
+ */
 
 /*
-|--------------------------------------------------------------------------
-| Authentication Routes
-|--------------------------------------------------------------------------
-*/
+ * |--------------------------------------------------------------------------
+ * | Authentication Routes
+ * |--------------------------------------------------------------------------
+ */
 
 Route::prefix('auth')->group(function () {
   // Public routes
@@ -42,10 +43,10 @@ Route::prefix('auth')->group(function () {
 });
 
 /*
-|--------------------------------------------------------------------------
-| Public Test Routes
-|--------------------------------------------------------------------------
-*/
+ * |--------------------------------------------------------------------------
+ * | Public Test Routes
+ * |--------------------------------------------------------------------------
+ */
 Route::prefix('test')->group(function () {
   Route::get('/ping', function () {
     return response()->json([
@@ -54,7 +55,7 @@ Route::prefix('test')->group(function () {
       'status' => 'success'
     ]);
   });
-  
+
   Route::get('/info', function () {
     return response()->json([
       'app_name' => config('app.name'),
@@ -68,16 +69,16 @@ Route::prefix('test')->group(function () {
 });
 
 /*
-|--------------------------------------------------------------------------
-| Protected Routes
-|--------------------------------------------------------------------------
-*/
+ * |--------------------------------------------------------------------------
+ * | Protected Routes
+ * |--------------------------------------------------------------------------
+ */
 Route::middleware('auth:sanctum')->group(function () {
   /*
-    |--------------------------------------------------------------------------
-    | Redis Test Routes
-    |--------------------------------------------------------------------------
-    */
+   * |--------------------------------------------------------------------------
+   * | Redis Test Routes
+   * |--------------------------------------------------------------------------
+   */
   Route::prefix('redis-test')->group(function () {
     Route::get('/set', function () {
       Cache::put('test_key', 'Redis berjaya dipasang!', now()->addMinutes(5));
@@ -91,10 +92,10 @@ Route::middleware('auth:sanctum')->group(function () {
   });
 
   /*
-    |--------------------------------------------------------------------------
-    | Budget Routes
-    |--------------------------------------------------------------------------
-    */
+   * |--------------------------------------------------------------------------
+   * | Budget Routes
+   * |--------------------------------------------------------------------------
+   */
   Route::prefix('budgets')->group(function () {
     Route::get('/', [BudgetController::class, 'index']);
     Route::post('/', [BudgetController::class, 'store']);
@@ -104,25 +105,25 @@ Route::middleware('auth:sanctum')->group(function () {
   });
 
   /*
-    |--------------------------------------------------------------------------
-    | Dashboard Routes
-    |--------------------------------------------------------------------------
-    */
+   * |--------------------------------------------------------------------------
+   * | Dashboard Routes
+   * |--------------------------------------------------------------------------
+   */
   Route::prefix('dashboard')->group(function () {
     // Route::get('/', [BillingController::class, 'getDashboardData']);
   });
 
   /*
-    |--------------------------------------------------------------------------
-    | Billing Routes
-    |--------------------------------------------------------------------------
-    */
+   * |--------------------------------------------------------------------------
+   * | Billing Routes
+   * |--------------------------------------------------------------------------
+   */
   Route::prefix('billings')->group(function () {
     // Basic Resource Routes
     Route::post('/', [BillingController::class, 'store']);
     Route::put('/{billing}', [BillingController::class, 'update']);
     Route::delete('/{billing}', [BillingController::class, 'destroy']);
-    
+
     // Additional Custom Routes
     Route::get('/incomplete', [BillingListController::class, 'getIncomplete']);
     Route::get('/pending-hod', [BillingListController::class, 'getPendingHOD']);
@@ -161,10 +162,10 @@ Route::middleware('auth:sanctum')->group(function () {
   });
 
   /*
-    |--------------------------------------------------------------------------
-    | Department Routes
-    |--------------------------------------------------------------------------
-    */
+   * |--------------------------------------------------------------------------
+   * | Department Routes
+   * |--------------------------------------------------------------------------
+   */
   Route::prefix('departments')->group(function () {
     Route::get('/', [DepartmentController::class, 'index']);
     Route::post('/', [DepartmentController::class, 'store']);
@@ -174,10 +175,10 @@ Route::middleware('auth:sanctum')->group(function () {
   });
 
   /*
-    |--------------------------------------------------------------------------
-    | Billing Recipient Routes
-    |--------------------------------------------------------------------------
-    */
+   * |--------------------------------------------------------------------------
+   * | Billing Recipient Routes
+   * |--------------------------------------------------------------------------
+   */
   Route::prefix('billing-recipients')->group(function () {
     Route::get('/', [BillingRecipientController::class, 'index']);
     Route::post('/', [BillingRecipientController::class, 'store']);
@@ -187,17 +188,17 @@ Route::middleware('auth:sanctum')->group(function () {
   });
 
   /*
-    |--------------------------------------------------------------------------
-    | Bank Routes
-    |--------------------------------------------------------------------------
-    */
+   * |--------------------------------------------------------------------------
+   * | Bank Routes
+   * |--------------------------------------------------------------------------
+   */
   Route::apiResource('banks', BankController::class);
 
   /*
-    |--------------------------------------------------------------------------
-    | User Routes
-    |--------------------------------------------------------------------------
-    */
+   * |--------------------------------------------------------------------------
+   * | User Routes
+   * |--------------------------------------------------------------------------
+   */
   Route::prefix('users')->group(function () {
     Route::get('/', [UserController::class, 'index']);
     Route::post('/', [UserController::class, 'store']);
@@ -207,5 +208,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Route untuk kemaskini abilities pengguna
     Route::put('/{id}/abilities', [UserController::class, 'updateAbilities']);
+  });
+
+  /*
+   * |--------------------------------------------------------------------------
+   * | Dashboard Routes
+   * |--------------------------------------------------------------------------
+   */
+  Route::prefix('dashboard')->group(function () {
+    Route::get('/', [BillingDashboardController::class, 'getDashboardData']);
   });
 });

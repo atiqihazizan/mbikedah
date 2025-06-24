@@ -27,7 +27,7 @@ class BillingActivitiesController extends Controller
       $remarks = $request->remarks ?? ''; //Diluluskan oleh HOD
       
       // Tetapkan tarikh kelulusan HOD
-      $billing->hod_approved_by = Auth::id();
+      $billing->approved_hod = Auth::id();
       $billing->hod_approved_at = now();
       $billing->save();
       
@@ -66,7 +66,7 @@ class BillingActivitiesController extends Controller
       if (empty($transactions)) {throw new \Exception('Tiada transaksi yang dimasukkan');}
       
       // Tetapkan tarikh semakan kewangan
-      $billing->reviewed_by = Auth::id();
+      $billing->review_by = Auth::id();
       $billing->reviewed_at = now();
       $billing->payment_method = "$payment_method";
       $billing->total_amount = $total_accept;
@@ -346,7 +346,7 @@ class BillingActivitiesController extends Controller
       $billing->details()->update([
         'approve' => 0,
         'accept' => -1,
-        'reviewed_by' => 0,
+        'review_by' => 0,
       ]);
       $billing->updateStatus(BillingStatus::REJECTED, Auth::id(), $request->remarks);
       DB::commit();
@@ -404,7 +404,7 @@ class BillingActivitiesController extends Controller
       $billing->details()->update([
         'approve' => 0,
         'accept' => -1,
-        'reviewed_by' => 0,
+        'review_by' => 0,
       ]);
 
       $billing->updateStatus(BillingStatus::RETURNED, Auth::id(), $request->remarks);
@@ -463,7 +463,7 @@ class BillingActivitiesController extends Controller
       $billing->details()->update([
         'approve' => 0,
         'accept' => -1,
-        'reviewed_by' => 0,
+        'review_by' => 0,
       ]);
 
       $billing->updateStatus(BillingStatus::CANCELLED, Auth::id(), $request->remarks);

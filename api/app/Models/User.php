@@ -154,6 +154,6 @@ class User extends Authenticatable
       $allowedMenus = array_merge($allowedMenus, $menus);
     }
 
-    return array_unique($allowedMenus);
+    return array_values(array_unique($allowedMenus));
   }
 }
