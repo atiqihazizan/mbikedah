@@ -189,16 +189,16 @@ function BillingTableActive() {
       </div>
 
       {/* Statistics/Filter Tabs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-6 mb-8">
         <TabCard
-          icon={FileText}
-          title="Semua"
-          value={stats.total_applications}
+          icon={Edit}
+          title="Draf"
+          value={statusCounts.draft}
           color="bg-gray-500"
-          description="Semua permohonan"
-          tabKey="all"
-          isActive={activeTab === 'all'}
-          onClick={() => handleTabChange('all')}
+          description="Belum dihantar"
+          tabKey="draft"
+          isActive={activeTab === 'draft'}
+          onClick={() => handleTabChange('draft')}
         />
         <TabCard
           icon={Clock}
@@ -219,16 +219,6 @@ function BillingTableActive() {
           tabKey="completed"
           isActive={activeTab === 'completed'}
           onClick={() => handleTabChange('completed')}
-        />
-        <TabCard
-          icon={Edit}
-          title="Draf"
-          value={statusCounts.draft}
-          color="bg-gray-500"
-          description="Belum dihantar"
-          tabKey="draft"
-          isActive={activeTab === 'draft'}
-          onClick={() => handleTabChange('draft')}
         />
         <TabCard
           icon={XCircle}

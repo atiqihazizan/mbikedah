@@ -140,7 +140,7 @@ class BillingActivitiesController extends Controller
       $billing->verified_by = Auth::id();
       $billing->verified_at = now();
       $billing->save();
-      $billing->updateStatus(BillingStatus::PROCESSING_PAYMENT, Auth::id(), $remarks);
+      $billing->updateStatus(BillingStatus::FINANCE_APPROVAL, Auth::id(), $remarks);
       DB::commit();
       return response()->json([
         'success' => true,

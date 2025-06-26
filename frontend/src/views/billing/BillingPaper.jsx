@@ -20,7 +20,7 @@ const BillingPaper = () => {
   const [action, setAction] = useState(null); // 'reject' atau 'return'
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [endPointApprove, setEndPointApprove] = useState(null);
-  const { idBilling, pageback } = useParams();
+  const { idBilling } = useParams();
 
   const endPointsByStatus = {
     2: { endPoint: "hod-approve", title: "Kelulusan Ketua Jabatan" },
@@ -108,9 +108,6 @@ const BillingPaper = () => {
     fetchBilling();
   }, [idBilling]);
 
-  if (!pageback) {
-    return <></>;
-  }
   if (isLoading) {
     return (
       <PageComponent title="Paparan Permohonan">
@@ -162,24 +159,8 @@ const BillingPaper = () => {
       buttons={
         !isLoading && (
           <div className="flex gap-2">
-            <TButton color="light" to={`/billing/${pageback}`}>Kembali</TButton>
+            <TButton color="light" to={`/billing/finance`}>Kembali</TButton>
             <TButton onClick={print} className="bg-blue-500 text-white font-bold py-2 px-4 rounded"><PrinterIcon size={16} className="mr-1" />Cetak</TButton>
-            {((pageback === "hod" && billing?.status_id === 2) ||
-              (pageback === "finance" &&
-                [3, 4, 5].includes(billing?.status_id))) &&
-              actionButtons
-                .filter(button => {
-                  // Jika status_id adalah 5, hanya paparkan butang approve
-                  if (billing?.status_id === 5) return button.type === "approve";
-                  // Untuk status lain, paparkan semua butang
-                  return true;
-                })
-                .map(({ type, icon: Icon, label, colorClass }) => (
-                  <TButton key={type} onClick={() => handleAction(billing.id, type)} className={colorClass}>
-                    <Icon size={16} className="mr-1" />
-                    {label}
-                  </TButton>
-                ))}
           </div>
         )
       }
@@ -194,7 +175,7 @@ const BillingPaper = () => {
           message={getActionText(action, "reason")}
           confirmText={getActionText(action, "noun")}
           endpoint={getEndpointForAction()}
-          callBack={() => navigate(`/billing/${pageback}`)}
+          callBack={() => navigate(`/billing/finance`)}
           total={billing?.total_amount}
           details={details}
           status={billing?.status_id}
@@ -203,7 +184,7 @@ const BillingPaper = () => {
         />
       )}
 
-      <div className="px-4 py-6 h-[calc(100vh-90px)] scrollable-y-hover overflow-auto">
+      <div className="px-4 py-6 h-[calc(100vh-218px)] scrollable-y-hover overflow-auto">
         <div
           style={{
             backgroundColor: "#fff",

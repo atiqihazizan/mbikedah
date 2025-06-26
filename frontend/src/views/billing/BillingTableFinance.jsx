@@ -46,7 +46,7 @@ function BillingTableFinance() {
 
   const stats = financeData.summary || {};
   const allBillings = financeData.needing_attention || [];
-
+  
   // Filter billings based on active tab
   const getFilteredBillings = () => {
     if (activeTab === 'all') return allBillings;
@@ -60,9 +60,13 @@ function BillingTableFinance() {
         return allBillings.filter(billing => 
           billing.status === 'Pengesahan Kewangan' || billing.status_id === 4
         );
+      case 'approval':
+        return allBillings.filter(billing => 
+          billing.status === 'Menunggu Pengesahan' || billing.status_id === 5
+        );
       case 'payment':
         return allBillings.filter(billing => 
-          billing.status === 'Menunggu Bayaran' || billing.status_id === 5
+          billing.status === 'Menunggu Bayaran' || billing.status_id === 6
         );
       default:
         return allBillings;
@@ -106,101 +110,39 @@ function BillingTableFinance() {
     setActiveTab(tabKey);
   };
 
-  const handleAction = async (billing, type) => {
-    try {
-      setSelectedBilling(billing);
-      setActionType(type);
-      setShowActionModal(true);
-      setActionComment("");
-    } catch (error) {
-      console.error('Error preparing action:', error);
-      toast.error('Ralat semasa menyediakan tindakan');
-    }
-  };
+  // const handleAction = async (billing, type) => {
+  //   try {
+  //     setSelectedBilling(billing);
+  //     setActionType(type);
+  //     setShowActionModal(true);
+  //     setActionComment("");
+  //   } catch (error) {
+  //     console.error('Error preparing action:', error);
+  //     toast.error('Ralat semasa menyediakan tindakan');
+  //   }
+  // };
 
-  const handleConfirmAction = async () => {
-    if (!selectedBilling || !actionType) return;
 
-    try {
-      setIsProcessing(true);
+  // const handleView = async (billing) => {
+  //   try {
+  //     const {data} = await apiClient.get(`/billings/${billing.id}`);
+  //     console.log(data);
+  //     setViewBilling(data);
+  //     setShowViewModal(true);
+  //   } catch (error) {
+  //     console.error('Error viewing billing:', error);
+  //     toast.error('Ralat semasa melihat permohonan');
+  //   }
+  // };
 
-      let endpoint = '';
-      let payload = {
-        remarks: actionComment.trim() || `${getActionLabel(actionType)} oleh Kewangan`
-      };
-
-      switch (actionType) {
-        case 'review':
-          endpoint = `/billings/${selectedBilling.id}/finance-review`;
-          break;
-        case 'verify':
-          endpoint = `/billings/${selectedBilling.id}/finance-verify`;
-          break;
-        case 'payment':
-          endpoint = `/billings/${selectedBilling.id}/finance-payment`;
-          break;
-        default:
-          throw new Error('Jenis tindakan tidak sah');
-      }
-
-      const response = await apiClient.post(endpoint, payload);
-
-      if (response.data.success || response.status === 200) {
-        toast.success(`Permohonan berjaya ${getActionLabel(actionType).toLowerCase()}`);
-        
-        handleCloseActionModal();
-        
-        // Refresh data
-        window.location.reload();
-      } else {
-        throw new Error(response.data.message || 'Ralat tidak diketahui');
-      }
-    } catch (error) {
-      console.error('Error processing action:', error);
-      toast.error(
-        error.response?.data?.message || 
-        error.message || 
-        'Ralat semasa memproses tindakan'
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleView = async (billing) => {
-    try {
-      const {data} = await apiClient.get(`/billings/${billing.id}`);
-      console.log(data);
-      setViewBilling(data);
-      setShowViewModal(true);
-    } catch (error) {
-      console.error('Error viewing billing:', error);
-      toast.error('Ralat semasa melihat permohonan');
-    }
-  };
-
-  const handleCloseActionModal = () => {
-    if (!isProcessing) {
-      setShowActionModal(false);
-      setSelectedBilling(null);
-      setActionType('');
-      setActionComment("");
-    }
-  };
-
-  const handleCloseViewModal = () => {
-    setShowViewModal(false);
-    setViewBilling(null);
-  };
-
-  const getActionLabel = (type) => {
-    switch (type) {
-      case 'review': return 'Semak';
-      case 'verify': return 'Verifikasi';
-      case 'payment': return 'Proses Bayaran';
-      default: return 'Proses';
-    }
-  };
+  // const handleCloseActionModal = () => {
+  //   if (!isProcessing) {
+  //     setShowActionModal(false);
+  //     setSelectedBilling(null);
+  //     setActionType('');
+  //     setActionComment("");
+  //   }
+  // };
 
   const getPriorityIcon = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -213,12 +155,44 @@ function BillingTableFinance() {
     }
   };
 
+  const getActionPath = (statusId) => {
+    const paths = {
+      3: 'check',
+      4: 'verify',
+      5: 'approval',
+      6: 'payment',
+    };
+    return paths[statusId] || 'check'; // default to 'check' if status not mapped
+  };
+
+  const getActionIcon = (statusId) => {
+    const paths = {
+      3: <FaCheck className="w-3 h-3" />,
+      4: <FaCheck className="w-3 h-3" />,
+      5: <FaCheck className="w-3 h-3" />,
+      6: <FaMoneyBillWave className="w-3 h-3" />,
+    };
+    return paths[statusId] || <FaCheck className="w-3 h-3" />;
+  };
+
+  const getActionTitle = (statusId) => {
+    const titles = {
+      3: 'Semak',
+      4: 'Verifikasi',
+      5: 'Pengesahan',
+      6: 'Bayar',
+    };
+    return titles[statusId] || 'Semak';
+  };
+
   const getActiveTabTitle = () => {
     switch (activeTab) {
       case 'review':
         return 'Menunggu Semakan';
       case 'verify':
         return 'Menunggu Verifikasi';
+      case 'approval':
+        return 'Menunggu Pengesahan';
       case 'payment':
         return 'Menunggu Bayaran';
       default:
@@ -294,7 +268,7 @@ function BillingTableFinance() {
       </div> */}
 
       {/* Statistics Grid - Now clickable tabs */}
-      <div className="grid grid-cols-3 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-4 md:grid-cols-4 gap-6 mb-8">
         <StatCard
           icon={FaClock}
           title="Menunggu Semakan"
@@ -314,6 +288,16 @@ function BillingTableFinance() {
           tabKey="verify"
           isActive={activeTab === 'verify'}
           onClick={() => handleTabClick('verify')}
+        />
+        <StatCard
+          icon={FaMoneyBillWave}
+          title="Menunggu Pengesahan"
+          value={stats.pending_approval || 0}
+          color="bg-red-500"
+          description="Perlu dihantar"
+          tabKey="approval"
+          isActive={activeTab === 'approval'}
+          onClick={() => handleTabClick('approval')}
         />
         <StatCard
           icon={FaMoneyBillWave}
@@ -395,8 +379,13 @@ function BillingTableFinance() {
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center justify-center space-x-2">
-                          <TButton color="check" to={`/billing/${billing.id}/check`} size="sm" title="Semak">
-                            <FaCheck className="w-3 h-3" />
+                          <TButton 
+                            color="check" 
+                            to={`/billing/${billing.id}/${getActionPath(billing.status_id)}`} 
+                            size="sm" 
+                            title={getActionTitle(billing.status_id)}
+                          >
+                            {getActionIcon(billing.status_id)}
                           </TButton>
                         </div>
                       </td>

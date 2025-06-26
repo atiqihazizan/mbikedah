@@ -24,17 +24,22 @@ export default function BillingCheck() {
   const fetchAllData = useCallback(async () => {
     try {
       const [billingRes, budgetsRes, banksRes] = await Promise.all([
-        apiClient.get(`/billings/${idBilling}`),
+        apiClient.post(`/status-validation/validate`,{billing_id: idBilling, status: 3, action:'process'}),
         apiClient.get("/budgets"),
         apiClient.get("/banks")
       ]);
-
       setBilling(billingRes.data);
       setBudgets(budgetsRes.data);
       setBanks(banksRes);
     } catch (error) {
-      console.error("Error fetching data:", error);
-      toast.error("Gagal memuat data");
+      if (error.response) {
+        console.error("Error fetching data:", error.response.data);
+        toast.error(error.response.data.message);
+      } else {
+        console.error("Error fetching data:", error);
+        // toast.error("Gagal memuat data");
+        toast.error("Tiada maklumat untuk semakan");
+      }
     } finally {
       setLoading(false);
     }
@@ -42,7 +47,7 @@ export default function BillingCheck() {
   
   useEffect(() => {
     fetchAllData();
-  }, [fetchAllData]);
+  }, []);
 
   if (loading) {
     return (<TLoadingSpinner position={TLoadingSpinner.Position.CENTER} />);

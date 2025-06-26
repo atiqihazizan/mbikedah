@@ -145,9 +145,10 @@ class BillingDashboardController extends Controller
     // Finance dashboard - show ALL finance related tasks regardless of specific role
     $pendingReview = Billing::where('status_id', BillingStatus::FINANCE_REVIEW)->count();
     $pendingVerify = Billing::where('status_id', BillingStatus::FINANCE_VERIFY)->count();
+    $pendingApproval = Billing::where('status_id', BillingStatus::FINANCE_APPROVAL)->count();
     $pendingPayment = Billing::where('status_id', BillingStatus::PROCESSING_PAYMENT)->count();
 
-    $totalProcessing = $pendingReview + $pendingVerify + $pendingPayment;
+    $totalProcessing = $pendingReview + $pendingVerify + $pendingApproval + $pendingPayment;
 
     $monthlyPayments = Billing::where('status_id', BillingStatus::COMPLETED)
       ->whereMonth('paid_at', now()->month)
@@ -156,12 +157,13 @@ class BillingDashboardController extends Controller
 
     // Show ALL finance-related items since we're grouping all finance roles
     $needingAttention = Billing::with(['creator:id,name', 'department:id,name', 'recipient:id,name'])
-      ->whereIn('status_id', [BillingStatus::FINANCE_REVIEW, BillingStatus::FINANCE_VERIFY, BillingStatus::PROCESSING_PAYMENT])
+      ->whereIn('status_id', [BillingStatus::FINANCE_REVIEW, BillingStatus::FINANCE_VERIFY, BillingStatus::FINANCE_APPROVAL, BillingStatus::PROCESSING_PAYMENT])
       ->orderByRaw('CASE 
             WHEN status_id = ' . BillingStatus::FINANCE_REVIEW . ' THEN 1
             WHEN status_id = ' . BillingStatus::FINANCE_VERIFY . ' THEN 2  
-            WHEN status_id = ' . BillingStatus::PROCESSING_PAYMENT . ' THEN 3
-            ELSE 4 END')
+            WHEN status_id = ' . BillingStatus::FINANCE_APPROVAL . ' THEN 3
+            WHEN status_id = ' . BillingStatus::PROCESSING_PAYMENT . ' THEN 4
+            ELSE 5 END')
       ->orderBy('created_at', 'asc')
       ->limit(20)
       ->get()
@@ -187,6 +189,7 @@ class BillingDashboardController extends Controller
     $statusCounts = [
       'pending_review' => $pendingReview,
       'pending_verify' => $pendingVerify,
+      'pending_approval' => $pendingApproval,
       'pending_payment' => $pendingPayment,
       'completed_this_month' => Billing::where('status_id', BillingStatus::COMPLETED)
         ->whereMonth('paid_at', now()->month)
@@ -209,6 +212,7 @@ class BillingDashboardController extends Controller
         'total_processing' => $totalProcessing,
         'pending_review' => $pendingReview,
         'pending_verify' => $pendingVerify,
+        'pending_approval' => $pendingApproval,
         'pending_payment' => $pendingPayment,
         'monthly_payments' => $monthlyPayments,
         'total_tasks' => $totalProcessing

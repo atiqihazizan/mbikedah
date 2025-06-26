@@ -9,6 +9,7 @@ use App\Http\Controllers\BillingListController;
 use App\Http\Controllers\BillingRecipientController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\StatusValidationController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -110,7 +111,7 @@ Route::middleware('auth:sanctum')->group(function () {
    * |--------------------------------------------------------------------------
    */
   Route::prefix('dashboard')->group(function () {
-    // Route::get('/', [BillingController::class, 'getDashboardData']);
+    Route::get('/', [BillingController::class, 'getDashboardData']);
   });
 
   /*
@@ -217,5 +218,43 @@ Route::middleware('auth:sanctum')->group(function () {
    */
   Route::prefix('dashboard')->group(function () {
     Route::get('/', [BillingDashboardController::class, 'getDashboardData']);
+  });
+});
+
+
+/*
+ * |--------------------------------------------------------------------------
+ * | Status Validation Routes (Page Baru)
+ * |--------------------------------------------------------------------------
+ */
+Route::middleware('auth:sanctum')->prefix('status-validation')->group(function () {
+  // Main page route
+  Route::get('/', [StatusValidationController::class, 'index']);
+  
+  // Core validation functionality
+  Route::post('/validate', [StatusValidationController::class, 'validateBillingStatus']);
+  
+  // Individual billing status info
+  Route::get('/billing/{billing}/info', [StatusValidationController::class, 'getBillingStatusInfo']);
+  
+  // Complete workflow information
+  Route::get('/workflow', [StatusValidationController::class, 'getWorkflowInfo']);
+  
+  // Batch validation for multiple billings
+  Route::post('/batch-validate', [StatusValidationController::class, 'batchValidate']);
+  
+  // Quick status check (lightweight)
+  Route::get('/quick-check/{billing}', function (Billing $billing) {
+      return response()->json([
+          'success' => true,
+          'data' => [
+              'billing_id' => $billing->id,
+              'current_status' => $billing->status_id,
+              'current_status_name' => BillingStatus::getStatusName($billing->status_id),
+              'is_active' => $billing->is_active,
+              'created_at' => $billing->created_at,
+              'updated_at' => $billing->updated_at
+          ]
+      ]);
   });
 });

@@ -19,8 +19,9 @@ export default function BillingVerify() {
 
   const fetchAllData = useCallback(async () => {
     try {
-      const [billingRes] = await Promise.all([apiClient.get(`/billings/${idBilling}`)]);
-      setBilling(billingRes.data);
+      // const [billingRes] = await Promise.all([apiClient.get(`/billings/${idBilling}`)]);
+      const [data] = await apiClient.post(`/status-validation/validate`,{billing_id: idBilling, status: 4, action:'process'})
+      setBilling(data);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Gagal memuat data");
@@ -58,12 +59,12 @@ export default function BillingVerify() {
             <p className="mt-1 text-sm text-gray-500">Dicipta pada: {formatDate(billing.created_at)}</p>
           </div>
           <div className="flex space-x-3">
-            <TButton onClick={() => navigate("/billing/finance")} color="primary-dark" ><ChevronLeft className="w-4 h-4 mr-2" /> Kembali</TButton>
+            <TButton onClick={() => navigate("/billing/finance")} color="light" ><ChevronLeft className="w-4 h-4 mr-2" /> Kembali</TButton>
           </div>
         </div>
       </div>
       
-      <div className="container h-[calc(100vh-90px)] overflow-y-auto">
+      <div className="px-6 h-[calc(100vh-218px)] overflow-y-auto">
         <BillingVerifyInfo billing={billing} />
         <BillingVerifyBudget billing={billing} />
         <BillingVerifyBank billing={billing} />

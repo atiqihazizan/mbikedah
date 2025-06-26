@@ -11,7 +11,6 @@ import BillingForm from "./views/billing/BillingForm";
 import BillingTableActive from "./views/billing/BillingTableActive";
 import BillingTableHOD from "./views/billing/BillingTableHOD";
 import BillingTableFinance from "./views/billing/BillingTableFinance";
-import BillingTableArchive from "./views/billing/BillingTableArchive";
 import BillingPaper from "./views/billing/BillingPaper";
 import BillingView from "./views/billing/BillingView";
 import BillingPayment from "./views/billing/BillingPayment";
@@ -28,7 +27,6 @@ const router = createBrowserRouter([
 			
 			// Pemohon specific routes
 			{ path: "billing/dashboard", element: <BillingTableActive /> },
-			{ path: "billing/archive", element: <BillingTableArchive /> },
 			{ path: "billing/create", element: <BillingForm /> },
 			{ path: "billing/:idform/edit", element: <BillingForm /> },
 			
@@ -39,11 +37,12 @@ const router = createBrowserRouter([
 			{ path: "billing/finance", element: <BillingTableFinance /> },
 			
 			// Shared routes (accessible by all roles)
-			{ path: "billing/:idBilling/:pageback/show", element: <BillingPaper /> },
-			{ path: "billing/:idBilling/payment", element: <BillingPayment /> },
+			// { path: "billing/:idBilling/:pageback/show", element: <BillingPaper /> },
 			{ path: "billing/:idBilling/view", element: <BillingView /> },
 			{ path: "billing/:idBilling/check", element: <BillingCheck /> },
 			{ path: "billing/:idBilling/verify", element: <BillingVerify /> },
+			{ path: "billing/:idBilling/approval", element: <BillingPaper /> },
+			{ path: "billing/:idBilling/payment", element: <BillingPayment /> },
 		],
 	},
 	{

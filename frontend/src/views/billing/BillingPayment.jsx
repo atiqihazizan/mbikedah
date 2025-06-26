@@ -20,7 +20,7 @@ export default function BillingPayment() {
   const fetchAllData = useCallback(async () => {
     try {
       const [billingRes, banksRes] = await Promise.all([
-        apiClient.get(`/billings/${idBilling}`),
+        apiClient.post(`/status-validation/validate`,{billing_id: idBilling, status: 6, action:'process'}),
         apiClient.get("/banks")
       ]);
       setBilling(billingRes.data);
