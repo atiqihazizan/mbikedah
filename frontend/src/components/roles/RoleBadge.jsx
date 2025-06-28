@@ -111,7 +111,7 @@ const RoleBadge = ({
     }
     
     if (onClick || metadata.route) {
-      return `Navigate to ${role} ${metadata.route === '/' ? 'dashboard' : 'page'}`;
+      return `Navigate to ${role} ${metadata.route === '/' ? 'applicant' : 'page'}`;
     }
     
     return metadata.description;

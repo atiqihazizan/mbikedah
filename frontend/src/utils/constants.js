@@ -144,26 +144,26 @@ export const ROUTES = {
   // Billing routes by role
   PEMOHON: {
     DASHBOARD: '/',
-    INCOMPLETE: '/billing/dashboard',
-    ARCHIVE: '/billing/archive',
-    CREATE: '/billing/create',
-    EDIT: (id) => `/billing/${id}/edit`,
-    VIEW: (id) => `/billing/${id}/view`
+    INCOMPLETE: '/applicant/dashboard',
+    ARCHIVE: '/applicant/archive',
+    CREATE: '/applicant/create',
+    EDIT: (id) => `/applicant/${id}/edit`,
+    VIEW: (id) => `/applicant/${id}/view`
   },
   
   HOD: {
-    DASHBOARD: '/billing/hod',
-    PENDING: '/billing/hod/pending',
-    APPROVED: '/billing/hod/approved',
-    REJECTED: '/billing/hod/rejected'
+    DASHBOARD: '/hod',
+    PENDING: '/hod/pending',
+    APPROVED: '/hod/approved',
+    REJECTED: '/hod/rejected'
   },
   
   FINANCE: {
-    DASHBOARD: '/billing/finance',
-    REVIEW: '/billing/finance/review',
-    VERIFY: '/billing/finance/verify',
-    PAYMENT: '/billing/finance/payment',
-    PAID: '/billing/finance/paid'
+    DASHBOARD: '/finance',
+    REVIEW: '/finance/review',
+    VERIFY: '/finance/verify',
+    PAYMENT: '/finance/payment',
+    PAID: '/finance/paid'
   },
   
   // Shared routes

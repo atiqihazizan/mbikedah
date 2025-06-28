@@ -32,26 +32,16 @@ class BillingController extends Controller
 {
   use AuthorizesRequests;
 
-  /**
-   * Display a listing of billings.
-   */
   public function index()
   {
     try {
       $billings = Billing::with(['details', 'recipient', 'department'])->get();
       return BillingResource::collection($billings);
     } catch (Exception $e) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Error fetching billings',
-        'error' => $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false, 'message' => 'Error fetching billings', 'error' => $e->getMessage()], 500);
     }
   }
 
-  /**
-   * Store a newly created billing.
-   */
   public function store(BillingRequest $request)
   {
     try {
@@ -71,7 +61,6 @@ class BillingController extends Controller
       }
 
       $billing = Billing::create([
-        // 'description' => $validatedData['description'],
         'no_project' => $validatedData['no_project'],
         'recipient_id' => $validatedData['recipient_id'],
         'total_amount' => $validatedData['total_amount'],
@@ -79,8 +68,6 @@ class BillingController extends Controller
         'department_id' => $departmentId,
         'created_by' => $request->user()->id,
         'issued_at' => $validatedData['issued_at'],
-        // 'payment_due' => $validatedData['payment_due'],
-        // 'status_id' => $validatedData['status_id'],
         'status_id' => BillingStatus::DRAFT,
         'is_archived' => false
       ]);
@@ -105,6 +92,7 @@ class BillingController extends Controller
         'created_by' => $request->user()->id,
         'remarks' => 'Permohonan baru'
       ]);
+      
       if ($validatedData['status_id'] === BillingStatus::HOD_APPROVAL) {
         $billing->history()->create([
           'old_status' => BillingStatus::DRAFT,
@@ -113,7 +101,6 @@ class BillingController extends Controller
           'remarks' => 'Permohonan dihantar ke HOD'
         ]);
       }
-
 
       DB::commit();
 
@@ -124,16 +111,10 @@ class BillingController extends Controller
       ], 201);
     } catch (Exception $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => 'Failed to create billing: ' . $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false, 'message' => 'Failed to create billing: ' . $e->getMessage()], 500);
     }
   }
 
-  /**
-   * Display the specified billing.
-   */
   public function show($id)
   {
     try {
@@ -144,9 +125,6 @@ class BillingController extends Controller
     }
   }
 
-  /**
-   * Update the specified billing.
-   */
   public function update(BillingRequest $request, Billing $billing)
   {
     try {
@@ -156,18 +134,13 @@ class BillingController extends Controller
 
       DB::beginTransaction();
 
-      $isReturn = $billing->status_id === BillingStatus::RETURNED ? true : false;
-
       $billing->update([
-        // 'description' => $validatedData['description'],
         'no_project' => $validatedData['no_project'],
         'recipient_id' => $validatedData['recipient_id'],
         'total_amount' => $validatedData['total_amount'],
         'payment_method' => $validatedData['payment_method'],
         'department_id' => $validatedData['department_id'],
         'issued_at' => $validatedData['issued_at'],
-        // 'payment_due' => $validatedData['payment_due'],
-        // 'status_id' => $validatedData['status_id']
       ]);
 
       $billing->details()->delete();
@@ -190,46 +163,24 @@ class BillingController extends Controller
         $billing->updateStatus(BillingStatus::HOD_APPROVAL, Auth::id(), 'Permohonan dihantar ke HOD');
       }
 
-      // Reset cache
-      $cacheKey = 'billing.' . $billing->id;
-      Cache::forget($cacheKey);
+      Cache::forget('billing.' . $billing->id);
 
-      // Get updated billing data
       $billingData = $this->getBillingById($billing->id);
 
       DB::commit();
 
       return $billingData;
 
-      // return response()->json([
-      //   'success' => true,
-      //   'message' => 'Billing berjaya dikemaskini',
-      //   'data' => $billingData
-      // ]);
     } catch (ModelNotFoundException $e) {
-      return response()->json([
-        'success' => false,
-        'message' => $e->getMessage()
-      ],404);
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
     } catch (AuthorizationException $e) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Anda tidak mempunyai kebenaran untuk mengemaskini billing ini'
-      ], 403);
+      return response()->json(['success' => false, 'message' => 'Anda tidak mempunyai kebenaran untuk mengemaskini billing ini'], 403);
     } catch (Exception $e) {
       DB::rollBack();
-
-      return response()->json([
-        'success' => false,
-        'message' => 'Ralat semasa mengemaskini billing',
-        'error' => $e->getMessage()
-      ]);
+      return response()->json(['success' => false, 'message' => 'Ralat semasa mengemaskini billing', 'error' => $e->getMessage()]);
     }
   }
 
-  /**
-   * Remove the specified billing and its details.
-   */
   public function destroy(Billing $billing)
   {
     try {
@@ -237,10 +188,7 @@ class BillingController extends Controller
 
       $this->authorize('delete', $billing);
 
-      // Delete related billing details first
       $billing->details()->delete();
-
-      // Then delete the billing
       $billing->delete();
 
       DB::commit();
@@ -250,28 +198,16 @@ class BillingController extends Controller
         'message' => 'Billing and its details deleted successfully'
       ]);
     } catch (ModelNotFoundException $e) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Billing not found'
-      ], 404);
+      return response()->json(['success' => false, 'message' => 'Billing not found'], 404);
     } catch (Exception $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => 'Error deleting billing',
-        'error' => $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false, 'message' => 'Error deleting billing', 'error' => $e->getMessage()], 500);
     }
   }
-
-  /**
-   * Get billing by ID.
-   */
 
   public function getBillingById($id)
   {
     try {
-      // Select specific columns
       $billing = Billing::select([
         'id',
         'running_no',
@@ -348,43 +284,25 @@ class BillingController extends Controller
 
       return $response->response();
     } catch (Exception $error) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Error fetching billing',
-        'error' => $error->getMessage()
-      ], 500);
+      return response()->json(['success' => false, 'message' => 'Error fetching billing', 'error' => $error->getMessage()], 500);
     }
   }
 
-  /**
-   * Record a print action for a billing.
-   * 
-   * @param Billing $billing
-   * @return \Illuminate\Http\JsonResponse
-   */
   public function recordPrint(Billing $billing)
   {
     try {
-      // Pastikan pengguna mempunyai kebenaran
       $this->authorize('view', $billing);
       
-      // Kemaskini rekod percetakan
+      $malaysiaTime = now('Asia/Kuala_Lumpur');
       $billing->update([
-        'last_printed_at' => now(),
+        'last_printed_at' => $malaysiaTime,
         'last_printed_by' => Auth::id(),
         'print_count' => $billing->print_count + 1
       ]);
       
-      return response()->json([
-        'success' => true,
-        'message' => 'Rekod percetakan berjaya dikemaskini'
-      ]);
+      return response()->json(['success' => true, 'message' => 'Rekod percetakan berjaya dikemaskini']);
     } catch (Exception $e) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Ralat merekodkan percetakan',
-        'error' => $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false, 'message' => 'Ralat merekodkan percetakan', 'error' => $e->getMessage()], 500);
     }
   }
 }

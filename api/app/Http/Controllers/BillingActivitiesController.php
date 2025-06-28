@@ -40,10 +40,7 @@ class BillingActivitiesController extends Controller
       ]);
     } catch (AuthorizationException $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => $e->getMessage()
-      ], 403);
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
     }
   }
 
@@ -118,17 +115,11 @@ class BillingActivitiesController extends Controller
       ]);
     } catch (AuthorizationException $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => $e->getMessage()
-      ], 403);
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
     }
     catch (Exception $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => 'Ralat sistem ' . $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false, 'message' => 'Ralat sistem ' . $e->getMessage()], 500);
     }
   }
 
@@ -149,10 +140,7 @@ class BillingActivitiesController extends Controller
       ]);
     } catch (AuthorizationException $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => $e->getMessage()
-      ], 403);
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
     }
   }
 
@@ -177,55 +165,7 @@ class BillingActivitiesController extends Controller
       ]);
     } catch (AuthorizationException $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => $e->getMessage()
-      ], 403);
-    }
-  }
-
-  /**
-   * Update budget actuals based on billing details
-   */
-  private function updateBudgetActuals(Billing $billing)
-  {
-    // Dapatkan semua details yang telah diluluskan
-    $approvedDetails = $billing->details()->where('approve', true)->get();
-    
-    // Kumpulkan jumlah per budget_id dan bulan
-    $budgetData = [];
-    $month = $billing->paid_at ? $billing->paid_at->format('n') : now()->month;
-    
-    foreach ($approvedDetails as $detail) {
-      if (!$detail->budget_id) continue;
-      
-      $budgetData[$detail->budget_id] = ($budgetData[$detail->budget_id] ?? 0) + $detail->total;
-    }
-    
-    // Update setiap budget
-    foreach ($budgetData as $budgetId => $amount) {
-      $budget = Budget::find($budgetId);
-      if (!$budget) continue;
-      
-      // Dapatkan current actual untuk bulan tersebut
-      $monthField = 'act' . $month;
-      $currentActual = $budget->$monthField;
-      
-      // Update actual untuk bulan tersebut
-      $budget->$monthField = $currentActual + $amount;
-      
-      // Kira semula acttotal
-      $actTotal = 0;
-      for ($i = 1; $i <= 12; $i++) {
-        $actField = 'act' . $i;
-        $actTotal += $budget->$actField;
-      }
-      
-      // Update acttotal dan balance
-      $budget->acttotal = $actTotal;
-      $budget->balance = $budget->bdgtotal - $actTotal;
-      
-      $budget->save();
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
     }
   }
 
@@ -278,8 +218,42 @@ class BillingActivitiesController extends Controller
       $billing->paid_by = Auth::id();
       $billing->save();
       
-      // Panggil fungsi untuk update budget actuals
-      $this->updateBudgetActuals($billing);
+      // Update budget actuals (gabungan dari updateBudgetActuals method)
+      $approvedDetails = $billing->details()->where('approve', true)->get();
+      $budgetData = [];
+      $month = $billing->paid_at ? $billing->paid_at->format('n') : now()->month;
+      
+      foreach ($approvedDetails as $detail) {
+        if (!$detail->budget_id) continue;
+        
+        $budgetData[$detail->budget_id] = ($budgetData[$detail->budget_id] ?? 0) + $detail->total;
+      }
+      
+      // Update setiap budget
+      foreach ($budgetData as $budgetId => $amount) {
+        $budget = Budget::find($budgetId);
+        if (!$budget) continue;
+        
+        // Dapatkan current actual untuk bulan tersebut
+        $monthField = 'act' . $month;
+        $currentActual = $budget->$monthField;
+        
+        // Update actual untuk bulan tersebut
+        $budget->$monthField = $currentActual + $amount;
+        
+        // Kira semula acttotal
+        $actTotal = 0;
+        for ($i = 1; $i <= 12; $i++) {
+          $actField = 'act' . $i;
+          $actTotal += $budget->$actField;
+        }
+        
+        // Update acttotal dan balance
+        $budget->acttotal = $actTotal;
+        $budget->balance = $budget->bdgtotal - $actTotal;
+        
+        $budget->save();
+      }
       
       $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), $remarks);
       DB::commit();
@@ -290,41 +264,29 @@ class BillingActivitiesController extends Controller
       ]);
     } catch (AuthorizationException $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => $e->getMessage()
-      ], 403);
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
     }
   }
 
-  // public function completeBilling(Billing $billing) {
-  //   try {
-  //     $this->authorize('process', $billing,BillingStatus::COMPLETED);
-  //     DB::beginTransaction();
-  //     $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), ''); //Permohonan berjaya selesai
-  //     DB::commit();
-  //     return response()->json(['message' => 'Permohonan berjaya selesai']);
-  //   } catch (AuthorizationException $e) {
-  //     DB::rollBack();
-  //     return response()->json([
-  //       'success' => false,
-  //       'message' => $e->getMessage()
-  //     ], 403);
-  //   }
-  // }
-
+  public function completeBilling(Billing $billing) {
+    try {
+      $this->authorize('process', [$billing, BillingStatus::COMPLETED]);
+      DB::beginTransaction();
+      $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), ''); //Permohonan berjaya selesai
+      DB::commit();
+      return response()->json(['message' => 'Permohonan berjaya selesai']);
+    } catch (AuthorizationException $e) {
+      DB::rollBack();
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
+    }
+  }
+  
   public function rejectBilling(Request $request, Billing $billing) {
     try {
       $this->authorize('reject', $billing);
-      $validator = Validator::make($request->all(), [
-        'remarks' => 'required|string|max:500'
-      ]);
+      $validator = Validator::make($request->all(), ['remarks' => 'required|string|max:500']);
       if ($validator->fails()) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Sila nyatakan sebab penolakan',
-          'errors' => $validator->errors()
-        ], 422);
+        return response()->json(['success' => false, 'message' => 'Sila nyatakan sebab penolakan', 'errors' => $validator->errors()], 422);
       }
       DB::beginTransaction();
 
@@ -343,11 +305,7 @@ class BillingActivitiesController extends Controller
       //reset transactions
       $billing->transactions()->delete();
       //reset details
-      $billing->details()->update([
-        'approve' => 0,
-        'accept' => -1,
-        'review_by' => 0,
-      ]);
+      $billing->details()->update(['approve' => 0, 'accept' => -1, 'review_by' => 0]);
       $billing->updateStatus(BillingStatus::REJECTED, Auth::id(), $request->remarks);
       DB::commit();
       return response()->json([
@@ -357,32 +315,19 @@ class BillingActivitiesController extends Controller
       ]);
     } catch (AuthorizationException $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => $e->getMessage()
-      ], 403);
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
     } catch (Exception $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => 'Ralat semasa menolak permohonan',
-        'error' => $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false, 'message' => 'Ralat semasa menolak permohonan', 'error' => $e->getMessage()], 500);
     }
   }
 
   public function returnBilling(Request $request, Billing $billing) {
     try {
       $this->authorize('reject', $billing);
-      $validator = Validator::make($request->all(), [
-        'remarks' => 'required|string|max:500'
-      ]);
+      $validator = Validator::make($request->all(), ['remarks' => 'required|string|max:500']);
       if ($validator->fails()) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Sila nyatakan sebab pemulangan',
-          'errors' => $validator->errors()
-        ], 422);
+        return response()->json(['success' => false, 'message' => 'Sila nyatakan sebab pemulangan', 'errors' => $validator->errors()], 422);
       }
       DB::beginTransaction();
       
@@ -416,17 +361,10 @@ class BillingActivitiesController extends Controller
       ]);
     } catch (AuthorizationException $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => $e->getMessage()
-      ], 403);
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
     } catch (Exception $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => 'Ralat semasa memulangkan permohonan',
-        'error' => $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false, 'message' => 'Ralat semasa memulangkan permohonan', 'error' => $e->getMessage()], 500);
     }
   }
 
@@ -437,11 +375,7 @@ class BillingActivitiesController extends Controller
         'remarks' => 'required|string|max:500'
       ]);
       if ($validator->fails()) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Sila nyatakan sebab pembatalan',
-          'errors' => $validator->errors()
-        ], 422);
+        return response()->json(['success' => false, 'message' => 'Sila nyatakan sebab pembatalan', 'errors' => $validator->errors()], 422);
       }
       DB::beginTransaction();
       
@@ -475,17 +409,10 @@ class BillingActivitiesController extends Controller
       ]);
     } catch (AuthorizationException $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => $e->getMessage()
-      ], 403);
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
     } catch (Exception $e) {
       DB::rollBack();
-      return response()->json([
-        'success' => false,
-        'message' => 'Ralat semasa membatalkan permohonan',
-        'error' => $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false, 'message' => 'Ralat semasa membatalkan permohonan', 'error' => $e->getMessage()], 500);
     }
   }
 

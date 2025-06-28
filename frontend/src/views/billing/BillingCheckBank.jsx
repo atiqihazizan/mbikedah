@@ -38,7 +38,7 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
         };
         await apiClient.post(`/billings/${billing.id}/finance-review`, dataPost);
         toast.success("Bil berjaya diluluskan");
-        navigate("/billing/finance");
+        navigate("/finance");
       } catch (error) {
         console.error("Error approving billing:", error.response.data.message);
         toast.error("Gagal meluluskan bil");
@@ -55,7 +55,7 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
         setProcessing(true);
         await apiClient.post(`/billings/${billing.id}/reject`, { reason });
         toast.success("Bil berjaya ditolak");
-        navigate("/billing/finance");
+        navigate("/finance");
       } catch (error) {
         console.error("Error rejecting billing:", error);
         toast.error("Gagal menolak bil");
@@ -125,7 +125,7 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
       </div>
       {/* Action Buttons */}
       <div className="mt-8 px-5 py-5 border-t border-gray-200 flex justify-end space-x-3">
-        {/* <TButton onClick={() => navigate("/billing/finance")} color="light" className="px-4 py-2">Batal</TButton> */}
+        {/* <TButton onClick={() => navigate("/finance")} color="light" className="px-4 py-2">Batal</TButton> */}
         <TButton onClick={handleReject} disabled={processing} color="red" className="px-4 py-2"><X className="w-4 h-4 mr-2" /> Tolak</TButton>
         <TButton onClick={handleApprove} disabled={processing} color="green" className="px-4 py-2">
           <Check className="w-4 h-4 mr-2" />Semakan {processing && <TSpinner className="-mr-1 ml-2" />}

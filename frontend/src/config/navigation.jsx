@@ -23,10 +23,10 @@ export const navigation = [
   { text: "Permohonan Bayaran", to: "", type: 0 },
   {
     text: "Permohonan Baru",
-    to: "/billing/create",
+    to: "/applicant/create",
     icon: <FilePlus size={20} />,
     type: 1,
-    menu: "billing.create"
+    menu: "applicant.create"
   },
   {
     text: "Masih Aktif",
@@ -56,10 +56,10 @@ export const navigation = [
   { text: "Kewangan", to: "", type: 0 },
   {
     text: "Tindakan Pegawai Kewangan",
-    to: "/billing/finance",
+    to: "/finance",
     icon: <Banknote size={20} />,
     type: 1,
-    menu: "billing.finance"
+    menu: "finance.view"
   },
 
   // Laporan

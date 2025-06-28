@@ -23,7 +23,7 @@ export default function BillingFormDialog({
   const [loading, setLoading] = useState(false);
   const [recipients, setRecipients] = useState([]);
   const [budgets, setBudgets] = useState([]);
-  const [showRecipientModal, setShowRecipientModal] = useState(false);
+  const [showRecipientDialog, setShowRecipientDialog] = useState(false);
   const [selectedRecipient, setSelectedRecipient] = useState(null);
   
   const isViewMode = mode === "view";
@@ -71,12 +71,12 @@ export default function BillingFormDialog({
 
   const handleAddRecipient = () => {
     setSelectedRecipient(null);
-    setShowRecipientModal(true);
+    setShowRecipientDialog(true);
   };
 
   const handleEditRecipient = (recipient) => {
     setSelectedRecipient(recipient);
-    setShowRecipientModal(true);
+    setShowRecipientDialog(true);
   };
 
   const handleSaveRecipient = async (recipientData) => {
@@ -89,7 +89,7 @@ export default function BillingFormDialog({
       toast.success(selectedRecipient ? 'Penerima berjaya dikemaskini' : 'Penerima baru berjaya ditambah');
       
       await fetchRecipients();
-      setShowRecipientModal(false);
+      setShowRecipientDialog(false);
       
     } catch (error) {
       console.error('Ralat semasa simpan penerima:', error);
@@ -577,7 +577,7 @@ export default function BillingFormDialog({
       </div>
 
       {/* Recipient Modal */}
-      <RecipientDialog show={showRecipientModal} onClose={() => setShowRecipientModal(false)} onSaved={handleSaveRecipient} recipient={selectedRecipient}/>
+      <RecipientDialog show={showRecipientDialog} onClose={() => setShowRecipientDialog(false)} onSaved={handleSaveRecipient} recipient={selectedRecipient}/>
     </>
   );
 }

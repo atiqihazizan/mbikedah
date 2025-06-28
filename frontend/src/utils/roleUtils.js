@@ -28,24 +28,25 @@ export const getRoleMetadata = (role) => {
       color: ROLE_COLORS.BLUE,
       description: 'Dashboard untuk pemohon',
       shortName: 'Pemohon',
-      route: '/billing/dashboard',
-      matchPaths: ['/', '/billing/dashboard', '/billing/archive', '/billing/create', '/billing/edit']
+      route: '/applicant',
+      // matchPaths: ['/', '/applicant', '/applicant/archive', '/applicant/create', '/applicant/edit']
+      matchPaths: ['/', '/applicant']
     },
     [ROLE_TYPES.KETUA_JABATAN]: {
       icon: '👔',
       color: ROLE_COLORS.PURPLE,
       description: 'Dashboard ketua jabatan',
       shortName: 'HOD',
-      route: '/billing/hod',
-      matchPaths: ['/billing/hod']
+      route: '/hod',
+      matchPaths: ['/hod']
     },
     [ROLE_TYPES.KEWANGAN]: {
       icon: '💰',
       color: ROLE_COLORS.GREEN,
       description: 'Dashboard kewangan',
       shortName: 'Finance',
-      route: '/billing/finance',
-      matchPaths: ['/billing/finance']
+      route: '/finance',
+      matchPaths: ['/finance']
     }
   };
   
@@ -54,7 +55,7 @@ export const getRoleMetadata = (role) => {
     color: ROLE_COLORS.GRAY,
     description: 'Dashboard pengguna',
     shortName: role,
-    route: '/billing/dashboard',
+    route: '/applicant',
     matchPaths: ['/']
   };
 };
@@ -109,7 +110,7 @@ export const getActiveRoleIndex = (currentPath, userRoles) => {
  * @returns {Object} Role routes mapping
  */
 export const getRoleRoutes = () => ({
-  [ROLE_TYPES.PEMOHON]: '/billing/dashboard',
-  [ROLE_TYPES.KETUA_JABATAN]: '/billing/hod',
-  [ROLE_TYPES.KEWANGAN]: '/billing/finance'
+  [ROLE_TYPES.PEMOHON]: '/applicant',
+  [ROLE_TYPES.KETUA_JABATAN]: '/hod',
+  [ROLE_TYPES.KEWANGAN]: '/finance'
 });

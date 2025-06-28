@@ -18,7 +18,7 @@ const BillingVerifyBank = ({billing,processing}) => {
     try {
       await apiClient.post(`/billings/${billing.id}/finance-verify`, {remarks: reason});
       toast.success("Bil berjaya disahkan");
-      navigate("/billing/finance");
+      navigate("/finance");
     } catch (error) {
       console.error("Error approving billing:", error.response.data.message);
       toast.error("Tidak berjaya disahkan");
@@ -31,7 +31,7 @@ const BillingVerifyBank = ({billing,processing}) => {
       try {
         await apiClient.post(`/billings/${billing.id}/reject`, { reason });
         toast.success("Bil berjaya ditolak");
-        navigate("/billing/finance");
+        navigate("/finance");
       } catch (error) {
         console.error("Error rejecting billing:", error);
         toast.error("Tidak berjaya ditolak");

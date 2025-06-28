@@ -1,4 +1,3 @@
-// utils/formatUtils.js
 // Frontend utilities untuk handle formatting yang consistent dengan backend
 
 export const formatUtils = {
@@ -12,17 +11,237 @@ export const formatUtils = {
     })}`;
   },
 
+  // Enhanced title formatting dengan sensitive case handling
+  formatTitle: (text, options = {}) => {
+    if (!text || typeof text !== 'string') return '';
+    
+    const {
+      mode = 'title', // 'title', 'upper', 'lower', 'proper', 'preserve'
+      preserveAcronyms = true,
+      malaysianContext = true
+    } = options;
+
+    // Words yang perlu preserve case mereka
+    const preservedWords = new Set([
+      // Common acronyms
+      'CEO', 'CFO', 'CTO', 'HR', 'IT', 'PR', 'QA', 'API', 'UI', 'UX',
+      'PhD', 'MD', 'BSc', 'MSc', 'MBA', 'IP', 'GPS', 'SMS', 'ATM',
+      
+      // Malaysian specific
+      'YB', 'YAB', 'YBhg', 'Dato', "Dato'", 'Datuk', 'Tan Sri', 'Tun',
+      'Dr', 'Prof', 'Ir', 'Ar', 'En', 'Pn', 'Cik',
+      'UMNO', 'PKR', 'DAP', 'PAS', 'MIC', 'MCA', 'GPS', 'BN', 'PH',
+      'KL', 'JB', 'PJ', 'USM', 'UKM', 'UM', 'UTM', 'UPM', 'UiTM',
+      'KLCC', 'LRT', 'MRT', 'KTM', 'PLUS', 'TNB', 'TM', 'MAB',
+      'JPJ', 'JPN', 'EPF', 'KWSP', 'LHDN', 'IRB', 'MACC', 'PDRM',
+      
+      // Government departments
+      'JKR', 'JPS', 'SPAN', 'MAMPU', 'INTAN', 'BNM', 'SC', 'MCMC',
+      'DOE', 'DOSH', 'MOH', 'MOE', 'MOHE', 'MOF', 'MITI', 'KPDNHEP'
+    ]);
+
+    // Words yang shouldn't be capitalized dalam title case (articles, prepositions, etc.)
+    const lowercaseWords = new Set([
+      'a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'if', 'in', 
+      'nor', 'of', 'on', 'or', 'so', 'the', 'to', 'up', 'yet',
+      'dengan', 'dan', 'atau', 'untuk', 'dari', 'ke', 'di', 'pada',
+      'oleh', 'daripada', 'kepada', 'dalam', 'antara', 'tanpa'
+    ]);
+
+    // Malaysian name particles yang perlu proper formatting
+    const nameParticles = new Map([
+      ['bin', 'bin'],
+      ['binti', 'binti'],
+      ['bt', 'bt'],
+      ['b', 'b'],
+      ['al', 'al'],
+      ['abdul', 'Abdul'],
+      ['abu', 'Abu'],
+      ['ahmad', 'Ahmad'],
+      ['mohammed', 'Mohammed'],
+      ['muhammad', 'Muhammad'],
+      ['mohd', 'Mohd'],
+      ['mohamed', 'Mohamed'],
+      ['siti', 'Siti'],
+      ['nur', 'Nur'],
+      ['wan', 'Wan'],
+      ['raja', 'Raja'],
+      ['tengku', 'Tengku'],
+      ['megat', 'Megat'],
+      ['nik', 'Nik']
+    ]);
+
+    const processWord = (word, index, words) => {
+      const lowerWord = word.toLowerCase();
+      const originalCase = word;
+
+      // Preserve acronyms if enabled
+      if (preserveAcronyms && preservedWords.has(word.toUpperCase())) {
+        return word.toUpperCase();
+      }
+
+      // Check if it's a preserved word with exact case
+      if (preservedWords.has(originalCase)) {
+        return originalCase;
+      }
+
+      // Handle Malaysian name particles
+      if (malaysianContext && nameParticles.has(lowerWord)) {
+        return nameParticles.get(lowerWord);
+      }
+
+      // Apply formatting based on mode
+      switch (mode) {
+        case 'upper':
+          return word.toUpperCase();
+          
+        case 'lower':
+          return word.toLowerCase();
+          
+        case 'preserve':
+          return originalCase;
+          
+        case 'proper':
+          // Proper case: First letter uppercase, rest lowercase
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+          
+        case 'title':
+        default:
+          // Title case logic
+          const isFirstWord = index === 0;
+          const isLastWord = index === words.length - 1;
+          
+          // Always capitalize first and last words
+          if (isFirstWord || isLastWord) {
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+          }
+          
+          // Don't capitalize articles and prepositions in the middle
+          if (lowercaseWords.has(lowerWord)) {
+            return lowerWord;
+          }
+          
+          // Capitalize everything else
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }
+    };
+
+    // Process the text
+    let processedText = text
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+
+    // Split by spaces and process each word
+    const words = processedText.split(' ');
+    const formattedWords = words.map((word, index) => {
+      // Handle hyphenated words
+      if (word.includes('-')) {
+        return word.split('-')
+          .map((part, partIndex) => processWord(part, index + partIndex, words))
+          .join('-');
+      }
+      
+      // Handle words with apostrophes
+      if (word.includes("'")) {
+        const parts = word.split("'");
+        return parts[0] + "'" + (parts[1] || '');
+      }
+      
+      return processWord(word, index, words);
+    });
+
+    return formattedWords.join(' ');
+  },
+
+  // Quick title formatting shortcuts
+  formatTitleUpper: (text) => formatUtils.formatTitle(text, { mode: 'upper' }),
+  formatTitleProper: (text) => formatUtils.formatTitle(text, { mode: 'proper' }),
+  formatTitlePreserve: (text) => formatUtils.formatTitle(text, { mode: 'preserve' }),
+
+  // Format Malaysian names specifically
+  formatMalaysianName: (name) => {
+    if (!name) return '';
+    
+    return formatUtils.formatTitle(name, {
+      mode: 'proper',
+      preserveAcronyms: true,
+      malaysianContext: true
+    });
+  },
+
+  // Format position/title dengan proper capitalization
+  formatPosition: (position) => {
+    if (!position) return '';
+    
+    const result = formatUtils.formatTitle(position, {
+      mode: 'title',
+      preserveAcronyms: true,
+      malaysianContext: true
+    });
+
+    // Special handling untuk common positions
+    const positionMappings = {
+      'ceo': 'CEO',
+      'cfo': 'CFO', 
+      'cto': 'CTO',
+      'general manager': 'General Manager',
+      'assistant manager': 'Assistant Manager',
+      'senior manager': 'Senior Manager',
+      'executive': 'Executive',
+      'senior executive': 'Senior Executive',
+      'assistant executive': 'Assistant Executive',
+      'ketua jabatan': 'Ketua Jabatan',
+      'ketua pegawai': 'Ketua Pegawai',
+      'pegawai kewangan': 'Pegawai Kewangan',
+      'eksekutif': 'Eksekutif'
+    };
+
+    const lowerResult = result.toLowerCase();
+    return positionMappings[lowerResult] || result;
+  },
+
+  // Format department names
+  formatDepartment: (department) => {
+    if (!department) return '';
+    
+    return formatUtils.formatTitle(department, {
+      mode: 'title',
+      preserveAcronyms: true,
+      malaysianContext: true
+    });
+  },
+
+  // Validate and clean text input
+  cleanText: (text, options = {}) => {
+    if (!text || typeof text !== 'string') return '';
+    
+    const {
+      removeExtraSpaces = true,
+      removeSpecialChars = false,
+      allowedChars = /[a-zA-Z0-9\s\-'./,()]/g
+    } = options;
+
+    let cleaned = text;
+
+    if (removeSpecialChars) {
+      cleaned = cleaned.match(allowedChars)?.join('') || '';
+    }
+
+    if (removeExtraSpaces) {
+      cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    }
+
+    return cleaned;
+  },
+
   // Format days pending dengan proper handling
   formatDaysPending: (days) => {
-    // Handle null, undefined, atau invalid values
     if (days === null || days === undefined || isNaN(days)) {
       return 'Tidak diketahui';
     }
 
-    // Convert to integer untuk elakkan decimal places
     days = Math.round(Number(days));
 
-    // Handle zero atau negative days
     if (days <= 0) {
       return 'Baru sahaja';
     }
@@ -79,10 +298,10 @@ export const formatUtils = {
       return 'Baru sahaja';
     } else if (diffInMinutes < 60) {
       return `${diffInMinutes} minit yang lalu`;
-    } else if (diffInMinutes < 1440) { // Less than 24 hours
+    } else if (diffInMinutes < 1440) {
       const hours = Math.floor(diffInMinutes / 60);
       return `${hours} jam yang lalu`;
-    } else if (diffInMinutes < 10080) { // Less than 7 days
+    } else if (diffInMinutes < 10080) {
       const days = Math.floor(diffInMinutes / 1440);
       return `${days} hari yang lalu`;
     } else {
@@ -146,22 +365,17 @@ export const formatUtils = {
     try {
       let date;
       
-      // Helper function untuk parse DD/MM/YYYY format
       const parseDDMMYYYY = (dateStr) => {
-        // Check jika format DD/MM/YYYY atau DD-MM-YYYY
         const ddmmyyyyPattern = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/;
         const match = dateStr.match(ddmmyyyyPattern);
         
         if (match) {
           const [, day, month, year] = match;
-          // JavaScript Date constructor menggunakan format: new Date(year, month-1, day)
-          // Note: month adalah 0-indexed (0 = January, 11 = December)
           return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         }
         return null;
       };
       
-      // Helper function untuk parse YYYY-MM-DD format (ISO format)
       const parseYYYYMMDD = (dateStr) => {
         const isoPattern = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
         const match = dateStr.match(isoPattern);
@@ -173,32 +387,25 @@ export const formatUtils = {
         return null;
       };
       
-      // Try to parse different formats
       if (typeof dateString === 'string') {
-        // First try DD/MM/YYYY or DD-MM-YYYY
         date = parseDDMMYYYY(dateString);
         
-        // If that fails, try YYYY-MM-DD (ISO format)
         if (!date || isNaN(date.getTime())) {
           date = parseYYYYMMDD(dateString);
         }
         
-        // If still fails, try standard Date constructor as fallback
         if (!date || isNaN(date.getTime())) {
           date = new Date(dateString);
         }
       } else {
-        // If dateString is already a Date object or timestamp
         date = new Date(dateString);
       }
       
-      // Validate if date is valid
       if (isNaN(date.getTime())) {
         console.error('Invalid date:', dateString);
         return 'Format tarikh tidak sah';
       }
       
-      // Format output based on requested format
       switch (format) {
         case 'dd/MM/yyyy':
           return date.toLocaleDateString('en-GB');
@@ -232,7 +439,7 @@ export const formatUtils = {
           });
           
         case 'relative':
-          return formatRelativeTime(date);
+          return formatUtils.formatRelativeTime(date);
           
         default:
           return date.toLocaleDateString('ms-MY');
@@ -379,38 +586,6 @@ export const dashboardHelpers = {
     }, {});
   }
 };
-
-// Example usage dalam React component:
-/*
-import { formatUtils, useFormattedValue, dashboardHelpers } from '../utils/formatUtils';
-
-function DashboardComponent({ data }) {
-  // Safe formatting dengan hooks
-  const formattedAmount = useFormattedValue(
-    data?.total_amount, 
-    formatUtils.formatCurrency,
-    [data?.total_amount]
-  );
-
-  const formattedDays = useFormattedValue(
-    data?.days_pending,
-    formatUtils.formatDaysPending,
-    [data?.days_pending]
-  );
-
-  // Safe data extraction
-  const summary = dashboardHelpers.extractSafeData(data, 'summary', {});
-  const statusCounts = dashboardHelpers.extractSafeData(data, 'status_counts', {});
-
-  return (
-    <div>
-      <p>Amount: {formattedAmount}</p>
-      <p>Days Pending: {formattedDays}</p>
-      <p>Total Applications: {dashboardHelpers.getDisplayValue(summary.total_applications)}</p>
-    </div>
-  );
-}
-*/
 
 export default {
   formatUtils,

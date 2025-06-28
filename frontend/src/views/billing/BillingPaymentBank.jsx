@@ -48,7 +48,7 @@ const BillingCheckBank = ({billing,banks}) => {
         const dataPost = {remarks, transactions};
         await apiClient.post(`/billings/${billing.id}/process-payment`, dataPost);
         toast.success("Bil berjaya diluluskan");
-        navigate("/billing/finance");
+        navigate("/finance");
       } catch (error) {
         console.error("Error approving billing:", error.response.data.message);
         toast.error("Gagal meluluskan bil");
@@ -65,7 +65,7 @@ const BillingCheckBank = ({billing,banks}) => {
         setProcessing(true);
         await apiClient.post(`/billings/${billing.id}/reject`, { remarks });
         toast.success("Bil berjaya ditolak");
-        navigate("/billing/finance");
+        navigate("/finance");
       } catch (error) {
         console.error("Error rejecting billing:", error);
         toast.error("Gagal menolak bil");

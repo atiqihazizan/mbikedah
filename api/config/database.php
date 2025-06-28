@@ -60,6 +60,8 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            // 'timezone' => 'Asia/Kuala_Lumpur',
+            'timezone' => '+08:00',
         ],
 
         'mariadb' => [
@@ -80,6 +82,7 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            'timezone' => '+08:00',
         ],
 
         'pgsql' => [
@@ -95,6 +98,7 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            'timezone' => 'Asia/Kuala_Lumpur',
         ],
 
         'sqlsrv' => [

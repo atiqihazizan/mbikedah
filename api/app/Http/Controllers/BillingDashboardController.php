@@ -466,7 +466,7 @@ class BillingDashboardController extends Controller
             'type' => 'hod_approval',
             'count' => $urgentApprovals,
             'message' => "Ada {$urgentApprovals} permohonan yang menunggu kelulusan anda lebih dari 3 hari",
-            'action_url' => '/billing/pending-hod'
+            'action_url' => '/hod'
           ];
         }
       }
@@ -486,7 +486,7 @@ class BillingDashboardController extends Controller
             'type' => 'finance_urgent',
             'count' => $urgentFinance,
             'message' => "Ada {$urgentFinance} item kewangan yang perlu perhatian segera",
-            'action_url' => '/billing/finance'
+            'action_url' => '/finance'
           ];
         }
       }

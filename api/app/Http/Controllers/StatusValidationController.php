@@ -47,52 +47,17 @@ class StatusValidationController extends Controller
       $action = $request->input('action', 'view');
 
       // Validate required fields
-      if (!$billingId) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Billing ID diperlukan'
-        ], 422);
-      }
+      if (!$billingId) return response()->json(['success' => false,'message' => 'Billing not found'], 422);
 
       // Find billing
       $billing = Billing::find($billingId);
-      if (!$billing) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Billing tidak ditemui'
-        ], 404);
-      }
+      if (!$billing) return response()->json(['success' => false,'message' => 'Billing not found'], 422);
 
       // Check if user can access this billing
-      if (!$this->canAccessBilling($billing)) {
-        // Add detailed debugging info
-        $user = Auth::user();
-        return response()->json([
-          'success' => false,
-          'message' => 'Anda tidak mempunyai kebenaran untuk mengakses billing ini',
-          'debug_info' => [
-            'user_logged_in' => $user ? true : false,
-            'user_id' => $user ? $user->id : null,
-            'user_abilities' => $user ? $user->abilities : null,
-            'user_abilities_name' => $user ? (UserAbilities::getAbilitiesName()[$user->abilities] ?? 'Unknown') : null,
-            'user_department_id' => $user ? ($user->department_id ?? 'null') : null,
-            'billing_id' => $billing->id,
-            'billing_created_by' => $billing->created_by,
-            'billing_department_id' => $billing->department_id ?? 'null',
-            'is_owner' => $user ? ($billing->created_by == $user->id) : false,
-            'same_department' => $user && isset($user->department_id) ? ($billing->department_id == $user->department_id) : false,
-            'access_check_details' => $this->debugAccessCheck($billing)
-          ]
-        ], 403);
-      }
+      $this->authorize('view', $billing);
 
       // Validate action and status based on action type
-      if ($action === 'process' && !$requestedStatus) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Status diperlukan untuk tindakan pemprosesan'
-        ], 422);
-      }
+      if ($action === 'process' && !$requestedStatus) return response()->json(['success' => false,'message' => 'A required parameter is missing'], 422);
 
       // Get current status
       $currentStatus = $billing->status_id;
@@ -122,14 +87,7 @@ class StatusValidationController extends Controller
       ];
 
       // Check if current status is valid
-      if (!array_key_exists($currentStatus, $allowedActions)) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Status semasa tidak sah',
-          'current_status' => $currentStatus,
-          'current_status_name' => BillingStatus::getStatusName($currentStatus)
-        ], 400);
-      }
+      if (!array_key_exists($currentStatus, $allowedActions)) return response()->json(['success' => false,'message' => 'Invalid operation'], 400);
 
       $currentAllowedActions = $allowedActions[$currentStatus];
 
@@ -137,62 +95,29 @@ class StatusValidationController extends Controller
       if ($action === 'view') {
         $detailedBillingData = $this->getDetailedBillingData($billing);
         
-        return response()->json([
-          'success' => true,
-          'message' => 'Data berjaya diambil',
-          'data' => $detailedBillingData,
-          'current_status' => $currentStatus,
-          'current_status_name' => BillingStatus::getStatusName($currentStatus),
-          'allowed_actions' => $currentAllowedActions,
-          'is_active' => $billing->is_active,
-          'validation_mode' => 'view_only'
-        ]);
+        return response()->json(['success' => true,'data' => $detailedBillingData,'is_active' => $billing->is_active,'validation_mode' => 'view_only']);
       }
 
       // Validate if action is allowed for current status
-      if (!in_array($action, $currentAllowedActions)) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Tindakan tidak dibenarkan untuk status semasa',
-          'current_status' => $currentStatus,
-          'current_status_name' => BillingStatus::getStatusName($currentStatus),
-          'requested_action' => $action,
-          'allowed_actions' => $currentAllowedActions
-        ], 400);
-      }
+      if (!in_array($action, $currentAllowedActions)) return response()->json(['success' => false, 'message' => 'Proses ini tidak sah'], 400);
 
       // For process action, strict validation
       if ($action === 'process') {
         // Strict validation: requested status MUST equal current status
-        if ($requestedStatus !== $currentStatus) {
-          return response()->json([
+        if ($requestedStatus !== $currentStatus) return response()->json([
             'success' => false,
-            'message' => 'Hanya boleh memproses status semasa sahaja',
-            'current_status' => $currentStatus,
-            'current_status_name' => BillingStatus::getStatusName($currentStatus),
-            'requested_status' => $requestedStatus,
-            'requested_status_name' => BillingStatus::getStatusName($requestedStatus),
-            'hint' => 'Sila gunakan status_id yang sama dengan status semasa untuk memproses'
+            'message' => $requestedStatus > $currentStatus 
+              ? 'Maaf, permohonan ini telah diproses'
+              : 'Maaf, proses `' . BillingStatus::getStatusName($currentStatus) . '` belum selesai'
           ], 400);
-        }
 
         // Manual authorization check using custom methods
-        if (!$this->canProcessStatus($billing, $requestedStatus)) {
-          return response()->json([
-            'success' => false,
-            'message' => 'Anda tidak mempunyai kebenaran untuk memproses status ini'
-          ], 403);
-        }
+        if (!$this->canProcessStatus($billing, $requestedStatus)) return response()->json(['success' => false, 'message' => 'Anda perlu mendapat kebenaran'], 403);
       }
 
       // For other actions (reject, return, cancel)
       if (in_array($action, ['reject', 'return', 'cancel'])) {
-        if (!$this->canRejectBilling($billing)) {
-          return response()->json([
-            'success' => false,
-            'message' => 'Anda tidak mempunyai kebenaran untuk melakukan tindakan ini'
-          ], 403);
-        }
+        if (!$this->canRejectBilling($billing)) return response()->json(['success' => false, 'message' => 'Anda perlu mendapat kebenaran'], 403);
       }
 
       // Determine next status after process
@@ -216,21 +141,18 @@ class StatusValidationController extends Controller
         'data' => $detailedBillingData,
         'current_status' => $currentStatus,
         'current_status_name' => BillingStatus::getStatusName($currentStatus),
-        'requested_status' => $requestedStatus,
-        'requested_status_name' => $requestedStatus ? BillingStatus::getStatusName($requestedStatus) : null,
-        'next_status_after_process' => $nextStatusAfterProcess,
-        'next_status_after_process_name' => $nextStatusAfterProcess ? BillingStatus::getStatusName($nextStatusAfterProcess) : null,
+        // 'requested_status' => $requestedStatus,
+        // 'requested_status_name' => $requestedStatus ? BillingStatus::getStatusName($requestedStatus) : null,
+        // 'next_status_after_process' => $nextStatusAfterProcess,
+        // 'next_status_after_process_name' => $nextStatusAfterProcess ? BillingStatus::getStatusName($nextStatusAfterProcess) : null,
         'action' => $action,
         'allowed_actions' => $currentAllowedActions,
-        'process_method' => $processMethods[$currentStatus] ?? null,
+        // 'process_method' => $processMethods[$currentStatus] ?? null,
         'is_active' => $billing->is_active,
-        'validation_mode' => 'full_validation'
+        // 'validation_mode' => 'full_validation'
       ]);
     } catch (Exception $e) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Ralat sistem: ' . $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false,'message' => 'Error 202: ' . $e->getMessage()], 500);
     }
   }
 
@@ -249,10 +171,7 @@ class StatusValidationController extends Controller
 
       foreach (array_keys($allStatuses) as $statusId) {
         if ($billing->canTransitionTo($statusId)) {
-          $possibleNextStatuses[] = [
-            'status_id' => $statusId,
-            'status_name' => BillingStatus::getStatusName($statusId)
-          ];
+          $possibleNextStatuses[] = ['status_id' => $statusId,'status_name' => BillingStatus::getStatusName($statusId)];
         }
       }
 
@@ -272,25 +191,15 @@ class StatusValidationController extends Controller
           'current_status' => $currentStatus,
           'current_status_name' => BillingStatus::getStatusName($currentStatus),
           'possible_next_statuses' => $possibleNextStatuses,
-          'is_final_status' => in_array($currentStatus, [
-            BillingStatus::COMPLETED,
-            BillingStatus::REJECTED,
-            BillingStatus::CANCELLED
-          ]),
-          'can_be_edited' => in_array($currentStatus, [
-            BillingStatus::DRAFT,
-            BillingStatus::RETURNED
-          ]),
+          'is_final_status' => in_array($currentStatus, [BillingStatus::COMPLETED,BillingStatus::REJECTED,BillingStatus::CANCELLED]),
+          'can_be_edited' => in_array($currentStatus, [BillingStatus::DRAFT,BillingStatus::RETURNED]),
           'is_active' => $billing->is_active,
           'required_abilities' => $statusProcessors[$currentStatus] ?? [],
           'billing_data' => $this->getDetailedBillingData($billing)
         ]
       ]);
     } catch (Exception $e) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Ralat mendapatkan maklumat status: ' . $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false,'message' => 'Error 203: ' . $e->getMessage()], 500);
     }
   }
 
@@ -312,10 +221,7 @@ class StatusValidationController extends Controller
         $possibleTransitions = [];
         foreach (array_keys($allStatuses) as $nextStatusId) {
           if ($tempBilling->canTransitionTo($nextStatusId)) {
-            $possibleTransitions[] = [
-              'status_id' => $nextStatusId,
-              'status_name' => BillingStatus::getStatusName($nextStatusId)
-            ];
+            $possibleTransitions[] = ['status_id' => $nextStatusId,'status_name' => BillingStatus::getStatusName($nextStatusId)];
           }
         }
 
@@ -340,10 +246,7 @@ class StatusValidationController extends Controller
         ]
       ]);
     } catch (Exception $e) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Ralat mendapatkan maklumat workflow: ' . $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false,'message' => 'Error 204: ' . $e->getMessage()], 500);
     }
   }
 
@@ -357,12 +260,7 @@ class StatusValidationController extends Controller
       $billingIds = $request->input('billing_ids', []);
       $action = $request->input('action', 'view');
 
-      if (empty($billingIds)) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Sila masukkan sekurang-kurangnya satu Billing ID'
-        ], 422);
-      }
+      if (empty($billingIds)) return response()->json(['success' => false,'message' => 'Error 205: Sila masukkan sekurang-kurangnya satu Billing'], 422);
 
       $results = [];
       $billings = Billing::whereIn('id', $billingIds)->get();
@@ -403,10 +301,7 @@ class StatusValidationController extends Controller
         ]
       ]);
     } catch (Exception $e) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Ralat batch validation: ' . $e->getMessage()
-      ], 500);
+      return response()->json(['success' => false,'message' => 'Error 206: ' . $e->getMessage()], 500);
     }
   }
 
@@ -419,12 +314,7 @@ class StatusValidationController extends Controller
   {
     $user = Auth::user();
     
-    if (!$user) {
-      return response()->json([
-        'success' => false,
-        'message' => 'User not authenticated'
-      ], 401);
-    }
+    if (!$user) return response()->json(['success' => false,'message' => 'Error 207: User not authenticated'], 401);
         
     // Get allowed actions for current status
     $allowedActions = [
@@ -558,8 +448,7 @@ class StatusValidationController extends Controller
         'workflow_info' => [
           'allowed_actions_for_status' => $allowedActions[$billing->status_id] ?? [],
           'current_status_name' => BillingStatus::getStatusName($billing->status_id)
-        ],
-        'debug_details' => $this->debugAccessCheck($billing)
+        ]
       ]
     ]);
   }
@@ -590,26 +479,18 @@ class StatusValidationController extends Controller
     $billingDeptId = isset($billing->department_id) ? (int) $billing->department_id : null;
 
     // Admin can access everything
-    if ($userAbilities === UserAbilities::ADMIN) {
-      return true;
-    }
+    if ($userAbilities === UserAbilities::ADMIN) return true;
 
     // Applicant can only access billings they created
-    if ($userAbilities === UserAbilities::APPLICANT) {
-      return $billingCreatedBy === $userId;
-    }
+    if ($userAbilities === UserAbilities::APPLICANT) return $billingCreatedBy === $userId;
 
     // HOD can access billings from their department + own billings
     if ($userAbilities === UserAbilities::HOD) {
       // Check if user is the creator (own billing)
-      if ($billingCreatedBy === $userId) {
-        return true;
-      }
+      if ($billingCreatedBy === $userId) return true;
       
       // Check if billing is from their department
-      if ($userDeptId !== null && $billingDeptId !== null && $billingDeptId === $userDeptId) {
-        return true;
-      }
+      if ($userDeptId !== null && $billingDeptId !== null && $billingDeptId === $userDeptId) return true;
       
       // HOD cannot access billings from other departments (unless they created it)
       return false;
@@ -623,9 +504,7 @@ class StatusValidationController extends Controller
       UserAbilities::PAYMENT_MAKER
     ];
 
-    if (in_array($userAbilities, $financeRoles, true)) {
-      return true; // Access all billings regardless of department
-    }
+    if (in_array($userAbilities, $financeRoles, true)) return true; // Access all billings regardless of department
 
     // Default: no access
     return false;
@@ -648,14 +527,10 @@ class StatusValidationController extends Controller
     $billingDeptId = isset($billing->department_id) ? (int) $billing->department_id : null;
 
     // Admin can process everything
-    if ($userAbilities === UserAbilities::ADMIN) {
-      return true;
-    }
+    if ($userAbilities === UserAbilities::ADMIN) return true;
 
     // First check if user can access this billing
-    if (!$this->canAccessBilling($billing)) {
-      return false;
-    }
+    if (!$this->canAccessBilling($billing)) return false;
 
     // Define which roles can process which status
     $statusProcessors = [
@@ -668,25 +543,19 @@ class StatusValidationController extends Controller
     ];
 
     // Check if status can be processed by anyone
-    if (!isset($statusProcessors[$statusId])) {
-      // Statuses like COMPLETED, REJECTED, CANCELLED cannot be processed
-      return false;
-    }
+    // Statuses like COMPLETED, REJECTED, CANCELLED cannot be processed
+    if (!isset($statusProcessors[$statusId])) return false;
 
     $allowedRoles = $statusProcessors[$statusId];
     
     // Check if user has required role for this status
-    if (!in_array($userAbilities, $allowedRoles, true)) {
-      return false;
-    }
+    if (!in_array($userAbilities, $allowedRoles, true)) return false;
 
     // Role-specific additional checks
     switch ($userAbilities) {
       case UserAbilities::APPLICANT:
         // Applicant can only process their own DRAFT billings
-        if ($statusId === BillingStatus::DRAFT) {
-          return $billingCreatedBy === $userId;
-        }
+        if ($statusId === BillingStatus::DRAFT) return $billingCreatedBy === $userId;
         return false;
 
       case UserAbilities::HOD:
@@ -695,13 +564,9 @@ class StatusValidationController extends Controller
         // 2. Billings from their department
         if ($statusId === BillingStatus::HOD_APPROVAL) {
           // Own billing
-          if ($billingCreatedBy === $userId) {
-            return true;
-          }
+          if ($billingCreatedBy === $userId) return true;
           // Department billing
-          if ($userDeptId !== null && $billingDeptId !== null && $billingDeptId === $userDeptId) {
-            return true;
-          }
+          if ($userDeptId !== null && $billingDeptId !== null && $billingDeptId === $userDeptId) return true;
         }
         return false;
 
@@ -743,14 +608,10 @@ class StatusValidationController extends Controller
     $currentStatus = (int) $billing->status_id;
 
     // Admin can reject anything
-    if ($userAbilities === UserAbilities::ADMIN) {
-      return true;
-    }
+    if ($userAbilities === UserAbilities::ADMIN) return true;
 
     // First check if user can access this billing
-    if (!$this->canAccessBilling($billing)) {
-      return false;
-    }
+    if (!$this->canAccessBilling($billing)) return false;
 
     // Role-specific rejection rules
     switch ($userAbilities) {
@@ -762,13 +623,9 @@ class StatusValidationController extends Controller
         // HOD can reject/return billings at HOD_APPROVAL stage that they can access
         if ($currentStatus === BillingStatus::HOD_APPROVAL) {
           // Own billing
-          if ($billingCreatedBy === $userId) {
-            return true;
-          }
+          if ($billingCreatedBy === $userId) return true;
           // Department billing
-          if ($userDeptId !== null && $billingDeptId !== null && $billingDeptId === $userDeptId) {
-            return true;
-          }
+          if ($userDeptId !== null && $billingDeptId !== null && $billingDeptId === $userDeptId) return true;
         }
         return false;
 
@@ -856,8 +713,9 @@ class StatusValidationController extends Controller
             'created_by',
             'created_at'
           ])
-          ->orderBy('new_status', 'desc')
-          ->orderBy('created_at', 'desc');
+          ->where('old_status', '>', 1);
+          // ->orderBy('new_status', 'desc')
+          // ->orderBy('created_at', 'desc');
         },
         'transactions' => function ($query) {
           $query->select([
@@ -886,119 +744,5 @@ class StatusValidationController extends Controller
       // Fallback to simple resource if detailed fetch fails
       return new BillingResource($billing->fresh(['details', 'recipient', 'department']));
     }
-  }
-
-  /**
-   * Debug access check untuk troubleshooting
-   */
-  private function debugAccessCheck(Billing $billing): array
-  {
-    $user = Auth::user();
-    
-    if (!$user) {
-      return ['error' => 'User not authenticated'];
-    }
-
-    $debug = [
-      'step_1_user_check' => 'User authenticated: ' . $user->id,
-      'step_2_abilities_check' => 'User abilities: ' . $user->abilities,
-      'step_2b_abilities_type' => 'Type: ' . gettype($user->abilities),
-      'step_2c_constants_check' => [
-        'ADMIN' => UserAbilities::ADMIN,
-        'APPLICANT' => UserAbilities::APPLICANT,
-        'HOD' => UserAbilities::HOD,
-        'FINANCE_CHECKER' => UserAbilities::FINANCE_CHECKER,
-        'FINANCE_VERIFIER' => UserAbilities::FINANCE_VERIFIER,
-        'FINANCE_APPROVER' => UserAbilities::FINANCE_APPROVER,
-        'PAYMENT_MAKER' => UserAbilities::PAYMENT_MAKER
-      ]
-    ];
-
-    // Admin check
-    if ($user->abilities == UserAbilities::ADMIN) {
-      $debug['step_3_admin'] = 'User is ADMIN - should have access';
-      $debug['step_3a_admin_check'] = 'abilities(' . $user->abilities . ') == ADMIN(' . UserAbilities::ADMIN . ') = ' . ($user->abilities == UserAbilities::ADMIN ? 'true' : 'false');
-      return $debug;
-    }
-
-    // Applicant check
-    if ($user->abilities == UserAbilities::APPLICANT) {
-      $debug['step_3_applicant'] = 'User is APPLICANT';
-      $debug['step_3a_applicant_check'] = 'abilities(' . $user->abilities . ') == APPLICANT(' . UserAbilities::APPLICANT . ') = ' . ($user->abilities == UserAbilities::APPLICANT ? 'true' : 'false');
-      $debug['step_4_owner_check'] = 'billing.created_by=' . $billing->created_by . ', user.id=' . $user->id;
-      $debug['step_5_is_owner'] = $billing->created_by == $user->id ? 'YES - should have access' : 'NO - access denied';
-      
-      // Process check for applicant
-      $debug['step_6_process_check'] = [
-        'can_process_draft' => $this->canProcessStatus($billing, BillingStatus::DRAFT),
-        'current_status' => $billing->status_id,
-        'current_status_name' => BillingStatus::getStatusName($billing->status_id),
-        'can_process_current_status' => $this->canProcessStatus($billing, $billing->status_id)
-      ];
-      
-      return $debug;
-    }
-
-    // HOD check
-    if ($user->abilities == UserAbilities::HOD) {
-      $debug['step_3_hod'] = 'User is HOD';
-      $debug['step_3a_hod_check'] = 'abilities(' . $user->abilities . ') == HOD(' . UserAbilities::HOD . ') = ' . ($user->abilities == UserAbilities::HOD ? 'true' : 'false');
-      $debug['step_4_owner_check'] = 'billing.created_by=' . $billing->created_by . ', user.id=' . $user->id;
-      $debug['step_5_is_owner'] = $billing->created_by == $user->id ? 'YES' : 'NO';
-      
-      if ($billing->created_by == $user->id) {
-        $debug['step_6_result'] = 'HOD owns billing - should have access';
-      } else {
-        $debug['step_6_dept_check'] = 'user.department_id=' . ($user->department_id ?? 'null') . ', billing.department_id=' . ($billing->department_id ?? 'null');
-        $debug['step_7_same_dept'] = (isset($user->department_id) && $billing->department_id == $user->department_id) ? 'YES - should have access' : 'NO - access denied';
-      }
-      
-      // Process check for HOD
-      $debug['step_8_process_check'] = [
-        'can_process_hod_approval' => $this->canProcessStatus($billing, BillingStatus::HOD_APPROVAL),
-        'current_status' => $billing->status_id,
-        'current_status_name' => BillingStatus::getStatusName($billing->status_id),
-        'can_process_current_status' => $this->canProcessStatus($billing, $billing->status_id)
-      ];
-      
-      return $debug;
-    }
-
-    // Finance check
-    $financeRoles = [
-      UserAbilities::FINANCE_CHECKER,
-      UserAbilities::FINANCE_VERIFIER,
-      UserAbilities::FINANCE_APPROVER,
-      UserAbilities::PAYMENT_MAKER
-    ];
-
-    if (in_array($user->abilities, $financeRoles)) {
-      $debug['step_3_finance'] = 'User is FINANCE role - should have access to all billings';
-      $debug['step_3a_finance_check'] = 'abilities(' . $user->abilities . ') in finance_roles = ' . (in_array($user->abilities, $financeRoles) ? 'true' : 'false');
-      $debug['step_3b_finance_roles'] = $financeRoles;
-      
-      // Process check for Finance roles
-      $financeStatusMap = [
-        UserAbilities::FINANCE_CHECKER => BillingStatus::FINANCE_REVIEW,
-        UserAbilities::FINANCE_VERIFIER => BillingStatus::FINANCE_VERIFY,
-        UserAbilities::FINANCE_APPROVER => BillingStatus::FINANCE_APPROVAL,
-        UserAbilities::PAYMENT_MAKER => BillingStatus::PROCESSING_PAYMENT
-      ];
-      
-      $relevantStatus = $financeStatusMap[$user->abilities] ?? null;
-      $debug['step_4_process_check'] = [
-        'user_role_processes_status' => $relevantStatus,
-        'user_role_processes_status_name' => $relevantStatus ? BillingStatus::getStatusName($relevantStatus) : 'None',
-        'can_process_relevant_status' => $relevantStatus ? $this->canProcessStatus($billing, $relevantStatus) : false,
-        'current_status' => $billing->status_id,
-        'current_status_name' => BillingStatus::getStatusName($billing->status_id),
-        'can_process_current_status' => $this->canProcessStatus($billing, $billing->status_id)
-      ];
-      
-      return $debug;
-    }
-
-    $debug['step_3_unknown'] = 'Unknown user role: ' . $user->abilities;
-    return $debug;
   }
 }

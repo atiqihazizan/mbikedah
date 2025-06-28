@@ -381,7 +381,7 @@ function BillingTableFinance() {
                         <div className="flex items-center justify-center space-x-2">
                           <TButton 
                             color="check" 
-                            to={`/billing/${billing.id}/${getActionPath(billing.status_id)}`} 
+                            to={`/finance/${billing.id}/${getActionPath(billing.status_id)}`} 
                             size="sm" 
                             title={getActionTitle(billing.status_id)}
                           >

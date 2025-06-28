@@ -46,7 +46,7 @@ export default function BillingPayment() {
       <PageComponent>
         <div className="text-center py-12">
           <p className="text-gray-600">Bil tidak dijumpai</p>
-          <TButton onClick={() => navigate("/billing/finance")} color="light" ><ChevronLeft className="w-4 h-4 mr-2" /> Kembali ke Senarai</TButton>
+          <TButton onClick={() => navigate("/finance")} color="light" ><ChevronLeft className="w-4 h-4 mr-2" /> Kembali ke Senarai</TButton>
         </div>
       </PageComponent>
     );
@@ -62,7 +62,7 @@ export default function BillingPayment() {
             <p className="mt-1 text-sm text-gray-500">Dicipta pada: {formatDate(billing.created_at)}</p>
           </div>
           <div className="flex space-x-3">
-            <TButton onClick={() => navigate("/billing/finance")} color="primary-dark" ><ChevronLeft className="w-4 h-4 mr-2" /> Kembali</TButton>
+            <TButton onClick={() => navigate("/finance")} color="primary-dark" ><ChevronLeft className="w-4 h-4 mr-2" /> Kembali</TButton>
           </div>
         </div>
       </div>

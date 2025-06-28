@@ -12,12 +12,12 @@ function RootLoading() {
       
       // Define role routes
       const roleRoutes = {
-        'Pemohon': '/billing/dashboard',
-        'Ketua Jabatan': '/billing/hod',
-        'Kewangan': '/billing/finance'
+        'Pemohon': '/applicant',
+        'Ketua Jabatan': '/hod',
+        'Kewangan': '/finance'
       };
       
-      const targetRoute = roleRoutes[firstRole] || '/billing/dashboard';
+      const targetRoute = roleRoutes[firstRole] || '/applicant';
       navigate(targetRoute, { replace: true });
     }
   }, [userRoles, navigate]);

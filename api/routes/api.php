@@ -221,7 +221,6 @@ Route::middleware('auth:sanctum')->group(function () {
   });
 });
 
-
 /*
  * |--------------------------------------------------------------------------
  * | Status Validation Routes (Page Baru)
