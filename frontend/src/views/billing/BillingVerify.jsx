@@ -4,7 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import { formatDate } from "../../config/format";
 import PageComponent from "../../components/PageComponent";
-import apiClient from "../../axios";
+import apiClient from "../../utils/axios";
 import BillingVerifyBank from "./BillingVerifyBank";
 import TButton from "../../components/Core/TButton";
 import TLoadingSpinner from "../../components/Core/TLoadingSpinner";
@@ -20,7 +20,7 @@ export default function BillingVerify() {
   const fetchAllData = useCallback(async () => {
     try {
       // const [billingRes] = await Promise.all([apiClient.get(`/billings/${idBilling}`)]);
-      const [data] = await apiClient.post(`/status-validation/validate`,{billing_id: idBilling, status: 4, action:'process'})
+      const {data} = await apiClient.post(`/status-validation/validate`,{billing_id: idBilling, status: 4, action:'process'})
       setBilling(data);
     } catch (error) {
       if (error.response) {

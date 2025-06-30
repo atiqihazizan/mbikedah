@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
 import TButton from '../../components/Core/TButton';
 import TSpinner from '../../components/Core/TSpinner';
-import apiClient from '../../axios';
+import apiClient from '../../utils/axios';
 
 const BillingVerifyBank = ({billing,processing}) => {
   const navigate = useNavigate();

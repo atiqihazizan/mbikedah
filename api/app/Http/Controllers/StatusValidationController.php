@@ -99,7 +99,7 @@ class StatusValidationController extends Controller
       }
 
       // Validate if action is allowed for current status
-      if (!in_array($action, $currentAllowedActions)) return response()->json(['success' => false, 'message' => 'Proses ini tidak sah'], 400);
+      if (!in_array($action, $currentAllowedActions)) return response()->json(['success' => false, 'message' => 'Tiada proses untuk dilakukan'], 400);
 
       // For process action, strict validation
       if ($action === 'process') {

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import PageComponent from "../../components/PageComponent";
-import apiClient from "../../axios";
+import apiClient from "../../utils/axios";
 import BillingCheckBank from "./BillingCheckBank";
 import TButton from "../../components/Core/TButton";
 import TLoadingSpinner from "../../components/Core/TLoadingSpinner";

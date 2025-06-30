@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import FormC from "../../components/FormContext";
 import TButton from "../../components/Core/TButton";
-import apiClient from "../../axios";
+import apiClient from "../../utils/axios";
 
 export default function RecipientDialog({ show, onClose, onSaved, recipient = null }) {
   const [loading, setLoading] = useState(false);

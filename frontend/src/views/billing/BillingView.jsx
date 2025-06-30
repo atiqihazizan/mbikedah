@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { formatCurrency, formatDate } from "../../config/format";
-import apiClient from "../../axios";
+import apiClient from "../../utils/axios";
 import PageComponent from "../../components/PageComponent";
 import TButton from "../../components/Core/TButton";
 import Card from "../../components/Card";

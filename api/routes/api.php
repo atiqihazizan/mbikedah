@@ -77,6 +77,13 @@ Route::prefix('test')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
   /*
    * |--------------------------------------------------------------------------
+   * | Password Change Route (for current user)
+   * |--------------------------------------------------------------------------
+   */
+  Route::post('/change-password', [UserController::class, 'changePassword']);
+
+  /*
+   * |--------------------------------------------------------------------------
    * | Redis Test Routes
    * |--------------------------------------------------------------------------
    */
@@ -203,12 +210,16 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::prefix('users')->group(function () {
     Route::get('/', [UserController::class, 'index']);
     Route::post('/', [UserController::class, 'store']);
+    Route::get('/finance-approval', [UserController::class, 'getUsersFinanceApproval']);
     Route::get('/{id}', [UserController::class, 'show']);
     Route::put('/{id}', [UserController::class, 'update']);
     Route::delete('/{id}', [UserController::class, 'destroy']);
 
     // Route untuk kemaskini abilities pengguna
     Route::put('/{id}/abilities', [UserController::class, 'updateAbilities']);
+    
+    // Route untuk kemaskini kata laluan pengguna tertentu (admin only)
+    Route::post('/{id}/change-password', [UserController::class, 'changePassword']);
   });
 
   /*

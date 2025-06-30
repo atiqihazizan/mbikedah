@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import PropTypes from "prop-types";
-import apiClient from "../../axios";
+import apiClient from "../../utils/axios";
 import TButton from "../Core/TButton";
 // import BankPaying from "../../views/billing/BankPaying";
 import { formatCurrency } from "../../config/format";

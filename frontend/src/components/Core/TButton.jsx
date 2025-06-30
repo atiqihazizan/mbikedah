@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 function TButton({
 	color = "indigo",
 	size = "md",
+	variant = "solid", // Tambah prop variant: "solid", "link", "subtle"
 	to = "",
 	circle = false,
 	href = "",
-	link = false,
 	target = "_blank",
 	onClick = () => {},
 	children,
@@ -19,9 +19,6 @@ function TButton({
 		"flex",
 		"items-center",
 		"whitespace-nowrap",
-		// "border",
-		// "border-2",
-		// "border-transparent",
 	];
 
 	// Size configurations
@@ -30,33 +27,39 @@ function TButton({
 			text: "text-xs",
 			padding: "px-2 py-1",
 			circle: "h-6 w-6",
+			iconPadding: "p-0.5", // Untuk button icon
 		},
 		sm: {
 			text: "text-sm",
 			padding: "px-3 py-1.5",
 			circle: "h-7 w-7",
+			iconPadding: "p-1",
 		},
 		md: {
 			text: "text-sm",
 			padding: "px-4 py-2",
 			circle: "h-8 w-8",
+			iconPadding: "p-1",
 		},
 		lg: {
 			text: "text-base",
 			padding: "px-6 py-3",
 			circle: "h-10 w-10",
+			iconPadding: "p-1.5",
 		},
 		xl: {
 			text: "text-lg",
 			padding: "px-8 py-4",
 			circle: "h-12 w-12",
+			iconPadding: "p-2",
 		}
 	};
 
 	const currentSize = sizeConfig[size] || sizeConfig.md;
 	classes = [...classes, currentSize.text];
 
-	if (link) {
+	// Variant: Link (text only dengan underline)
+	if (variant === "link") {
 		classes = [...classes, "transition-colors", "duration-200", "hover:underline"];
 
 		switch (color) {
@@ -85,8 +88,41 @@ function TButton({
 				classes = [...classes, "text-gray-500", "hover:text-gray-700", "focus:text-gray-800"];
 				break;
 		}
-	} else {
-		classes = [...classes, "focus:ring-2", "focus:fing-offset-2"];
+	} 
+	// Variant: Subtle (text berwarna dengan background hover ringan)
+	else if (variant === "subtle") {
+		classes = [...classes, "transition-colors", "duration-200", "rounded"];
+
+		switch (color) {
+			case "indigo":
+				classes = [...classes, "text-indigo-600", "hover:text-indigo-900", "hover:bg-indigo-50"];
+				break;
+			case "red":
+				classes = [...classes, "text-red-600", "hover:text-red-900", "hover:bg-red-50"];
+				break;
+			case "blue":
+				classes = [...classes, "text-blue-600", "hover:text-blue-900", "hover:bg-blue-50"];
+				break;
+			case "green":
+				classes = [...classes, "text-green-600", "hover:text-green-900", "hover:bg-green-50"];
+				break;
+			case "primary":
+				classes = [...classes, "text-blue-600", "hover:text-blue-900", "hover:bg-blue-50"];
+				break;
+			case "danger":
+				classes = [...classes, "text-red-600", "hover:text-red-900", "hover:bg-red-50"];
+				break;
+			case "ghost":
+				classes = [...classes, "text-gray-600", "hover:text-gray-800", "hover:bg-gray-50"];
+				break;
+			case "light":
+				classes = [...classes, "text-gray-500", "hover:text-gray-700", "hover:bg-gray-50"];
+				break;
+		}
+	}
+	// Variant: Solid (default - button dengan background solid)
+	else {
+		classes = [...classes, "focus:ring-2", "focus:ring-offset-2"];
 
 		if (isDisable || onChecking) color = "waiting";
 		switch (color) {
@@ -94,6 +130,8 @@ function TButton({
 				classes = [...classes,"text-white","bg-indigo-600","hover:bg-indigo-700","focus:ring-indigo-500"];break;
 			case "red":
 				classes = [...classes,"text-white","bg-red-600","hover:bg-red-700","focus:ring-red-500"];break;
+			case "blue":
+				classes = [...classes,"text-white","bg-blue-600","hover:bg-blue-700","focus:ring-blue-500"];break;
 			case "green":
 				classes = [...classes,"text-white","bg-emerald-600","hover:bg-emerald-700","focus:ring-emerald-500"];break;
 			case "primary":
@@ -111,13 +149,18 @@ function TButton({
 				classes = [...classes,"text-white","bg-gray-300","hover:bg-gray-400","focus:ring-gray-600"];break;
 			case "check":
 				classes = [...classes,"text-white","bg-green-600","hover:bg-green-700","focus:ring-green-500"];break;
+			case "refresh":
+				classes = [...classes,"p-2","text-gray-400","hover:text-gray-600","transition-colors","duration-200","rounded-lg","hover:bg-white"];break;
 		}
 	}
 
+	// Apply size-based padding dan shape
 	if (circle) {
 		classes = [...classes, currentSize.circle, "items-center", "justify-center", "rounded-full"];
 	} else {
-		classes = [...classes, "p-0", currentSize.padding, "rounded-md"];
+		// Untuk variant subtle, gunakan padding yang lebih kecil (cocok untuk icon button)
+		const padding = variant === "subtle" ? currentSize.iconPadding : currentSize.padding;
+		classes = [...classes, "p-0", padding, "rounded-md"];
 	}
 
 	classes = [className, ...classes];
@@ -126,7 +169,7 @@ function TButton({
 	return (
 		<>
 			{href && (<a href={href} className={classes.join(" ")} target={target}>{children}</a>)}
-			{to && (<Link to={to} className={classes.join(" ")}>	{children}</Link>)}
+			{to && (<a href={to} className={classes.join(" ")}>	{children}</a>)}
 			{!to && !href && (
 				<button
 					onClick={onClick}
@@ -164,5 +207,6 @@ function TButton({
 		</>
 	);
 }
+
 
 export default TButton;

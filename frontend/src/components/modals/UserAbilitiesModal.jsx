@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { toast } from 'react-toastify';
-import apiClient from '../../axios';
+import apiClient from '../../utils/axios';
 
 const abilities = {
   1: 'Pentadbir',

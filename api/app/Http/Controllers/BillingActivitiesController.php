@@ -16,6 +16,10 @@ use App\Http\Resources\BillingResource;
 use App\Models\Bank;
 use App\Models\Budget;
 
+use App\Http\Requests\FinanceApprovalRequest;
+use App\Http\Requests\BillingRejectionRequest;
+use App\Http\Requests\BillingReturnRequest;
+
 class BillingActivitiesController extends Controller
 {
   use AuthorizesRequests;
@@ -144,19 +148,19 @@ class BillingActivitiesController extends Controller
     }
   }
 
-  public function financeApprove(Billing $billing, Request $request) {
+  public function financeApprove(Billing $billing, FinanceApprovalRequest $request) {
     try {
       $this->authorize('process',[$billing, BillingStatus::FINANCE_APPROVAL]);
+      
       DB::beginTransaction();
       $remarks = $request->remarks ?? ''; //Diluluskan oleh kewangan
       
       // Tetapkan tarikh kelulusan kewangan
-      $approved_date = $request->approved_date ?? now();
-      $billing->approved_at = $approved_date;
-      $billing->approved_by = Auth::id();
+      $billing->approved_at = $request->approved_date;
+      $billing->approved_by = $request->approved_by;
       $billing->save();
       
-      $billing->updateStatus(BillingStatus::PROCESSING_PAYMENT, Auth::id(), $remarks);
+      $billing->updateStatus(BillingStatus::PROCESSING_PAYMENT, $request->approved_by, $remarks);
       DB::commit();
       return response()->json([
         'success' => true,
@@ -281,32 +285,16 @@ class BillingActivitiesController extends Controller
     }
   }
   
-  public function rejectBilling(Request $request, Billing $billing) {
+  public function rejectBilling(BillingRejectionRequest $request, Billing $billing) {
     try {
       $this->authorize('reject', $billing);
-      $validator = Validator::make($request->all(), ['remarks' => 'required|string|max:500']);
-      if ($validator->fails()) {
-        return response()->json(['success' => false, 'message' => 'Sila nyatakan sebab penolakan', 'errors' => $validator->errors()], 422);
-      }
+      
       DB::beginTransaction();
 
-      $billing->approved_hod = 0;
-      $billing->hod_approved_at = null;
-      $billing->review_by = 0;
-      $billing->reviewed_at = null;
-      $billing->verified_by = 0;
-      $billing->verified_at = null;
-      $billing->approved_by = 0;
-      $billing->approved_at = null;
-      $billing->paid_by = 0;
-      $billing->paid_at = null;
-      $billing->ceo_approved = 0;
-      $billing->save();
-      //reset transactions
-      $billing->transactions()->delete();
-      //reset details
-      $billing->details()->update(['approve' => 0, 'accept' => -1, 'review_by' => 0]);
-      $billing->updateStatus(BillingStatus::REJECTED, Auth::id(), $request->remarks);
+      $financeStatuses = [BillingStatus::FINANCE_APPROVAL];
+      $userId = in_array($billing->status_id, $financeStatuses) ? $request->user_id : Auth::id();
+      
+      $billing->updateStatus(BillingStatus::REJECTED, $userId, $request->remarks);
       DB::commit();
       return response()->json([
         'success' => true,
@@ -318,39 +306,31 @@ class BillingActivitiesController extends Controller
       return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
     } catch (Exception $e) {
       DB::rollBack();
-      return response()->json(['success' => false, 'message' => 'Ralat semasa menolak permohonan', 'error' => $e->getMessage()], 500);
+      return response()->json(['success' => false, 'message' => 'Penolakan tidak berjaya', 'error' => $e->getMessage()], 500);
     }
   }
 
-  public function returnBilling(Request $request, Billing $billing) {
+  public function returnBilling(BillingReturnRequest $request, Billing $billing) {
     try {
       $this->authorize('reject', $billing);
-      $validator = Validator::make($request->all(), ['remarks' => 'required|string|max:500']);
-      if ($validator->fails()) {
-        return response()->json(['success' => false, 'message' => 'Sila nyatakan sebab pemulangan', 'errors' => $validator->errors()], 422);
-      }
       DB::beginTransaction();
       
-      $billing->approved_hod = 0;
-      $billing->hod_approved_at = null;
-      $billing->review_by = 0;
-      $billing->reviewed_at = null;
-      $billing->verified_by = 0;
-      $billing->verified_at = null;
-      $billing->approved_by = 0;
-      $billing->approved_at = null;
-      $billing->paid_by = 0;
-      $billing->paid_at = null;
-      $billing->ceo_approved = 0;
-      $billing->save();
+      
+      // Reset billing data
+      $billing->fill([
+        'approved_hod' => 0, 'hod_approved_at' => null,
+        'review_by' => 0, 'reviewed_at' => null,
+        'verified_by' => 0, 'verified_at' => null,
+        'approved_by' => 0, 'approved_at' => null,
+        'paid_by' => 0, 'paid_at' => null,
+        'ceo_approved' => 0
+      ])->save();
+
       //reset transactions
       $billing->transactions()->delete();
+
       //reset details
-      $billing->details()->update([
-        'approve' => 0,
-        'accept' => -1,
-        'review_by' => 0,
-      ]);
+      $billing->details()->update(['approve' => 0, 'accept' => -1, 'review_by' => 0]);
 
       $billing->updateStatus(BillingStatus::RETURNED, Auth::id(), $request->remarks);
       DB::commit();
@@ -379,12 +359,20 @@ class BillingActivitiesController extends Controller
       }
       DB::beginTransaction();
       
-      $billing->approved_hod = 0;
-      $billing->hod_approved_at = null;
-      $billing->review_by = 0;
-      $billing->reviewed_at = null;
-      $billing->verified_by = 0;
-      $billing->verified_at = null;
+      // Reset billing data
+      $billing->fill([
+        'approved_hod' => 0, 'hod_approved_at' => null,
+        'review_by' => 0, 'reviewed_at' => null,
+        'verified_by' => 0, 'verified_at' => null,
+        'approved_by' => 0, 'approved_at' => null,
+        'paid_by' => 0, 'paid_at' => null,
+        'ceo_approved' => 0
+      ])->save();
+      
+      //reset transactions
+      $billing->transactions()->delete();
+      //reset details
+      $billing->details()->update(['approve' => 0, 'accept' => -1, 'review_by' => 0]);
       $billing->approved_by = 0;
       $billing->approved_at = null;
       $billing->paid_by = 0;

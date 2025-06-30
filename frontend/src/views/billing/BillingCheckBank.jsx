@@ -7,7 +7,7 @@ import FormC from '../../components/FormContext';
 import TButton from '../../components/Core/TButton';
 import TSpinner from '../../components/Core/TSpinner';
 import TSelect from '../../components/Core/TSelect';
-import apiClient from '../../axios';
+import apiClient from '../../utils/axios';
 
 const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) => {
   const navigate = useNavigate();

@@ -122,18 +122,10 @@ const UserDropdown = ({
     <div className="relative" ref={dropdownRef}>
       <div className="flex items-center space-x-2">
         {/* Notification Bell */}
-        <NotificationBell 
-          count={totalNotifications}
-          onClick={() => console.log('Open notifications')}
-        />
+        <NotificationBell count={totalNotifications} onClick={() => console.log('Open notifications')} />
 
         {/* User Avatar & Dropdown Toggle */}
-        <UserAvatarButton
-          user={currentUser}
-          isOpen={isOpen}
-          onClick={toggleDropdown}
-          getUserInitials={getUserInitials}
-        />
+        <UserAvatarButton user={currentUser} isOpen={isOpen} onClick={toggleDropdown} getUserInitials={getUserInitials} />
       </div>
 
       {/* Dropdown Menu */}

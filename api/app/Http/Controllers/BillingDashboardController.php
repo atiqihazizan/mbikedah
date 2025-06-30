@@ -98,6 +98,7 @@ class BillingDashboardController extends Controller
           'recipient' => $billing->recipient->name ?? 'Unknown',
           'total_amount' => $billing->total_amount,
           'created_at' => $billing->created_at->format('d/m/Y'),
+          'issued_at' => $billing->issued_at->format('d/m/Y'),
           'days_pending' => $days,
           'days_pending_display' => HelperController::formatDaysPending($days),
           'priority' => HelperController::getPriorityText($days),

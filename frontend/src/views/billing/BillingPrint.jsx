@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatCurrency, formatDate, formatTitle } from '../../config/format';
 import logoMBI from "../../assets/logo/mbi-head.png"
-import apiClient from '../../axios';
+import apiClient from '../../utils/axios';
 
 const BillingPrint = React.forwardRef(({ billingData, onPrintComplete }, ref) => {
   const agency = {

@@ -7,9 +7,12 @@ import Pulse from "../../components/Core/Pulse";
 import FormC from "../../components/FormContext";
 import TButton from "../../components/Core/TButton";
 import RecipientDialog from "./RecipientDialog";
-import apiClient from "../../axios";
+import apiClient from "../../utils/axios";
 import Select from "react-select";
 import BillingFormDetailsRows from "./BillingFormDetailsRows";
+
+// Import TanStack Query hook
+import { useBillingForm } from '../../hooks/useBillingForm';
 
 export default function BillingFormDialog({ 
   show, 
@@ -18,9 +21,11 @@ export default function BillingFormDialog({
   billingId = null, 
   mode = "create" // "create", "edit", "view"
 }) {
+  // TanStack Query hook untuk handle save operations
+  const { saveForm: saveFormMutation, loading: mutationLoading, error: mutationError, setError } = useBillingForm();
+
   const { currentUser } = useStateContext();
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
   const [recipients, setRecipients] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [showRecipientDialog, setShowRecipientDialog] = useState(false);
@@ -29,6 +34,10 @@ export default function BillingFormDialog({
   const isViewMode = mode === "view";
   const isEditMode = mode === "edit";
   const isCreateMode = mode === "create";
+
+  // Combine both loading states
+  const loading = mutationLoading || localLoading;
+  const error = mutationError;
 
   const getPaymentDueDate = (issuedDate) => {
     const date = new Date(issuedDate);
@@ -113,46 +122,19 @@ export default function BillingFormDialog({
     (petition?.details || []).length !== 0
   );
 
-  const saveForm = async (statusId, successMessage) => {
-    setError(null);
-    toast.dismiss();
-    
-    try {
-      if (statusId !== 1) {
-        setLoading(true);
-        if (!checkValid()) {
-          setLoading(false);
-          throw new Error("Sila lengkapkan semua maklumat yang diperlukan");
-        }
-      }
+  // Updated save functions menggunakan TanStack Query mutation
+  const saveDraft = async () => {
+    const result = await saveFormMutation(petition, billingId, 1);
+    if (result.success && onSaved) onSaved(result.data);
+  };
 
-      const url = !billingId ? "/billings" : `/billings/${billingId}`;
-      const method = !billingId ? "post" : "put";
-      const formData = {...petition, status_id: statusId};
-      const {data} = await apiClient[method](url, formData);
-      
-      if (successMessage) toast.success(successMessage);
-      if (onSaved) onSaved(data);
-      if (statusId === 2) onClose();
-      return { success: true, data };
-    } catch (error) {
-      if(error?.response?.status === 403) toast.error("Anda tidak mempunyai kebenaran untuk menghantar permohonan ini");
-      else if(error?.response?.status === 422) {
-        const {data} = error?.response || {};
-        setError(data?.errors);
-      } else {
-        if(error?.response?.data?.message) console.error(error?.response?.data?.message);
-        toast.error(error.message || `Ralat semasa ${statusId === 1 ? 'menyimpan draf' : 'menghantar permohonan'}. Sila cuba lagi.`);
-      }
-      
-      return { success: false, error };
-    } finally {
-      if (statusId !== 1) setLoading(false);
+  const submitToHOD = async () => {
+    const result = await saveFormMutation(petition, billingId, 2);
+    if (result.success) {
+      if (onSaved) onSaved(result.data);
+      onClose(); // Close dialog selepas submit
     }
   };
-  
-  const saveDraft = () => saveForm(1, "Permohonan berjaya disimpan sebagai draf");
-  const submitToHOD = () => saveForm(2, "Permohonan berjaya dihantar kepada ketua jabatan");
 
   const handleClose = () => {
     setPetition(defaultPetition);
@@ -170,7 +152,7 @@ export default function BillingFormDialog({
 
     const loadInitialData = async () => {
       if (!isSubscribed) return;
-      setLoading(true);
+      setLocalLoading(true);
       
       try {
         const {data:budgetResponse} = await apiClient.get("/budgets");
@@ -180,7 +162,7 @@ export default function BillingFormDialog({
         console.error('Ralat mendapatkan data:', error);
         toast.error(error.message || 'Ralat mendapatkan data. Sila cuba sebentar lagi.');
       } finally {
-        setLoading(false);
+        setLocalLoading(false);
       }
     };
 
@@ -198,7 +180,7 @@ export default function BillingFormDialog({
 
     const initBilling = async () => {
       try {
-        setLoading(true);
+        setLocalLoading(true);
         const {data} = await apiClient.get(`/billings/${billingId}`);
         if (data) {
           setPetition({
@@ -211,7 +193,7 @@ export default function BillingFormDialog({
         console.error('Ralat mendapatkan data billing:', error);
         toast.error('Ralat mendapatkan data permohonan.');
       } finally {
-        setLoading(false);
+        setLocalLoading(false);
       }
     };
 
@@ -230,14 +212,12 @@ export default function BillingFormDialog({
       {/* Dialog */}
       <div className="fixed inset-0 z-50 overflow-y-auto">
         <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-          <div className="inline-block w-full max-w-6xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+          <div className="inline-block w-full max-w-7xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {isCreateMode ? "Permohonan Bayaran Baru" : 
-                   isEditMode ? "Kemaskini Permohonan" : 
-                   "Lihat Permohonan"}
+                  {isCreateMode ? "Permohonan Bayaran Baru" : isEditMode ? "Kemaskini Permohonan" : "Lihat Permohonan"}
                 </h3>
                 {petition.running_no && <p className="text-sm text-gray-500 mt-1">No. Rujukan: {petition.running_no}</p>}
               </div>
@@ -496,14 +476,14 @@ export default function BillingFormDialog({
                             <table className="w-full">
                               <thead className="bg-gray-50">
                                 <tr>
-                                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Kod Bajet</th>
-                                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Perkara</th>
-                                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Rujukan</th>
-                                  <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase">Kuantiti</th>
-                                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Unit</th>
-                                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Harga</th>
-                                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Amaunt</th>
-                                  <th className="px-4 py-3"></th>
+                                  <th className="text-left pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Kod Bajet</th>
+                                  <th className="text-left pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Perkara</th>
+                                  <th className="text-left pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Rujukan</th>
+                                  <th className="text-center pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Kuantiti</th>
+                                  {/* <th className="text-left pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Unit</th> */}
+                                  <th className="text-right pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Harga</th>
+                                  <th className="text-right pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Amaunt</th>
+                                  <th className="pl-4 py-3"></th>
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
@@ -523,7 +503,7 @@ export default function BillingFormDialog({
                               </tbody>
                               <tfoot className="bg-gray-50">
                                 <tr>
-                                  <td colSpan={6} className="px-4 py-3 text-right font-bold text-gray-900">Jumlah</td>
+                                  <td colSpan={5} className="px-4 py-3 text-right font-bold text-gray-900">Jumlah</td>
                                   <td className="px-4 py-3 text-right font-bold text-gray-900">{formatCurrency(petition?.total_amount || '0.00')}</td>
                                   <td></td>
                                 </tr>

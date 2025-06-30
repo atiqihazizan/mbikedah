@@ -1,14 +1,15 @@
 import { useParams } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, Printer } from "lucide-react";
+import { AlertTriangle, ChevronLeft, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { formatDate } from "../../config/format";
 import PageComponent from "../../components/PageComponent";
 import TButton from "../../components/Core/TButton";
-import apiClient from "../../axios";
 import BillingPrint from "./BillingPrint";
 import TLoadingSpinner from "../../components/Core/TLoadingSpinner";
+import BillingApprovalForm from "./BillingApprovalForm";
+import apiClient from "../../utils/axios";
 
 const BillingApproval = () => {
   const navigate = useNavigate();
@@ -17,27 +18,51 @@ const BillingApproval = () => {
   const [loading, setLoading] = useState(true);
   const { idBilling } = useParams();
 
+  const abortControllerRef = useRef(null);
+
   const fetchAllData = useCallback(async () => {
-      try {
-        const {data} = await apiClient.post(`/status-validation/validate`,{billing_id: idBilling, status: 5, action:'process'});
-        setBilling(data);
-      } catch (error) {
-        if (error.response) {
-          console.error("Error fetching data:", error.response.data);
-          toast.error(error.response.data.message);
-        } else {
-          console.error("Error fetching data:", error);
-          // toast.error("Gagal memuat data");
-          toast.error("Tiada maklumat untuk semakan");
-        }
-      } finally {
-        setLoading(false);
-      }
-    }, [idBilling]);
+    // Cancel previous request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
     
-    useEffect(() => {
-      fetchAllData();
-    }, []);
+    setLoading(true);
+    try {
+      const {data} = await apiClient.post(`/status-validation/validate`, {
+        billing_id: idBilling, 
+        status: 5, 
+        action:'process'
+      });
+      setBilling(data);
+    } catch (error) {
+      if (error.response) {
+        console.error("Error fetching data:", error.response.data);
+        toast.error(error.response.data.message);
+      } else {
+        console.error("Error fetching data:", error);
+        toast.error("Tiada maklumat untuk semakan");
+      }
+      navigate("/finance");
+    } finally {
+      setLoading(false);
+      abortControllerRef.current = null;
+    }
+  }, [idBilling]);
+
+  const handleApprovalComplete = (action, responseData) => {
+    setTimeout(() => {navigate("/finance")}, 1500);
+  };
+    
+  useEffect(() => {
+    fetchAllData();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchAllData]); 
+
 
   if (loading) {
     return (
@@ -64,10 +89,27 @@ const BillingApproval = () => {
           </div>
         </div>
       </div>
+
+      <div className="px-6 py-4 bg-blue-50 border-b border-blue-200">
+        <div className="flex items-center">
+          <div className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"><AlertTriangle /></div>
+          <div className="ml-3">
+            <h3 className="text-sm font-semibold text-blue-900">Untuk mendapatkan pengesahan</h3>
+            <div className="text-sm text-blue-700 mt-1">
+              <strong>Cetak dokumen dahulu untuk tandatangan manual kemudian lengkapkan borang di bawah untuk proses bayaran.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
       
-      <div className="px-8 h-[calc(100vh-220px)] overflow-y-auto">
-        {/* <BillingPreview billingData={billing}/> */}
-        <BillingPrint ref={printRef} billingData={billing}/>
+      <div className="px-8 h-[calc(100vh-295px)] overflow-y-auto">
+        {/* Billing Print Section */}
+        <div className="mb-8">
+          <BillingPrint ref={printRef} billingData={billing}/>
+        </div>
+        
+        {/* Approval Form Section */}
+        <BillingApprovalForm billingData={billing} onApprovalComplete={handleApprovalComplete}/>
       </div>
     </div>
   );

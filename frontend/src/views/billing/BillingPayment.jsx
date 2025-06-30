@@ -4,7 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import { formatDate } from "../../config/format";
 import PageComponent from "../../components/PageComponent";
-import apiClient from "../../axios";
+import apiClient from "../../utils/axios";
 import TButton from "../../components/Core/TButton";
 import TLoadingSpinner from "../../components/Core/TLoadingSpinner";
 import BillingPaymentInfo from "./BillingPaymentInfo";

@@ -1,10 +1,21 @@
 export const formatCurrency = (amount) => {
   return new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR' }).format(amount);
+  //   return `RM ${parseFloat(amount).toLocaleString('ms-MY', { minimumFractionDigits: 2 })}`;
 };
 
 export const formatDate = (dateString) => {
   if (!dateString) return '';
   return new Date(dateString).toLocaleDateString('ms-MY');
+};
+
+export const formatDateShort = (dateString) => {
+  const [day, month, year] = dateString.split('/');
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString('ms-MY', { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  });
 };
 
 export const formatTitle = (str) => {

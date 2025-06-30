@@ -58,7 +58,7 @@ export default function BillingFormDetailsRows({ FormC, data, def, idx = false, 
   return (
     <>
       <tr>
-        <td className="px-4 py-3 align-top w-[140px]">
+        <td className="pl-4 py-3 align-top w-[200px]">
           <FormC.select
             field="budget_id"
             keyval="id,code,name"
@@ -86,10 +86,10 @@ export default function BillingFormDetailsRows({ FormC, data, def, idx = false, 
           )}
         </td>
         
-        <td className="px-4 py-3 align-top">
+        <td className="pl-4 py-3 align-top">
           <FormC.textarea 
             field="description" 
-            rows={2} 
+            rows={1} 
             value={detail?.description || ''}
             option={{ disabled }} 
             onChange={(e) => inputChange(e, "description")}
@@ -101,7 +101,7 @@ export default function BillingFormDetailsRows({ FormC, data, def, idx = false, 
           )}
         </td>
         
-        <td className="px-4 py-3 w-[180px] align-top">
+        <td className="pl-4 py-3 w-[150px] align-top">
           <FormC.text 
             value={detail?.reference || ''} 
             onChange={(e) => inputChange(e, "reference")}  
@@ -109,7 +109,7 @@ export default function BillingFormDetailsRows({ FormC, data, def, idx = false, 
           />
         </td>
         
-        <td className="px-4 py-3 w-[100px] align-top">
+        <td className="pl-4 py-3 w-[100px] align-top">
           <FormC.number 
             value={detail?.quantity || '0'} 
             css="text-center" 
@@ -123,7 +123,7 @@ export default function BillingFormDetailsRows({ FormC, data, def, idx = false, 
           )}
         </td>
         
-        <td className="px-4 py-3 w-[120px] align-top">
+        {/* <td className="pl-4 py-3 w-[100px] align-top">
           <FormC.text 
             value={detail?.unit || ''} 
             onChange={(e) => inputChange(e, "unit")} 
@@ -134,9 +134,9 @@ export default function BillingFormDetailsRows({ FormC, data, def, idx = false, 
               {error?.[`details.${idx}.unit`]}
             </span>
           )}
-        </td>
+        </td> */}
         
-        <td className="px-4 py-3 w-[120px] align-top">
+        <td className="pl-4 py-3 w-[120px] align-top">
           <FormC.currency 
             value={detail?.price || '0.00'} 
             onChange={(e) => currChange(e, "price")} 
@@ -149,11 +149,11 @@ export default function BillingFormDetailsRows({ FormC, data, def, idx = false, 
           )}
         </td>
         
-        <td className="px-4 py-3 w-[120px] text-right align-top font-medium text-gray-900">
+        <td className="pl-4 pt-5 w-[120px] text-right align-top font-medium text-gray-900">
           {formatCurrency(detail?.total || '0.00')}
         </td>
         
-        <td className="px-4 py-3 w-[60px] align-top text-center">
+        <td className="pl-4 py-3 w-[60px] align-top text-center">
           {idx > 0 && !disabled && (
             <button 
               type="button"
@@ -169,7 +169,7 @@ export default function BillingFormDetailsRows({ FormC, data, def, idx = false, 
       
       {(idx === dataLen) && !disabled && (
         <tr>
-          <td colSpan={8} className="px-4 py-3">
+          <td colSpan={8} className="pl-4 py-3">
             <button
               type="button"
               className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-2 rounded italic font-medium transition-colors"

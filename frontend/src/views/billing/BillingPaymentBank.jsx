@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import FormC from '../../components/FormContext';
 import TButton from '../../components/Core/TButton';
 import TSpinner from '../../components/Core/TSpinner';
-import apiClient from '../../axios';
+import apiClient from '../../utils/axios';
 
 const BillingCheckBank = ({billing,banks}) => {
   const navigate = useNavigate();

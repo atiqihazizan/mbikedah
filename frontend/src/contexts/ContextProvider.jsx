@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import apiClient from "../axios";
+import apiClient from "../utils/axios";
 
 const StateContext = createContext({
   currentUser: {},

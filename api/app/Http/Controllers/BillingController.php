@@ -68,7 +68,7 @@ class BillingController extends Controller
         'department_id' => $departmentId,
         'created_by' => $request->user()->id,
         'issued_at' => $validatedData['issued_at'],
-        'status_id' => BillingStatus::DRAFT,
+        'status_id' => $validatedData['status_id'] ?? BillingStatus::DRAFT,
         'is_archived' => false
       ]);
 
@@ -90,7 +90,7 @@ class BillingController extends Controller
         'old_status' => 0,
         'new_status' => BillingStatus::DRAFT,
         'created_by' => $request->user()->id,
-        'remarks' => 'Permohonan baru'
+        'remarks' => $request->remarks ?? ''
       ]);
       
       if ($validatedData['status_id'] === BillingStatus::HOD_APPROVAL) {
@@ -98,7 +98,7 @@ class BillingController extends Controller
           'old_status' => BillingStatus::DRAFT,
           'new_status' => BillingStatus::HOD_APPROVAL,
           'created_by' => $request->user()->id,
-          'remarks' => 'Permohonan dihantar ke HOD'
+          'remarks' => $request->remarks ?? ''
         ]);
       }
 
@@ -160,7 +160,7 @@ class BillingController extends Controller
       }
 
       if ($validatedData['status_id'] === BillingStatus::HOD_APPROVAL) {
-        $billing->updateStatus(BillingStatus::HOD_APPROVAL, Auth::id(), 'Permohonan dihantar ke HOD');
+        $billing->updateStatus(BillingStatus::HOD_APPROVAL, Auth::id(), $request->remarks ?? '');
       }
 
       Cache::forget('billing.' . $billing->id);

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useStateContext } from "../contexts/ContextProvider";
-import apiClient from "../axios";
+import apiClient from "../utils/axios";
 import TButton from "../components/Core/TButton";
 
 function Signup() {

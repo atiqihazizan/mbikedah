@@ -1,168 +1,59 @@
-// components/DefaultLayout.jsx
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from 'react';
+// components/DefaultLayout.jsx - Updated dengan custom hooks
+import { Outlet } from "react-router-dom";
 import { useStateContext } from '../contexts/ContextProvider';
-import { toast } from 'react-toastify';
-import apiClient from '../axios';
-import Sidebar from "./Sidebar";
-import { FaUserTie } from 'react-icons/fa';
 
 // Import custom components
 import PasswordChangeDialog from './dialogs/PasswordChangeDialog';
 import UserDropdown from './header/UserDropdown';
 import RoleBadgesContainer from './roles/RoleBadgesContainer';
 
-// Import custom hooks and utilities
+// Import custom hooks
 import { useTabNotifications } from '../hooks/useTabNotifications';
-import { getRoleMetadata } from '../utils/roleUtils';
+import { useUserData } from '../hooks/useUserData';
+import { usePasswordChange } from '../hooks/usePasswordChange';
+import { useActiveRole } from '../hooks/useActiveRole';
+import { useUserActions } from '../hooks/useUserActions';
+import { useUserDisplayInfo } from '../hooks/useUserDisplayInfo';
+import { useTheme } from "../hooks/useTheme";
+import { FaUserTie } from "react-icons/fa";
 
 /**
- * Default Layout Component
- * Main layout wrapper that provides navigation, user management, and role switching
+ * Default Layout Component - Simplified dengan custom hooks
  */
 export default function DefaultLayout() {
   const { currentUser, logout } = useStateContext();
-  const navigate = useNavigate();
-  const location = useLocation();
   
-  // State management
-  const [dashboardData, setDashboardData] = useState({});
-  const [userRoles, setUserRoles] = useState([]);
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Custom hooks
+  // Custom hooks usage
+  const {
+    dashboardData,
+    userRoles,
+    isLoading,
+    error,
+    refreshUserData
+  } = useUserData(currentUser);
+  
+  const { handleLogout, handleSettings } = useUserActions(logout);
+  
+  const {
+    isPasswordDialogOpen,
+    setIsPasswordDialogOpen,
+    handleChangePassword,
+    handlePasswordSubmit
+  } = usePasswordChange(handleLogout);
+  
+  const { currentActiveRole, hasMultipleRoles } = useActiveRole(userRoles);
+  
+  const userDisplayInfo = useUserDisplayInfo(currentUser);
+  
   const tabNotifications = useTabNotifications(dashboardData, userRoles);
-
-  /**
-   * Fetch user data and roles from API
-   */
-  const fetchUserData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const response = await apiClient.get('/dashboard');
-      if (response.success) {
-        setDashboardData(response.data || {});
-        setUserRoles(response.user_roles || []);
-      } else {
-        throw new Error(response.message || 'Failed to fetch user data');
-      }
-    } catch (err) {
-      console.error('Error fetching user data:', err);
-      setError(err.message || 'Error loading user data');
-      toast.error('Gagal memuat data pengguna');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Initialize user data when component mounts or user changes
-  useEffect(() => {
-    if (currentUser) {
-      fetchUserData();
-    }
-  }, [currentUser]);
-
-  /**
-   * Get current active role based on current route
-   * @returns {string|null} Current active role name
-   */
-  const getCurrentActiveRole = () => {
-    const currentPath = location.pathname;
-    
-    for (let i = 0; i < userRoles.length; i++) {
-      const role = userRoles[i];
-      const metadata = getRoleMetadata(role);
-      
-      if (metadata.matchPaths && metadata.matchPaths.some(path => {
-        if (path === '/') return currentPath === '/';
-        return currentPath.startsWith(path);
-      })) {
-        return role;
-      }
-    }
-    
-    return userRoles[0] || null;
-  };
-
-  const currentActiveRole = getCurrentActiveRole();
-  const hasMultipleRoles = userRoles.length > 1;
-
-  /**
-   * Handle user logout
-   */
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success('Berjaya log keluar');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Ralat semasa log keluar');
-    }
-  };
-
-  /**
-   * Handle password change request
-   */
-  const handleChangePassword = () => {
-    setIsPasswordDialogOpen(true);
-  };
-
-  /**
-   * Handle password change form submission
-   * @param {Object} passwordData - Password form data
-   */
-  const handlePasswordSubmit = async (passwordData) => {
-    try {
-      const response = await apiClient.post('/change-password', passwordData);
-      
-      if (!response.success) {
-        throw new Error(response.message || 'Gagal menukar kata laluan');
-      }
-      
-      toast.success('Kata laluan berjaya dikemaskini');
-      setIsPasswordDialogOpen(false);
-    } catch (error) {
-      console.error('Password change error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Gagal menukar kata laluan';
-      throw new Error(errorMessage);
-    }
-  };
-
-  /**
-   * Handle settings navigation
-   */
-  const handleSettings = () => {
-    toast.info('Settings not implemented yet');
-    // navigate('/settings');
-  };
-
-  /**
-   * Get user display information
-   * @returns {Object} User display data
-   */
-  const getUserDisplayInfo = () => ({
-    name: currentUser?.name || 'Pengguna',
-    department: currentUser?.department || 'Tiada jabatan',
-    email: currentUser?.email || 'Tiada email'
-  });
-
-  const userDisplayInfo = getUserDisplayInfo();
+  
+  const { theme, toggleTheme, isDark } = useTheme();
 
   // Don't render anything if no current user
-  if (!currentUser) {
-    return null;
-  }
+  if (!currentUser) return null;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar Navigation */}
-      {/* <Sidebar /> */}
-      
-      {/* Fixed Header */}
+    <div className={`flex min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <Header
         userDisplayInfo={userDisplayInfo}
         userRoles={userRoles}
@@ -174,41 +65,64 @@ export default function DefaultLayout() {
         onLogout={handleLogout}
         onChangePassword={handleChangePassword}
         onSettings={handleSettings}
-        onRefresh={fetchUserData}
+        onRefresh={refreshUserData}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        isDark={isDark}
       />
       
       {/* Main Content Area with top padding to account for fixed header */}
       <div className="flex-1 flex flex-col overflow-hidden pt-32">
         {/* Page Content */}
         <main className="flex-1 overflow-auto" style={{ height: 'calc(100vh - 8rem)' }}>
-          <Outlet context={{ dashboardData, userRoles, currentActiveRole, tabNotifications, refreshUserData: fetchUserData, isLoading, error }} />
+          <Outlet context={{ 
+            dashboardData, 
+            userRoles, 
+            currentActiveRole, 
+            tabNotifications, 
+            refreshUserData: refreshUserData, 
+            isLoading, 
+            error,
+            theme,
+            isDark
+          }} />
         </main>
 
         {/* Password Change Dialog */}
-        <PasswordChangeDialog isOpen={isPasswordDialogOpen} onClose={() => setIsPasswordDialogOpen(false)} onSubmit={handlePasswordSubmit} />
+        <PasswordChangeDialog 
+          isOpen={isPasswordDialogOpen} 
+          onClose={() => setIsPasswordDialogOpen(false)} 
+          onSubmit={handlePasswordSubmit} 
+        />
       </div>
     </div>
   );
 }
 
 /**
- * Header Component
- * Contains user info, role badges, and user dropdown
+ * Header Component - Updated dengan theme support
  */
 const Header = ({
-  userDisplayInfo,
-  userRoles,
-  currentActiveRole,
-  hasMultipleRoles,
-  tabNotifications,
-  isLoading,
-  error,
-  onLogout,
-  onChangePassword,
-  onSettings,
-  onRefresh
+  userDisplayInfo, 
+  userRoles, 
+  currentActiveRole, 
+  hasMultipleRoles, 
+  tabNotifications, 
+  isLoading, 
+  error, 
+  onLogout, 
+  onChangePassword, 
+  onSettings, 
+  onRefresh,
+  theme,
+  onToggleTheme,
+  isDark
 }) => (
-  <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b border-blue-200 shadow-lg backdrop-blur-sm">
+  <header className={`fixed top-0 left-0 right-0 z-50 ${
+    isDark 
+      ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 border-gray-600' 
+      : 'bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-blue-200'
+  } border-b shadow-lg backdrop-blur-sm`}>
     <div className="p-4">
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -219,6 +133,7 @@ const Header = ({
             isLoading={isLoading}
             error={error}
             onRefresh={onRefresh}
+            isDark={isDark}
           />
 
           {/* Role Badges */}
@@ -228,39 +143,34 @@ const Header = ({
             hasMultipleRoles={hasMultipleRoles}
             isLoading={isLoading}
           />
-
-          {/* Current Active Role Info */}
-          {/* <ActiveRoleInfo 
-            currentActiveRole={currentActiveRole}
-            hasMultipleRoles={hasMultipleRoles}
-          /> */}
         </div>
         
-        {/* User Dropdown */}
+        {/* User Dropdown dengan theme toggle */}
         <UserDropdown
           currentUser={userDisplayInfo}
           tabNotifications={tabNotifications}
           onLogout={onLogout}
           onChangePassword={onChangePassword}
           onSettings={onSettings}
+          theme={theme}
+          onToggleTheme={onToggleTheme}
+          isDark={isDark}
         />
       </div>
     </div>
   </header>
 );
 
-/**
- * User Info Component
- */
-const UserInfo = ({ userDisplayInfo, currentActiveRole, isLoading, error, onRefresh }) => (
+// Rest of components sama...
+const UserInfo = ({ userDisplayInfo, currentActiveRole, isLoading, error, onRefresh, isDark }) => (
   <div className="flex items-center justify-between mb-3">
     <div className="flex items-center">
-      <FaUserTie className="w-5 h-5 mr-2 text-blue-600" />
+      <FaUserTie className={`w-5 h-5 mr-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
       <div>
-        <h2 className="font-bold text-lg text-gray-800">
+        <h2 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-800'}`}>
           {userDisplayInfo.name}
         </h2>
-        <p className="text-gray-600 text-sm">
+        <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
           {userDisplayInfo.department}
         </p>
       </div>
@@ -269,8 +179,10 @@ const UserInfo = ({ userDisplayInfo, currentActiveRole, isLoading, error, onRefr
     {/* Status Indicators */}
     <div className="flex items-center space-x-2">
       {isLoading && (
-        <div className="flex items-center text-blue-600 text-sm">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+        <div className={`flex items-center text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+          <div className={`animate-spin rounded-full h-4 w-4 border-b-2 mr-2 ${
+            isDark ? 'border-blue-400' : 'border-blue-600'
+          }`}></div>
           Memuat...
         </div>
       )}
@@ -278,7 +190,11 @@ const UserInfo = ({ userDisplayInfo, currentActiveRole, isLoading, error, onRefr
       {error && (
         <button
           onClick={onRefresh}
-          className="text-red-600 text-sm hover:text-red-800 transition-colors"
+          className={`text-sm transition-colors ${
+            isDark 
+              ? 'text-red-400 hover:text-red-300' 
+              : 'text-red-600 hover:text-red-800'
+          }`}
           title="Klik untuk cuba semula"
         >
           Ralat - Cuba semula
@@ -288,9 +204,6 @@ const UserInfo = ({ userDisplayInfo, currentActiveRole, isLoading, error, onRefr
   </div>
 );
 
-/**
- * Role Badges Section Component
- */
 const RoleBadgesSection = ({ userRoles, tabNotifications, hasMultipleRoles, isLoading }) => {
   if (isLoading && userRoles.length === 0) {
     return (
@@ -308,32 +221,13 @@ const RoleBadgesSection = ({ userRoles, tabNotifications, hasMultipleRoles, isLo
 
   return (
     <div className="mb-2">
-      <RoleBadgesContainer
-        userRoles={userRoles}
-        tabNotifications={tabNotifications}
-        variant={hasMultipleRoles ? 'default' : 'compact'}
-        size="md"
+      <RoleBadgesContainer 
+        userRoles={userRoles} 
+        tabNotifications={tabNotifications} 
+        variant={hasMultipleRoles ? 'default' : 'compact'} 
+        size="md" 
         showIcons={true}
       />
-    </div>
-  );
-};
-
-/**
- * Active Role Info Component
- */
-const ActiveRoleInfo = ({ currentActiveRole, hasMultipleRoles }) => {
-  if (!currentActiveRole || !hasMultipleRoles) return null;
-
-  return (
-    <div className="mt-2 text-sm text-gray-600">
-      <span className="inline-flex items-center">
-        <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-        Sedang menggunakan: 
-        <span className="font-medium ml-1 text-green-700">
-          {currentActiveRole}
-        </span>
-      </span>
     </div>
   );
 };
