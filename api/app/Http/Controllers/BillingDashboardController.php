@@ -242,6 +242,7 @@ class BillingDashboardController extends Controller
         BillingStatus::HOD_APPROVAL,
         BillingStatus::FINANCE_REVIEW,
         BillingStatus::FINANCE_VERIFY,
+        BillingStatus::FINANCE_APPROVAL,
         BillingStatus::PROCESSING_PAYMENT
       ])
       ->count();

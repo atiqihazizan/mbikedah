@@ -3,9 +3,9 @@ import { Outlet } from "react-router-dom";
 import { useStateContext } from '../contexts/ContextProvider';
 
 // Import custom components
-import PasswordChangeDialog from './dialogs/PasswordChangeDialog';
-import UserDropdown from './header/UserDropdown';
-import RoleBadgesContainer from './roles/RoleBadgesContainer';
+import PasswordChangeDialog from '../components/dialogs/PasswordChangeDialog';
+import UserDropdown from '../components/header/UserDropdown';
+import RoleBadgesContainer from '../components/roles/RoleBadgesContainer';
 
 // Import custom hooks
 import { useTabNotifications } from '../hooks/useTabNotifications';
@@ -24,29 +24,12 @@ export default function DefaultLayout() {
   const { currentUser, logout } = useStateContext();
   
   // Custom hooks usage
-  const {
-    dashboardData,
-    userRoles,
-    isLoading,
-    error,
-    refreshUserData
-  } = useUserData(currentUser);
-  
+  const { dashboardData, userRoles, isLoading, error, refreshUserData } = useUserData(currentUser);
   const { handleLogout, handleSettings } = useUserActions(logout);
-  
-  const {
-    isPasswordDialogOpen,
-    setIsPasswordDialogOpen,
-    handleChangePassword,
-    handlePasswordSubmit
-  } = usePasswordChange(handleLogout);
-  
+  const { isPasswordDialogOpen, setIsPasswordDialogOpen, handleChangePassword, handlePasswordSubmit } = usePasswordChange(handleLogout);
   const { currentActiveRole, hasMultipleRoles } = useActiveRole(userRoles);
-  
   const userDisplayInfo = useUserDisplayInfo(currentUser);
-  
   const tabNotifications = useTabNotifications(dashboardData, userRoles);
-  
   const { theme, toggleTheme, isDark } = useTheme();
 
   // Don't render anything if no current user

@@ -1,27 +1,47 @@
 import { Check, X } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { formatCurrency } from '../../config/format';
 import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import TButton from '../../components/Core/TButton';
 import TSpinner from '../../components/Core/TSpinner';
 import apiClient from '../../utils/axios';
+import { useStateContext } from '../../contexts/ContextProvider';
 
-const BillingVerifyBank = ({billing,processing}) => {
+const BillingVerifyBank = ({billing, onProcessComplete}) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { currentUser } = useStateContext();
+  const [processing, setProcessing] = useState(false);
   const transactions = useMemo(() => billing?.transactions || [], [billing?.transactions]);
   const totalAccepted = useMemo(() => billing?.details?.filter(detail => detail.accept).reduce((sum, detail) => sum + parseFloat(detail.total || 0), 0) || 0, [billing?.details]);
 
   const handleApprove = async () => {
     const reason = window.prompt("Adakah anda pasti untuk mengesahkan bil ini?\nNyatakan ulasan jika ada:");
     if(reason === null) return;
+    
     try {
+      setProcessing(true);
       await apiClient.post(`/billings/${billing.id}/finance-verify`, {remarks: reason});
-      toast.success("Bil berjaya disahkan");
-      navigate("/finance");
+      
+      // Invalidate queries to refresh dashboard data
+      await queryClient.invalidateQueries({
+        queryKey: ['userData', currentUser?.id]
+      });
+      
+      // Use callback for centralized handling
+      if (onProcessComplete) {
+        onProcessComplete('verify', "Bil berjaya disahkan");
+      } else {
+        toast.success("Bil berjaya disahkan");
+        navigate("/finance");
+      }
     } catch (error) {
-      console.error("Error approving billing:", error.response.data.message);
-      toast.error("Tidak berjaya disahkan");
+      console.error("Error approving billing:", error.response?.data?.message || error.message);
+      toast.error(error.response?.data?.message || "Tidak berjaya disahkan");
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -29,12 +49,26 @@ const BillingVerifyBank = ({billing,processing}) => {
     const reason = window.prompt("Sila nyatakan sebab penolakan:");
     if (reason) {
       try {
+        setProcessing(true);
         await apiClient.post(`/billings/${billing.id}/reject`, { reason });
-        toast.success("Bil berjaya ditolak");
-        navigate("/finance");
+        
+        // Invalidate queries to refresh dashboard data
+        await queryClient.invalidateQueries({
+          queryKey: ['userData', currentUser?.id]
+        });
+        
+        // Use callback for centralized handling
+        if (onProcessComplete) {
+          onProcessComplete('reject', "Bil berjaya ditolak");
+        } else {
+          toast.success("Bil berjaya ditolak");
+          navigate("/finance");
+        }
       } catch (error) {
         console.error("Error rejecting billing:", error);
-        toast.error("Tidak berjaya ditolak");
+        toast.error(error.response?.data?.message || "Tidak berjaya ditolak");
+      } finally {
+        setProcessing(false);
       }
     }
   };

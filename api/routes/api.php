@@ -137,6 +137,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pending-hod', [BillingListController::class, 'getPendingHOD']);
     Route::get('/pending-finance', [BillingListController::class, 'getPendingFinance']);
     Route::get('/archive', [BillingListController::class, 'getArchive']);
+    Route::get('/{id}', [BillingController::class, 'getBillingById']);
 
     // Nested/Specific Routes
     Route::prefix('{billing}')->group(function () {
@@ -165,8 +166,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
       // Edit Route
     });
-
-    Route::get('/{id}', [BillingController::class, 'getBillingById']);
   });
 
   /*

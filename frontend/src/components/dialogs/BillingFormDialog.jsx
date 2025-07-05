@@ -7,6 +7,7 @@ import Pulse from "../../components/Core/Pulse";
 import FormC from "../../components/FormContext";
 import TButton from "../../components/Core/TButton";
 import RecipientDialog from "./RecipientDialog";
+import BillingHistory from "../../views/billing/BillingHistory"; // Import component baru
 import apiClient from "../../utils/axios";
 import Select from "react-select";
 import BillingFormDetailsRows from "./BillingFormDetailsRows";
@@ -14,13 +15,7 @@ import BillingFormDetailsRows from "./BillingFormDetailsRows";
 // Import TanStack Query hook
 import { useBillingForm } from '../../hooks/useBillingForm';
 
-export default function BillingFormDialog({ 
-  show, 
-  onClose, 
-  onSaved, 
-  billingId = null, 
-  mode = "create" // "create", "edit", "view"
-}) {
+export default function BillingFormDialog({ show, onClose, onSaved, billingId = null, mode = "create" }) {
   // TanStack Query hook untuk handle save operations
   const { saveForm: saveFormMutation, loading: mutationLoading, error: mutationError, setError } = useBillingForm();
 
@@ -182,6 +177,7 @@ export default function BillingFormDialog({
       try {
         setLocalLoading(true);
         const {data} = await apiClient.get(`/billings/${billingId}`);
+        console.log(data);
         if (data) {
           setPetition({
             ...data,
@@ -237,6 +233,46 @@ export default function BillingFormDialog({
                   {isViewMode ? (
                     // View Mode - Read Only Display
                     <div className="space-y-6">
+                      {/* Current Status Card */}
+                      {petition.current_status && (
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border-l-4 border-blue-500">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="text-lg font-semibold text-gray-900 mb-2">Status Semasa</h4>
+                              <div className="flex items-center space-x-3">
+                                <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
+                                  petition.current_status.color === 'green' ? 'bg-green-100 text-green-800' :
+                                  petition.current_status.color === 'red' ? 'bg-red-100 text-red-800' :
+                                  petition.current_status.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                                  petition.current_status.color === 'blue' ? 'bg-blue-100 text-blue-800' :
+                                  petition.current_status.color === 'orange' ? 'bg-orange-100 text-orange-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {petition.current_status.stage}
+                                </span>
+                                {petition.current_status.is_final && (
+                                  <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                                    Final
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mt-2">{petition.current_status.status}</p>
+                              {petition.current_status.next_action && (
+                                <p className="text-xs text-gray-500 mt-1 italic">{petition.current_status.next_action}</p>
+                              )}
+                            </div>
+                            {petition.summary?.workflow_progress && (
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-blue-600">
+                                  {petition.summary.workflow_progress.percentage}%
+                                </div>
+                                <div className="text-xs text-gray-500">Kemajuan</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Basic Information */}
                       <div className="bg-gray-50 rounded-lg p-6">
                         <h4 className="text-lg font-semibold text-gray-900 mb-4">Maklumat Permohonan</h4>
@@ -377,39 +413,11 @@ export default function BillingFormDialog({
                         </div>
                       )}
 
-                      {/* History */}
+                      {/* Enhanced History using new BillingHistory component */}
                       {petition.history && petition.history.length > 0 && (
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-900 mb-4">Sejarah Permohonan</h4>
-                          <div className="border border-gray-200 rounded-lg overflow-hidden">
-                            <div className="bg-gray-50 px-4 py-3">
-                              <div className="grid grid-cols-4 gap-4">
-                                <div className="text-xs font-medium text-gray-500 uppercase">Tarikh</div>
-                                <div className="text-xs font-medium text-gray-500 uppercase">Oleh</div>
-                                <div className="text-xs font-medium text-gray-500 uppercase">Catatan</div>
-                              </div>
-                            </div>
-                            <div className="bg-white divide-y divide-gray-200">
-                              {petition.history.map((hist, i) => (
-                                <div key={i} className="px-4 py-3">
-                                  <div className="grid grid-cols-4 gap-4">
-                                    <div className="text-sm text-gray-900">
-                                      {new Date(hist.created_at).toLocaleDateString('ms-MY', { 
-                                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
-                                      })}
-                                    </div>
-                                    <div className="text-sm text-gray-900">
-                                      {hist.created_by}
-                                      {hist.position && <div className="text-xs text-gray-500">{hist.position}</div>}
-                                    </div>
-                                    <div className="text-sm text-gray-900">{hist.remarks}</div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
+                        <BillingHistory history={petition.history}currentUser={currentUser}billing={petition}compact={false}/>
                       )}
+
                     </div>
                   ) : (
                     // Edit/Create Mode - Form Display
@@ -480,7 +488,6 @@ export default function BillingFormDialog({
                                   <th className="text-left pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Perkara</th>
                                   <th className="text-left pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Rujukan</th>
                                   <th className="text-center pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Kuantiti</th>
-                                  {/* <th className="text-left pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Unit</th> */}
                                   <th className="text-right pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Harga</th>
                                   <th className="text-right pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Amaunt</th>
                                   <th className="pl-4 py-3"></th>
@@ -488,17 +495,7 @@ export default function BillingFormDialog({
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
                                 {(petition?.details || []).map((d, i) => (
-                                  <BillingFormDetailsRows 
-                                    key={i} 
-                                    FormC={FormC} 
-                                    data={d} 
-                                    def={defaultDetail}
-                                    idx={i} 
-                                    setChange={setPetition} 
-                                    budgets={budgets} 
-                                    error={error} 
-                                    dataLen={petition?.details?.length-1}
-                                  />
+                                  <BillingFormDetailsRows key={i} FormC={FormC} data={d} def={defaultDetail}idx={i} setChange={setPetition} budgets={budgets} error={error} dataLen={petition?.details?.length-1}/>
                                 ))}
                               </tbody>
                               <tfoot className="bg-gray-50">

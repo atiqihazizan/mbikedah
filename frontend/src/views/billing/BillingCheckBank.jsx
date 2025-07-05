@@ -3,14 +3,18 @@ import { useMemo, useEffect, useState } from 'react';
 import { formatCurrency } from '../../config/format';
 import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import FormC from '../../components/FormContext';
 import TButton from '../../components/Core/TButton';
 import TSpinner from '../../components/Core/TSpinner';
 import TSelect from '../../components/Core/TSelect';
 import apiClient from '../../utils/axios';
+import { useStateContext } from '../../contexts/ContextProvider';
 
-const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) => {
+const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing,onProcessComplete}) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { currentUser } = useStateContext();
   const [transactions, setTransactions] = useState(billing?.transactions || []);
   const [totalExpenses] = useState(billing?.total_amount || 0);
   const totalAmount = useMemo(() => transactions.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0), [transactions]);
@@ -26,6 +30,7 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
     if(billing?.transactions?.length === 0) return toast.error("Maklumat pembayar belum dimasukkan");
     if(billing?.payment_method === "") return toast.error("Kaedah bayaran belum dipilih");
     if(totalAmount !== totalAccepted) return toast.error("Jumlah pembayar tidak sepadan dengan jumlah yang diterima");
+    
     if (window.confirm("Adakah anda pasti untuk meluluskan bil ini?")) {
       try {
         setProcessing(true);
@@ -36,12 +41,24 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
           total_accept: totalAccepted,
           payment_method: billing?.payment_method.toLowerCase() || ''
         };
+        
         await apiClient.post(`/billings/${billing.id}/finance-review`, dataPost);
-        toast.success("Bil berjaya diluluskan");
-        navigate("/finance");
+        
+        // Invalidate queries to refresh dashboard data
+        await queryClient.invalidateQueries({
+          queryKey: ['userData', currentUser?.id]
+        });
+        
+        // Use callback for centralized handling
+        if (onProcessComplete) {
+          onProcessComplete('approve', "Bil berjaya diluluskan");
+        } else {
+          toast.success("Bil berjaya diluluskan");
+          navigate("/finance");
+        }
       } catch (error) {
-        console.error("Error approving billing:", error.response.data.message);
-        toast.error("Gagal meluluskan bil");
+        console.error("Error approving billing:", error.response?.data?.message || error.message);
+        toast.error(error.response?.data?.message || "Gagal meluluskan bil");
       } finally {
         setProcessing(false);
       }
@@ -54,11 +71,22 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
       try {
         setProcessing(true);
         await apiClient.post(`/billings/${billing.id}/reject`, { reason });
-        toast.success("Bil berjaya ditolak");
-        navigate("/finance");
+        
+        // Invalidate queries to refresh dashboard data
+        await queryClient.invalidateQueries({
+          queryKey: ['userData', currentUser?.id]
+        });
+        
+        // Use callback for centralized handling
+        if (onProcessComplete) {
+          onProcessComplete('reject', "Bil berjaya ditolak");
+        } else {
+          toast.success("Bil berjaya ditolak");
+          navigate("/finance");
+        }
       } catch (error) {
         console.error("Error rejecting billing:", error);
-        toast.error("Gagal menolak bil");
+        toast.error(error.response?.data?.message || "Gagal menolak bil");
       } finally {
         setProcessing(false);
       }
@@ -108,7 +136,6 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
       </div>
       
       <div className="sm:col-span-1">
-        {/* <dt className="text-sm font-medium text-gray-500">Kaedah Bayaran</dt> */}
         <h2 className="text-lg font-medium text-gray-900 mb-4">Kaedah Bayaran</h2>
 
         <dd className="mt-1">
@@ -125,7 +152,6 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing}) =
       </div>
       {/* Action Buttons */}
       <div className="mt-8 px-5 py-5 border-t border-gray-200 flex justify-end space-x-3">
-        {/* <TButton onClick={() => navigate("/finance")} color="light" className="px-4 py-2">Batal</TButton> */}
         <TButton onClick={handleReject} disabled={processing} color="red" className="px-4 py-2"><X className="w-4 h-4 mr-2" /> Tolak</TButton>
         <TButton onClick={handleApprove} disabled={processing} color="green" className="px-4 py-2">
           <Check className="w-4 h-4 mr-2" />Semakan {processing && <TSpinner className="-mr-1 ml-2" />}

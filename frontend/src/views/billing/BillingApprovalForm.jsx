@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, FileText, CheckCircle, XCircle } from "lucide-react";
+import { toast } from "react-toastify";
+import { useQueryClient } from '@tanstack/react-query';
+import { useStateContext } from "../../contexts/ContextProvider";
+import { useNavigate } from "react-router-dom";
 import TSelect from "../../components/Core/TSelect";
 import TInput from "../../components/Core/TInput";
 import TButton from "../../components/Core/TButton";
-import { toast } from "react-toastify";
 import apiClient from "../../utils/axios";
 
 const BillingApprovalForm = ({ billingData, onApprovalComplete }) => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { currentUser } = useStateContext();
   const [formData, setFormData] = useState({
     approver_name: "",
     approved_date: "",
@@ -74,10 +80,16 @@ const BillingApprovalForm = ({ billingData, onApprovalComplete }) => {
       const response = await apiClient.post(`/billings/${billingData.id}/finance-approve`, payload);
 
       if (response.data.success) {
+        // Invalidate queries to refresh dashboard data
+        await queryClient.invalidateQueries({
+          queryKey: ['userData', currentUser?.id]
+        });
+        
         toast.success('Permohonan telah diluluskan');
         if (onApprovalComplete) {
           onApprovalComplete('approve', response.data);
         }
+        navigate("/finance");
       }
     } catch (error) {
       if (error.response?.data?.message) {
@@ -107,10 +119,16 @@ const BillingApprovalForm = ({ billingData, onApprovalComplete }) => {
       const response = await apiClient.post(`/billings/${billingData.id}/reject`, payload);
 
       if (response.data.success) {
+        // Invalidate queries to refresh dashboard data
+        await queryClient.invalidateQueries({
+          queryKey: ['userData', currentUser?.id]
+        });
+        
         toast.success('Permohonan telah ditolak');
         if (onApprovalComplete) {
           onApprovalComplete('reject', response.data);
         }
+        navigate("/finance");
       }
     } catch (error) {
       console.error("Error processing rejection:", error);

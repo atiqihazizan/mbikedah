@@ -1,59 +1,107 @@
+import { useState } from 'react';
 import { 
   FaExclamationTriangle,
   FaTimes,
   FaUndo,
   FaCheckCircle
 } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 import { formatCurrency } from '../../config/format';
+import apiClient from '../../utils/axios';
+import TButton from '../Core/TButton';
 
 function HodReturnDialog({ 
   showModal, 
   selectedBilling, 
-  returnComment, 
-  setReturnComment,
-  isReturning, // Can be true, false, or 'success'
-  onConfirmReturn,
-  onCloseModal 
+  onCloseModal,
+  onReturnSuccess // Callback untuk refresh data dari parent
 }) {
+  // Internal state management
+  const [returnComment, setReturnComment] = useState("");
+  const [isReturning, setIsReturning] = useState(false); // Can be true, false, or 'success'
+
   if (!showModal || !selectedBilling) return null;
   
   const isSelectedBillingUrgent = selectedBilling && selectedBilling.days_pending > 3;
+
+  // Reset state when modal opens/closes
+  const handleCloseModal = () => {
+    if (!isReturning) {
+      setReturnComment("");
+      setIsReturning(false);
+      onCloseModal();
+    }
+  };
+
+  // Handle return confirmation with API call
+  const handleConfirmReturn = async () => {
+    if (!returnComment.trim()) return;
+    
+    try {
+      setIsReturning(true);
+      
+      const response = await apiClient.post(`/billings/${selectedBilling.id}/return`, {
+        remarks: returnComment.trim()
+      });
+      
+      if (response.success) {
+        setIsReturning('success');
+        toast.success('Permohonan berjaya dikembalikan untuk pembetulan');
+        
+        // Auto close after 2 seconds and notify parent
+        setTimeout(() => {
+          handleCloseModal();
+          if (onReturnSuccess) {
+            onReturnSuccess();
+          }
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Error returning billing:', error);
+      setIsReturning(false);
+      toast.error(error.response?.data?.message || 'Ralat semasa mengembalikan permohonan');
+    }
+  };
 
   // Render different button states
   const renderReturnButton = () => {
     if (isReturning === 'success') {
       return (
-        <button 
-          disabled 
-          className="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md disabled:opacity-75 flex items-center space-x-2"
+        <TButton 
+          color="orange" 
+          variant="solid"
+          isDisable={true}
+          className="flex items-center space-x-2"
         >
           <FaCheckCircle className="w-4 h-4" />
           <span>Berjaya Dikembalikan!</span>
-        </button>
+        </TButton>
       );
     }
     
     if (isReturning === true) {
       return (
-        <button 
-          disabled 
-          className="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md disabled:opacity-75 flex items-center space-x-2"
+        <TButton 
+          color="orange" 
+          variant="solid"
+          onChecking={true}
         >
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          <span>Memproses...</span>
-        </button>
+          Memproses...
+        </TButton>
       );
     }
     
     return (
-      <button
-        onClick={onConfirmReturn}
-        disabled={!returnComment.trim()}
-        className="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+      <TButton
+        color="orange"
+        variant="solid"
+        onClick={handleConfirmReturn}
+        isDisable={!returnComment.trim()}
+        className="flex items-center space-x-2"
       >
         <FaUndo className="w-4 h-4" />
         <span>Kembalikan untuk Pembetulan</span>
-      </button>
+      </TButton>
     );
   };
 
@@ -61,7 +109,7 @@ function HodReturnDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div 
         className="fixed inset-0 bg-black opacity-50" 
-        onClick={isReturning ? undefined : onCloseModal}
+        onClick={isReturning ? undefined : handleCloseModal}
       />
 
       <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6 ring-2 ring-orange-500">
@@ -98,7 +146,7 @@ function HodReturnDialog({
             {isSelectedBillingUrgent && <span className="text-orange-600 ml-2">(Mendesak)</span>}
           </h3>
           <button
-            onClick={onCloseModal}
+            onClick={handleCloseModal}
             disabled={isReturning}
             className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
           >
@@ -172,13 +220,13 @@ function HodReturnDialog({
         </div>
 
         <div className="flex justify-end space-x-3">
-          <button
-            onClick={onCloseModal}
-            disabled={isReturning}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          <TButton
+            variant="outline"
+            onClick={handleCloseModal}
+            isDisable={isReturning}
           >
             Batal
-          </button>
+          </TButton>
           {renderReturnButton()}
         </div>
 

@@ -31,11 +31,10 @@ function HodApprovalDialog({
     try {
       setIsApproving(true);
 
-      const response = await apiClient.post(`/billings/${selectedBilling.id}/hod-approve`, {
-        remarks: approvalComment.trim() || "Diluluskan oleh Ketua Jabatan"
-      });
+      //|| "Diluluskan oleh Ketua Jabatan"
+      const response = await apiClient.post(`/billings/${selectedBilling.id}/hod-approve`, {remarks: approvalComment.trim() });
 
-      if (response.data.success || response.status === 200) {
+      if (response?.success || response?.status === 200) {
         setApprovalSuccess(true);
         toast.success('Permohonan berjaya diluluskan');
         
@@ -46,14 +45,14 @@ function HodApprovalDialog({
           if (onApprovalSuccess) {
             onApprovalSuccess();
           }
-        }, 1500);
+        }, 500);
       } else {
-        throw new Error(response.data.message || 'Ralat tidak diketahui');
+        throw new Error(response?.message || 'Ralat tidak diketahui');
       }
     } catch (error) {
       console.error('Error approving billing:', error);
       toast.error(
-        error.response?.data?.message || 
+        error.response?.message || 
         error.message || 
         'Ralat semasa meluluskan permohonan'
       );

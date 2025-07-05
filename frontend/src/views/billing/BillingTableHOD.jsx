@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React from 'react';
 import { 
   FaCheckCircle, 
   FaClock, 
@@ -10,24 +10,16 @@ import {
   FaTimes,
   FaUndo
 } from 'react-icons/fa';
-import { toast } from 'react-toastify';
-import { RotateCcw } from 'lucide-react';
 import { useStateContext } from '../../contexts/ContextProvider';
-import { useUserData } from '../../hooks/useUserData';
-import { formatCurrency, formatDate } from '../../config/format';
-import TButton from '../../components/Core/TButton';
-import apiClient from '../../utils/axios';
-import UnifiedCard from '../../components/Core/UnifiedCard';
-import UnifiedBillingTable from '../../components/Core/UnifiedBillingTable';
-import HodApprovalDialog from '../../components/dialogs/HodApprovalDialog';
-import HodRejectDialog from '../../components/dialogs/HodRejectDialog';
-import HodReturnDialog from '../../components/dialogs/HodReturnDialog';
-import HodViewDialog from '../../components/dialogs/HodViewDialog';
+import { useUserData,useBillingTableHOD } from '../../hooks';
+import { formatCurrency } from '../../config/format';
+import { HodApprovalDialog, HodRejectDialog, HodReturnDialog, HodViewDialog } from '../../components/dialogs';
+import { TButton, UnifiedCard, UnifiedBillingTable } from '../../components/Core';
 
 function BillingTableHOD() {
   const { currentUser } = useStateContext();
   
-  // TanStack Query hook untuk get dashboard data - SAME AS APPLICANT
+  // ==================== DATA FETCHING ====================
   const { 
     dashboardData, 
     isLoading: loading, 
@@ -35,169 +27,52 @@ function BillingTableHOD() {
     refreshUserData: refetch 
   } = useUserData(currentUser);
 
-  const [activeTab, setActiveTab] = useState('urgent'); // 'urgent', 'all'
+  // ==================== MAIN BUSINESS LOGIC HOOK ====================
+  const {
+    // State values
+    activeTab,
+    showApprovalModal,
+    showRejectModal,
+    showReturnModal,
+    showViewModal,
+    selectedBilling,
+    viewBilling,
+    selectedBillingId, // Now used for ViewDialog
+    
+    // Data values
+    filteredBillings,
+    statistics,
+    
+    // Helper functions
+    getActiveTabTitle,
+    getActiveTabIcon,
+    getPriorityIcon,
+    getRowStyling,
+    getDaysPendingColor,
+    
+    // Event handlers - Simplified, no more API calls in component
+    handleTabClick,
+    handleApprove,
+    handleReject,
+    handleReturn,
+    handleView, // Now simplified - just sets ID and basic info
+    
+    // Success callbacks
+    handleApprovalSuccess,
+    handleRejectSuccess,
+    handleReturnSuccess,
+    
+    // Modal handlers
+    handleCloseApprovalModal,
+    handleCloseRejectModal,
+    handleCloseReturnModal,
+    handleCloseViewModal,
+    
+    // Configuration objects
+    emptyStateConfig
+  } = useBillingTableHOD(dashboardData, refetch);
 
-  // Approval Modal States - Simplified (approval logic moved to dialog)
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [selectedBilling, setSelectedBilling] = useState(null);
-
-  // Reject Modal States
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectComment, setRejectComment] = useState("");
-  const [isRejecting, setIsRejecting] = useState(false);
-
-  // Return Modal States
-  const [showReturnModal, setShowReturnModal] = useState(false);
-  const [returnComment, setReturnComment] = useState("");
-  const [isReturning, setIsReturning] = useState(false);
-
-  // View Modal States
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [viewBilling, setViewBilling] = useState(null);
-
-  // Extract data dari dashboardData - SAME PATTERN AS APPLICANT
-  const hodData = dashboardData?.hod || {};
-  const stats = hodData.summary || {};
-  const needingApproval = hodData.needing_approval || [];
-  const performance = hodData.performance || {};
-
-  // Helper function to extract days from days_pending_display
-  const extractDays = (daysPendingDisplay) => {
-    if (!daysPendingDisplay) return 0;
-    const match = daysPendingDisplay.match(/(\d+)/);
-    return match ? parseInt(match[1]) : 0;
-  };
-
-  // Filter untuk urgent (lebih 3 hari)
-  const urgentApprovals = needingApproval.filter(billing => extractDays(billing.days_pending_display) > 3);
-  
-  // Get filtered billings based on active tab
-  const getFilteredBillings = () => {
-    switch (activeTab) {
-      case 'urgent':
-        return urgentApprovals;
-      case 'all':
-      default:
-        return needingApproval;
-    }
-  };
-
-  const filteredBillings = getFilteredBillings();
-
-  const handleTabClick = (tabKey) => {
-    setActiveTab(tabKey);
-  };
-
-  const getActiveTabTitle = () => {
-    switch (activeTab) {
-      case 'urgent':
-        return 'Permohonan Urgent (Tunggakan > 3 Hari)';
-      case 'all':
-      default:
-        return 'Semua Permohonan Menunggu Kelulusan';
-    }
-  };
-
-  const getActiveTabIcon = () => {
-    switch (activeTab) {
-      case 'urgent':
-        return <FaFire className="w-5 h-5 mr-3 text-red-500" />;
-      case 'all':
-      default:
-        return <FaClock className="w-5 h-5 mr-3 text-orange-500" />;
-    }
-  };
-
-  // Simplified approve handler - logic moved to HodApprovalDialog
-  const handleApprove = async (billing) => {
-    try {
-      setSelectedBilling(billing);
-      setShowApprovalModal(true);
-    } catch (error) {
-      console.error('Error preparing approval:', error);
-      toast.error('Ralat semasa menyediakan kelulusan');
-    }
-  };
-
-  const handleReject = async (billing) => {
-    try {
-      setSelectedBilling(billing);
-      setShowRejectModal(true);
-      setRejectComment("");
-    } catch (error) {
-      console.error('Error preparing rejection:', error);
-      toast.error('Ralat semasa menyediakan penolakan');
-    }
-  };
-
-  const handleReturn = async (billing) => {
-    try {
-      setSelectedBilling(billing);
-      setShowReturnModal(true);
-      setReturnComment("");
-    } catch (error) {
-      console.error('Error preparing return:', error);
-      toast.error('Ralat semasa menyediakan pemulangan');
-    }
-  };
-
-  // Callback untuk success approval dari dialog
-  const handleApprovalSuccess = () => {
-    refetch(); // Refresh data using TanStack Query
-  };
-
-  const handleView = async (billing) => {
-    try {
-      const {data} = await apiClient.get(`/billings/${billing.id}`);
-      data.issued_at = formatDate(data.issued_at);
-      data.days_pending_display = billing.days_pending_display;
-      setViewBilling(data);
-      setShowViewModal(true);
-    } catch (error) {
-      console.error('Error viewing billing:', error);
-      toast.error('Ralat semasa melihat permohonan');
-    }
-  };
-
-  // Simplified close handlers
-  const handleCloseApprovalModal = () => {
-    setShowApprovalModal(false);
-    setSelectedBilling(null);
-  };
-
-  const handleCloseRejectModal = () => {
-    if (!isRejecting) {
-      setShowRejectModal(false);
-      setSelectedBilling(null);
-      setRejectComment("");
-    }
-  };
-
-  const handleCloseReturnModal = () => {
-    if (!isReturning) {
-      setShowReturnModal(false);
-      setSelectedBilling(null);
-      setReturnComment("");
-    }
-  };
-
-  const handleCloseViewModal = () => {
-    setShowViewModal(false);
-    setViewBilling(null);
-  };
-
-  const getPriorityIcon = (priority) => {
-    switch (priority?.toLowerCase()) {
-      case 'segera':
-        return <FaExclamationTriangle className="w-4 h-4 text-red-500" />;
-      case 'penting':
-        return <FaClock className="w-4 h-4 text-orange-500" />;
-      default:
-        return <FaCheckCircle className="w-4 h-4 text-green-500" />;
-    }
-  };
-
-  // Column configuration for UnifiedBillingTable
+  // ==================== COLUMN CONFIGURATION ====================
   const hodColumns = [
     {
       key: 'running_no',
@@ -237,12 +112,18 @@ function BillingTableHOD() {
       label: 'Prioriti',
       headerClassName: 'text-center',
       cellClassName: 'text-center',
-      render: (item) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.priority_class}`}>
-          {getPriorityIcon(item.priority)}
-          <span className="ml-1">{item.priority}</span>
-        </span>
-      )
+      render: (item) => {
+        const iconConfig = getPriorityIcon(item.priority);
+        const IconComponent = iconConfig.name === 'FaExclamationTriangle' ? FaExclamationTriangle :
+                              iconConfig.name === 'FaClock' ? FaClock : FaCheckCircle;
+        
+        return (
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.priority_class}`}>
+            <IconComponent className={iconConfig.className} />
+            <span className="ml-1">{item.priority}</span>
+          </span>
+        );
+      }
     },
     {
       key: 'days_pending_display',
@@ -250,32 +131,52 @@ function BillingTableHOD() {
       headerClassName: 'text-center',
       cellClassName: 'text-center',
       render: (item) => (
-        <span className={`text-sm font-medium ${
-          extractDays(item.days_pending_display) > 7 
-            ? 'text-red-600' 
-            : extractDays(item.days_pending_display) > 3 
-            ? 'text-orange-600' 
-            : 'text-gray-600'
-        }`}>
+        <span className={`text-sm font-medium ${getDaysPendingColor(item)}`}>
           {item.days_pending_display}
         </span>
       )
     }
   ];
 
-  // Actions renderer for UnifiedBillingTable
+  // ==================== ACTIONS RENDERER ====================
   const hodRenderActions = (item) => (
-    <div className="flex items-center justify-center space-x-2">
-      <TButton color="light" onClick={() => handleView(item)} title="Lihat Permohonan" className="!p-2">
+    <div className="flex items-center justify-center space-x-1">
+      <TButton 
+        color="light" 
+        onClick={() => handleView(item)} 
+        title="Lihat Permohonan" 
+        className="!p-2"
+      >
         <FaEye className="w-4 h-4" />
       </TButton>
-      <TButton color="green" onClick={() => handleApprove(item)} title="Luluskan" className="!p-2">
+      <TButton 
+        color="green" 
+        onClick={() => handleApprove(item)} 
+        title="Luluskan" 
+        className="!p-2"
+      >
         <FaCheck className="w-4 h-4" />
+      </TButton>
+      <TButton 
+        color="red" 
+        onClick={() => handleReject(item)} 
+        title="Tolak" 
+        className="!p-2"
+      >
+        <FaTimes className="w-4 h-4" />
+      </TButton>
+      <TButton 
+        color="orange" 
+        onClick={() => handleReturn(item)} 
+        title="Kembalikan" 
+        className="!p-2"
+      >
+        <FaUndo className="w-4 h-4" />
       </TButton>
     </div>
   );
 
-  // Helper function untuk renderCell (sama seperti dalam UnifiedBillingTable)
+  // ==================== CELL RENDERER ====================
   const renderCell = (item, column) => {
     if (column.render) {
       return column.render(item, column);
@@ -287,33 +188,14 @@ function BillingTableHOD() {
       return <span className="font-medium text-gray-900">{formatCurrency(value)}</span>;
     }
     
-    if (column.type === 'date') {
-      return <span className="text-gray-500">{formatDate(value)}</span>;
-    }
-    
-    if (column.type === 'status') {
-      const statusClass = column.getStatusClass ? column.getStatusClass(value, item) : 'bg-gray-100 text-gray-800';
-      return (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusClass}`}>
-          {value}
-        </span>
-      );
-    }
-    
     return <span className={column.className || "text-gray-900"}>{value}</span>;
   };
 
-  // Custom row renderer untuk HOD (dengan conditional styling)
+  // ==================== ROW RENDERER ====================
   const hodRenderRow = (item, rowIndex) => (
     <tr 
       key={item.id || rowIndex} 
-      className={`hover:bg-gray-50 ${
-        activeTab === 'urgent' && extractDays(item.days_pending_display) > 7 
-          ? 'bg-red-50 border-l-4 border-red-500' 
-          : activeTab === 'urgent' && extractDays(item.days_pending_display) > 3
-          ? 'bg-orange-50 border-l-4 border-orange-400'
-          : ''
-      }`}
+      className={`hover:bg-gray-50 ${getRowStyling(item)}`}
     >
       {hodColumns.map((column, colIndex) => (
         <td key={colIndex} className={`px-6 py-4 ${column.cellClassName || ''}`}>
@@ -326,9 +208,19 @@ function BillingTableHOD() {
     </tr>
   );
 
+  // ==================== RENDER TAB ICON ====================
+  const renderTabIcon = () => {
+    const iconConfig = getActiveTabIcon();
+    const IconComponent = iconConfig.name === 'FaFire' ? FaFire : FaClock;
+    return <IconComponent className={iconConfig.className} />;
+  };
+
+  // ==================== MAIN RENDER ====================
   return (
     <div className="p-6 bg-gray-50 min-h-full">
-      {/* Updated Approval Modal - Simplified props */}
+      {/* ==================== MODALS ==================== */}
+      
+      {/* Approval Modal - Self-contained logic */}
       <HodApprovalDialog
         showModal={showApprovalModal}
         selectedBilling={selectedBilling}
@@ -336,15 +228,34 @@ function BillingTableHOD() {
         onApprovalSuccess={handleApprovalSuccess}
       />
 
-      {/* View Modal */}
+      {/* View Modal - Now handles its own data fetching! */}
       <HodViewDialog
         showModal={showViewModal}
-        viewBilling={viewBilling}
+        billingId={selectedBillingId} // Pass ID instead of full data
+        billingBasicInfo={viewBilling} // Basic info for loading display
         onCloseModal={handleCloseViewModal}
         onApprove={handleApprove}
+        onReject={handleReject}
+        onReturn={handleReturn}
       />
 
-      {/* Header - SAME PATTERN AS APPLICANT */}
+      {/* Reject Modal - Self-contained logic */}
+      <HodRejectDialog
+        showModal={showRejectModal}
+        selectedBilling={selectedBilling}
+        onCloseModal={handleCloseRejectModal}
+        onRejectSuccess={handleRejectSuccess}
+      />
+
+      {/* Return Modal - Self-contained logic */}
+      <HodReturnDialog
+        showModal={showReturnModal}
+        selectedBilling={selectedBilling}
+        onCloseModal={handleCloseReturnModal}
+        onReturnSuccess={handleReturnSuccess}
+      />
+
+      {/* ==================== HEADER ==================== */}
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
@@ -356,22 +267,15 @@ function BillingTableHOD() {
               Pengurusan kelulusan dan pemantauan permohonan billing
             </p>
           </div>
-          <button
-            onClick={refetch}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200 rounded-lg hover:bg-white"
-            title="Refresh Data"
-          >
-            <RotateCcw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
         </div>
       </div>
 
-      {/* Statistics Grid - Interactive Tabs */}
+      {/* ==================== INTERACTIVE STATISTICS CARDS ==================== */}
       <div className="grid grid-cols-3 md:grid-cols-3 gap-6 mb-8">
         <UnifiedCard
           icon={FaFire}
           title="Urgent"
-          value={urgentApprovals.length || 0}
+          value={statistics.urgent}
           color="bg-red-500"
           description="Tunggakan > 3 hari"
           tabKey="urgent"
@@ -385,7 +289,7 @@ function BillingTableHOD() {
         <UnifiedCard
           icon={FaClock}
           title="Semua Pending"
-          value={stats.pending_approvals || 0}
+          value={statistics.pending}
           color="bg-orange-500"
           description="Permohonan yang perlu diluluskan"
           tabKey="all"
@@ -399,35 +303,27 @@ function BillingTableHOD() {
         <UnifiedCard
           icon={FaCalendarAlt}
           title="Jumlah Bulan Ini"
-          value={performance.this_month || 0}
+          value={statistics.thisMonth}
           color="bg-blue-500"
           description="Permohonan bulan semasa"
           interactive={false}
         />
       </div>
 
-      {/* UnifiedBillingTable - Replaces the old table implementation */}
+      {/* ==================== UNIFIED BILLING TABLE ==================== */}
       <UnifiedBillingTable
         data={filteredBillings}
         loading={loading}
         error={error}
         title={getActiveTabTitle()}
-        titleIcon={getActiveTabIcon()}
+        titleIcon={renderTabIcon()}
         columns={hodColumns}
-        renderRow={hodRenderRow} // Custom row rendering untuk urgent styling
+        renderRow={hodRenderRow}
         showActionsColumn={true}
         onRefresh={refetch}
         emptyIcon={FaCheckCircle}
-        emptyTitle={activeTab === 'urgent' 
-          ? 'Tiada permohonan urgent pada masa ini' 
-          : 'Tiada permohonan menunggu kelulusan'
-        }
-        emptyDescription={activeTab === 'urgent' 
-          ? 'Semua permohonan dalam tempoh yang wajar' 
-          : activeTab === 'all'
-          ? 'Semua permohonan telah diproses'
-          : 'Cuba pilih tab lain untuk melihat permohonan lain'
-        }
+        emptyTitle={emptyStateConfig.title}
+        emptyDescription={emptyStateConfig.description}
         showCount={true}
       />
     </div>

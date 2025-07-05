@@ -90,7 +90,8 @@ class BillingController extends Controller
         'old_status' => 0,
         'new_status' => BillingStatus::DRAFT,
         'created_by' => $request->user()->id,
-        'remarks' => $request->remarks ?? ''
+        'remarks' => $request->remarks ?? '',
+        'status_name' => BillingStatus::getNameStatus(BillingStatus::DRAFT)
       ]);
       
       if ($validatedData['status_id'] === BillingStatus::HOD_APPROVAL) {
@@ -98,7 +99,8 @@ class BillingController extends Controller
           'old_status' => BillingStatus::DRAFT,
           'new_status' => BillingStatus::HOD_APPROVAL,
           'created_by' => $request->user()->id,
-          'remarks' => $request->remarks ?? ''
+          'remarks' => $request->remarks ?? '',
+          'status_name' => BillingStatus::getNameStatus(BillingStatus::HOD_APPROVAL)
         ]);
       }
 
@@ -264,6 +266,7 @@ class BillingController extends Controller
               'created_by',
               'created_at'
             ])
+            // ->where('old_status', '>',0)
             ->orderBy('new_status', 'desc')
             ->orderBy('created_at', 'desc');
           },

@@ -1,58 +1,106 @@
+import { useState } from 'react';
 import { 
   FaExclamationTriangle,
   FaTimes,
   FaCheckCircle
 } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 import { formatCurrency } from '../../config/format';
+import apiClient from '../../utils/axios';
+import TButton from '../Core/TButton';
 
 function HodRejectDialog({ 
   showModal, 
   selectedBilling, 
-  rejectComment, 
-  setRejectComment,
-  isRejecting, // Can be true, false, or 'success'
-  onConfirmReject,
-  onCloseModal 
+  onCloseModal,
+  onRejectSuccess // Callback untuk refresh data dari parent
 }) {
+  // Internal state management
+  const [rejectComment, setRejectComment] = useState("");
+  const [isRejecting, setIsRejecting] = useState(false); // Can be true, false, or 'success'
+
   if (!showModal || !selectedBilling) return null;
   
   const isSelectedBillingUrgent = selectedBilling && selectedBilling.days_pending > 3;
+
+  // Reset state when modal opens/closes
+  const handleCloseModal = () => {
+    if (!isRejecting) {
+      setRejectComment("");
+      setIsRejecting(false);
+      onCloseModal();
+    }
+  };
+
+  // Handle reject confirmation with API call
+  const handleConfirmReject = async () => {
+    if (!rejectComment.trim()) return;
+    
+    try {
+      setIsRejecting(true);
+      
+      const response = await apiClient.post(`/billings/${selectedBilling.id}/reject`, {
+        remarks: rejectComment.trim()
+      });
+      
+      if (response.success) {
+        setIsRejecting('success');
+        toast.success('Permohonan berjaya ditolak');
+        
+        // Auto close after 2 seconds and notify parent
+        setTimeout(() => {
+          handleCloseModal();
+          if (onRejectSuccess) {
+            onRejectSuccess();
+          }
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Error rejecting billing:', error);
+      setIsRejecting(false);
+      toast.error(error.response?.data?.message || 'Ralat semasa menolak permohonan');
+    }
+  };
 
   // Render different button states
   const renderRejectButton = () => {
     if (isRejecting === 'success') {
       return (
-        <button 
-          disabled 
-          className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md disabled:opacity-75 flex items-center space-x-2"
+        <TButton 
+          color="red" 
+          variant="solid"
+          isDisable={true}
+          className="flex items-center space-x-2"
         >
           <FaCheckCircle className="w-4 h-4" />
           <span>Berjaya Ditolak!</span>
-        </button>
+        </TButton>
       );
     }
     
     if (isRejecting === true) {
       return (
-        <button 
-          disabled 
-          className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md disabled:opacity-75 flex items-center space-x-2"
+        <TButton 
+          color="red" 
+          variant="solid"
+          onChecking={true}
         >
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          <span>Memproses...</span>
-        </button>
+          Memproses...
+        </TButton>
       );
     }
     
     return (
-      <button
-        onClick={onConfirmReject}
-        disabled={!rejectComment.trim()}
-        className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+      <TButton
+        color="red"
+        variant="solid"
+        onClick={handleConfirmReject}
+        isDisable={!rejectComment.trim()}
+        className="flex items-center space-x-2"
       >
         <FaTimes className="w-4 h-4" />
         <span>Tolak Permohonan</span>
-      </button>
+      </TButton>
     );
   };
 
@@ -60,7 +108,7 @@ function HodRejectDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div 
         className="fixed inset-0 bg-black opacity-50" 
-        onClick={isRejecting ? undefined : onCloseModal}
+        onClick={isRejecting ? undefined : handleCloseModal}
       />
 
       <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6 ring-2 ring-red-500">
@@ -97,7 +145,7 @@ function HodRejectDialog({
             {isSelectedBillingUrgent && <span className="text-red-600 ml-2">(Mendesak)</span>}
           </h3>
           <button
-            onClick={onCloseModal}
+            onClick={handleCloseModal}
             disabled={isRejecting}
             className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
           >
@@ -155,13 +203,13 @@ function HodRejectDialog({
         </div>
 
         <div className="flex justify-end space-x-3">
-          <button
-            onClick={onCloseModal}
-            disabled={isRejecting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          <TButton
+            variant="outline"
+            onClick={handleCloseModal}
+            isDisable={isRejecting}
           >
             Batal
-          </button>
+          </TButton>
           {renderRejectButton()}
         </div>
 

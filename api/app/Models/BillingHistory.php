@@ -15,6 +15,7 @@ class BillingHistory extends Model
         'old_status',
         'new_status',
         'created_by',
+        'status_name',
         'remarks'
     ];
 

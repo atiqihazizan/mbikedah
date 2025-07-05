@@ -3,13 +3,17 @@ import { useMemo, useEffect, useState } from 'react';
 import { formatCurrency } from '../../config/format';
 import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import FormC from '../../components/FormContext';
 import TButton from '../../components/Core/TButton';
 import TSpinner from '../../components/Core/TSpinner';
 import apiClient from '../../utils/axios';
+import { useStateContext } from '../../contexts/ContextProvider';
 
-const BillingCheckBank = ({billing,banks}) => {
+const BillingPaymentBank = ({billing, banks, onProcessComplete}) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { currentUser } = useStateContext();
   const [processing,setProcessing] = useState(false);
   const [transactions, setTransactions] = useState(billing?.transactions || []);
   const totalAmount = useMemo(() => transactions.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0), [transactions]);
@@ -26,9 +30,6 @@ const BillingCheckBank = ({billing,banks}) => {
   };
 
   useEffect(()=>{
-    // console.log(transactions.length === 0)
-    // console.log(!transactions.every(tx => tx.bank_id && parseFloat(tx.credit || 0) >0))
-    // console.log(totalAccepted !== totalAmount)
     if(transactions.length === 0 ) return setIncomplete(true);
     if (!transactions.every(tx => tx.bank_id && parseFloat(tx.amount || 0) >0)) return setIncomplete(true);
     if (!transactions.every(tx => tx.paid_date && tx.paid_ref)) return setIncomplete(true);
@@ -40,6 +41,7 @@ const BillingCheckBank = ({billing,banks}) => {
     if (incomplete) return toast.error("Sila pastikan semua bank dipilih dan jumlah credit dimasukkan");
     if( transactions?.length === 0) return toast.error("Maklumat pembayar belum dimasukkan");
     if(totalAmount !== totalAccepted) return toast.error("Jumlah bayaran tidak sama dengan jumlah permohonan");
+    
     const remarks = window.prompt("Adakah anda pasti untuk meluluskan bil ini?\n\nSila nyatakan ulasan anda (Jika perlu)");
 
     if (remarks !== null) {
@@ -47,11 +49,22 @@ const BillingCheckBank = ({billing,banks}) => {
         setProcessing(true);
         const dataPost = {remarks, transactions};
         await apiClient.post(`/billings/${billing.id}/process-payment`, dataPost);
-        toast.success("Bil berjaya diluluskan");
-        navigate("/finance");
+        
+        // Invalidate queries to refresh dashboard data
+        await queryClient.invalidateQueries({
+          queryKey: ['userData', currentUser?.id]
+        });
+        
+        // Use callback for centralized handling
+        if (onProcessComplete) {
+          onProcessComplete('payment', "Bil berjaya diluluskan");
+        } else {
+          toast.success("Bil berjaya diluluskan");
+          navigate("/finance");
+        }
       } catch (error) {
-        console.error("Error approving billing:", error.response.data.message);
-        toast.error("Gagal meluluskan bil");
+        console.error("Error approving billing:", error.response?.data?.message || error.message);
+        toast.error(error.response?.data?.message || "Gagal meluluskan bil");
       } finally {
         setProcessing(false);
       }
@@ -64,11 +77,22 @@ const BillingCheckBank = ({billing,banks}) => {
       try {
         setProcessing(true);
         await apiClient.post(`/billings/${billing.id}/reject`, { remarks });
-        toast.success("Bil berjaya ditolak");
-        navigate("/finance");
+        
+        // Invalidate queries to refresh dashboard data
+        await queryClient.invalidateQueries({
+          queryKey: ['userData', currentUser?.id]
+        });
+        
+        // Use callback for centralized handling
+        if (onProcessComplete) {
+          onProcessComplete('reject', "Bil berjaya ditolak");
+        } else {
+          toast.success("Bil berjaya ditolak");
+          navigate("/finance");
+        }
       } catch (error) {
         console.error("Error rejecting billing:", error);
-        toast.error("Gagal menolak bil");
+        toast.error(error.response?.data?.message || "Gagal menolak bil");
       } finally {
         setProcessing(false);
       }
@@ -90,7 +114,6 @@ const BillingCheckBank = ({billing,banks}) => {
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-4">Bil</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank</th>
-                {/* <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Baki Semasa</th> */}
                 <th scope="col" className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Tarikh Bayaran</th>
                 <th scope="col" className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-48">No. Rujukan</th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Jumlah (RM)</th>
@@ -114,11 +137,6 @@ const BillingCheckBank = ({billing,banks}) => {
           </table>
         </FormC>
       </div>
-      
-      {/* {totalAmount !== totalAccepted && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-        <strong className="font-bold">Error!</strong>
-        <span className="block sm:inline">Jumlah bayaran tidak sepadan dengan jumlah yang diterima</span>
-      </div>} */}
 
       {/* Action Buttons */}
       <div className="mt-8 px-5 py-5 border-t border-gray-200 flex justify-end space-x-3">
@@ -184,15 +202,6 @@ const RowTransaction = ({ banks, transactions, setTransactions, index, setIncomp
 
   };
 
-  // const handleChangeCurrency = (e) => {
-  //   const amount = parseFloat(e.target.value);
-  //   setPreTransactions((prev) => ({...prev, amount: amount}));
-  //   setTransactions((prev) => {
-  //     const updatedTransactions = [...prev];
-  //     updatedTransactions[index] = { ...prev[index], amount: amount };
-  //     return updatedTransactions;
-  //   });
-  // };
   const handleChangeInput = (e, type) => {
     const value = type === 'amount' ? parseFloat(e.target.value) : e.target.value;
     setPreTransactions((prev) => ({...prev, [type]: value}));
@@ -212,7 +221,6 @@ const RowTransaction = ({ banks, transactions, setTransactions, index, setIncomp
           {errors.bank && <p className="text-red-500 text-xs mt-1">{errors.bank}</p>}
         </div>
       </td>
-      {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right align-top">{formatCurrency(preTransactions?.balance || 0)}</td> */}
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right align-top">
         <FormC.date value={preTransactions?.paid_date || ''} onChange={(e) => handleChangeInput(e, 'paid_date')} />
         {errors.paid_date && <p className="text-red-500 text-xs mt-1">{errors.paid_date}</p>}
@@ -234,4 +242,4 @@ const RowTransaction = ({ banks, transactions, setTransactions, index, setIncomp
   );
 };
 
-export default BillingCheckBank;
+export default BillingPaymentBank;

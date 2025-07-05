@@ -4,7 +4,7 @@ import { AlertTriangle, ChevronLeft, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { formatDate } from "../../config/format";
-import PageComponent from "../../components/PageComponent";
+import PageComponent from "../../components/PageComponent.jsx";
 import TButton from "../../components/Core/TButton";
 import BillingPrint from "./BillingPrint";
 import TLoadingSpinner from "../../components/Core/TLoadingSpinner";
@@ -48,11 +48,16 @@ const BillingApproval = () => {
       setLoading(false);
       abortControllerRef.current = null;
     }
-  }, [idBilling]);
+  }, [idBilling, navigate]);
 
-  const handleApprovalComplete = (action, responseData) => {
-    setTimeout(() => {navigate("/finance")}, 1500);
-  };
+  // Handle successful completion with real-time refresh
+  const handleApprovalComplete = useCallback(async (action, responseData) => {
+    // Don't double-invalidate since BillingApprovalForm already did it
+    // Just navigate back to finance page after short delay
+    setTimeout(() => {
+      navigate("/finance");
+    }, 500); // Shorter delay since toast already shown
+  }, [navigate]);
     
   useEffect(() => {
     fetchAllData();

@@ -87,6 +87,7 @@ const calculateFinanceNotifications = (financeData) => {
     (status_counts.pending_review || 0) +
     (status_counts.pending_verify || 0) +
     (status_counts.pending_payment || 0) +
+    (status_counts.pending_approval || 0) +
     (status_counts.urgent_payments || 0)
   );
 };

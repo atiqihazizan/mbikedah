@@ -2,24 +2,27 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from "../../config/format";
-import PageComponent from "../../components/PageComponent";
+import PageComponent from "../../components/PageComponent.jsx";
 import apiClient from "../../utils/axios";
 import BillingVerifyBank from "./BillingVerifyBank";
 import TButton from "../../components/Core/TButton";
 import TLoadingSpinner from "../../components/Core/TLoadingSpinner";
 import BillingVerifyBudget from "./BillingVerifyBudget";
 import BillingVerifyInfo from "./BillingVerifyInfo";
+import { useStateContext } from "../../contexts/ContextProvider";
 
 export default function BillingVerify() {
   const { idBilling } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { currentUser } = useStateContext();
   const [billing, setBilling] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchAllData = useCallback(async () => {
     try {
-      // const [billingRes] = await Promise.all([apiClient.get(`/billings/${idBilling}`)]);
       const {data} = await apiClient.post(`/status-validation/validate`,{billing_id: idBilling, status: 4, action:'process'})
       setBilling(data);
     } catch (error) {
@@ -30,10 +33,26 @@ export default function BillingVerify() {
         console.error("Error fetching data:", error);
         toast.error("Tiada maklumat untuk semakan");
       }
+      setTimeout(() => {
+        navigate("/finance");
+      }, 500);
     } finally {
       setLoading(false);
     }
-  }, [idBilling]);
+  }, [idBilling, navigate]);
+
+  // Handle successful completion with real-time refresh
+  const handleProcessComplete = useCallback(async (action, message) => {
+    // Invalidate and refetch user data to update dashboard
+    await queryClient.invalidateQueries({
+      queryKey: ['userData', currentUser?.id]
+    });
+    
+    // Show success message
+    toast.success(message);
+    
+    navigate("/finance");
+  }, [queryClient, currentUser?.id, navigate]);
   
   useEffect(() => {
     fetchAllData();
@@ -72,7 +91,10 @@ export default function BillingVerify() {
       <div className="px-6 h-[calc(100vh-218px)] overflow-y-auto">
         <BillingVerifyInfo billing={billing} />
         <BillingVerifyBudget billing={billing} />
-        <BillingVerifyBank billing={billing} />
+        <BillingVerifyBank 
+          billing={billing} 
+          onProcessComplete={handleProcessComplete}
+        />
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->unsignedTinyInteger('old_status');
             $table->unsignedTinyInteger('new_status');
+            $table->string('status_name',150)->nullable();
             $table->string('remarks')->nullable();
             $table->timestamps();
         });

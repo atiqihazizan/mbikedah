@@ -2,17 +2,21 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from "../../config/format";
-import PageComponent from "../../components/PageComponent";
+import PageComponent from "../../components/PageComponent.jsx";
 import apiClient from "../../utils/axios";
 import TButton from "../../components/Core/TButton";
 import TLoadingSpinner from "../../components/Core/TLoadingSpinner";
 import BillingPaymentInfo from "./BillingPaymentInfo";
 import BillingPaymentBank from "./BillingPaymentBank";
+import { useStateContext } from "../../contexts/ContextProvider";
 
 export default function BillingPayment() {
   const { idBilling } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { currentUser } = useStateContext();
   const [billing, setBilling] = useState(null);
   const [loading, setLoading] = useState(true);
   const [banks, setBanks] = useState([]);
@@ -28,10 +32,24 @@ export default function BillingPayment() {
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Gagal memuat data");
+      navigate("/finance");
     } finally {
       setLoading(false);
     }
-  }, [idBilling]);
+  }, [idBilling, navigate]);
+
+  // Handle successful completion with real-time refresh
+  const handleProcessComplete = useCallback(async (action, message) => {
+    // Invalidate and refetch user data to update dashboard
+    await queryClient.invalidateQueries({
+      queryKey: ['userData', currentUser?.id]
+    });
+    
+    // Show success message
+    toast.success(message);
+    
+    navigate("/finance");
+  }, [queryClient, currentUser?.id, navigate]);
   
   useEffect(() => {
     fetchAllData();
@@ -69,7 +87,12 @@ export default function BillingPayment() {
       
       <div className="container h-[calc(100vh-90px)] overflow-y-auto">
         <BillingPaymentInfo billing={billing} />
-        <BillingPaymentBank billing={billing} setBilling={setBilling} banks={banks} />
+        <BillingPaymentBank 
+          billing={billing} 
+          setBilling={setBilling} 
+          banks={banks}
+          onProcessComplete={handleProcessComplete}
+        />
       </div>
     </div>
   );

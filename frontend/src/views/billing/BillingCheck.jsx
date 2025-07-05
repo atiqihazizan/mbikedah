@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
-import PageComponent from "../../components/PageComponent";
+import { useQueryClient } from '@tanstack/react-query';
+import PageComponent from "../../components/PageComponent.jsx";
 import apiClient from "../../utils/axios";
 import BillingCheckBank from "./BillingCheckBank";
 import TButton from "../../components/Core/TButton";
@@ -11,10 +12,13 @@ import BillingCheckBudget from "./BillingCheckBudget";
 import { formatDate } from "../../config/format";
 import BillingCheckInfo from "./BillingCheckInfo";
 import TAlertIcon from "../../components/Core/TAlertIcon";
+import { useStateContext } from "../../contexts/ContextProvider";
 
 export default function BillingCheck() {
   const { idBilling } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { currentUser } = useStateContext();
   const [billing, setBilling] = useState(null);
   const [loading, setLoading] = useState(true);
   const [budgets, setBudgets] = useState([]);
@@ -37,13 +41,29 @@ export default function BillingCheck() {
         toast.error(error.response.data.message);
       } else {
         console.error("Error fetching data:", error);
-        // toast.error("Gagal memuat data");
         toast.error("Tiada maklumat untuk semakan");
       }
+      navigate("/finance");
     } finally {
       setLoading(false);
     }
-  }, [idBilling]);
+  }, [idBilling, navigate]);
+
+  // Handle successful completion with real-time refresh
+  const handleProcessComplete = useCallback(async (action, message) => {
+    // Invalidate and refetch user data to update dashboard
+    await queryClient.invalidateQueries({
+      queryKey: ['userData', currentUser?.id]
+    });
+    
+    // Show success message
+    toast.success(message);
+    
+    // Navigate back to finance page
+    setTimeout(() => {
+      navigate("/finance");
+    }, 1000);
+  }, [queryClient, currentUser?.id, navigate]);
   
   useEffect(() => {
     fetchAllData();
@@ -74,7 +94,6 @@ export default function BillingCheck() {
             <p className="mt-1 text-sm text-gray-500">Dicipta pada: {formatDate(billing.created_at)}</p>
           </div>
           <div className="flex space-x-3">
-            {/* <TButton onClick={() => window.print()} color="light" ><Printer className="w-4 h-4 mr-2" /> Cetak</TButton> */}
             <TButton onClick={() => navigate("/finance")} color="light" ><ChevronLeft className="w-4 h-4 mr-2" /> Kembali</TButton>
           </div>
         </div>
@@ -95,7 +114,14 @@ export default function BillingCheck() {
       <div className="px-8 h-[calc(100vh-298px)] overflow-y-auto">
         <BillingCheckInfo billing={billing} />
         <BillingCheckBudget billing={billing} setBilling={setBilling} budgets={budgets} processing={processing} />
-        <BillingCheckBank billing={billing} setBilling={setBilling} banks={banks} processing={processing} setProcessing={setProcessing} />
+        <BillingCheckBank 
+          billing={billing} 
+          setBilling={setBilling} 
+          banks={banks} 
+          processing={processing} 
+          setProcessing={setProcessing}
+          onProcessComplete={handleProcessComplete}
+        />
       </div>
     </div>
   );

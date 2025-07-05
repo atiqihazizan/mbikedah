@@ -21,14 +21,7 @@ export const useUserData = (currentUser) => {
   };
 
   // TanStack Query hook
-  const {
-    data,
-    isLoading,
-    error,
-    refetch,
-    isError,
-    isFetching
-  } = useQuery({
+  const {data,isLoading,error,refetch,isError,isFetching } = useQuery({
     queryKey: ['userData', currentUser?.id], // Query key dengan user ID
     queryFn: fetchUserData,
     enabled: !!currentUser, // Only run query kalau ada currentUser
@@ -41,14 +34,14 @@ export const useUserData = (currentUser) => {
       toast.error('Gagal memuat data pengguna');
     },
     // Auto refetch setiap 30 saat kalau window focus
-    refetchOnWindowFocus: true,
-    refetchInterval: 30000, // Auto refetch setiap 30 saat
+    // refetchOnWindowFocus: true,
+    // refetchInterval: 10000, // Auto refetch setiap 30 saat
+    refetchInterval: false,           // Disable auto-refresh
+    refetchOnWindowFocus: true,       // Refresh bila focus window
   });
 
   // Helper function untuk refresh data manually - keep sama macam original
-  const refreshUserData = () => {
-    return refetch();
-  };
+  const refreshUserData = () => refetch();
 
   // Return sama format macam original hook
   return {
