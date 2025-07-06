@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStateContext } from '../../contexts/ContextProvider';
 import { useUserData, useBillingTableFinance } from '../../hooks';
 import { TButton, UnifiedCard, UnifiedBillingTable } from '../../components/Core';
+import { FinanceVerifyDialog } from '../../components/dialogs';
 
 function BillingTableFinance() {
   const { currentUser } = useStateContext();
+  
+  // Dialog state management
+  const [showVerifyDialog, setShowVerifyDialog] = useState(false);
+  const [selectedBillingId, setSelectedBillingId] = useState(null);
   
   // TanStack Query hook untuk get dashboard data
   const { 
@@ -44,6 +49,31 @@ function BillingTableFinance() {
     // Current tab info
     currentTabInfo
   } = useBillingTableFinance(dashboardData, refetch);
+
+  // Dialog handlers
+  const handleOpenVerifyDialog = (billingId) => {
+    setSelectedBillingId(billingId);
+    setShowVerifyDialog(true);
+  };
+
+  const handleCloseVerifyDialog = () => {
+    setShowVerifyDialog(false);
+    setSelectedBillingId(null);
+  };
+
+  const handleVerificationComplete = (action, message) => {
+    console.log(`Verification ${action} completed:`, message);
+    
+    // Refresh data setelah verification
+    refetch();
+    
+    // Optional: additional logic berdasarkan action
+    if (action === 'verify') {
+      console.log('Bill was successfully verified');
+    } else if (action === 'reject') {
+      console.log('Bill was rejected');
+    }
+  };
 
   // Enhanced column renderer function
   const renderColumnCell = (column, item) => {
@@ -95,18 +125,38 @@ function BillingTableFinance() {
     const actionIcon = getActionIcon(item.status_id);
     const ActionIconComponent = actionIcon.component;
     
-    return (
-      <div className="flex items-center justify-center space-x-2">
-        <TButton 
-          color={getActionColor(item.status_id)}
-          to={`/finance/${item.id}/${getActionPath(item.status_id)}`} 
-          size="sm" 
-          title={getActionTitle(item.status_id)}
-        >
-          <ActionIconComponent className={actionIcon.className} />
-        </TButton>
-      </div>
-    );
+    // Check if this is a verification action (status_id 4 biasanya untuk verification)
+    const isVerificationAction = item.status_id === 4;
+    
+    if (isVerificationAction) {
+      // Use dialog for verification
+      return (
+        <div className="flex items-center justify-center space-x-2">
+          <TButton 
+            color={getActionColor(item.status_id)}
+            onClick={() => handleOpenVerifyDialog(item.id)}
+            size="sm" 
+            title={getActionTitle(item.status_id)}
+          >
+            <ActionIconComponent className={actionIcon.className} />
+          </TButton>
+        </div>
+      );
+    } else {
+      // Use routing for other actions
+      return (
+        <div className="flex items-center justify-center space-x-2">
+          <TButton 
+            color={getActionColor(item.status_id)}
+            to={`/finance/${item.id}/${getActionPath(item.status_id)}`} 
+            size="sm" 
+            title={getActionTitle(item.status_id)}
+          >
+            <ActionIconComponent className={actionIcon.className} />
+          </TButton>
+        </div>
+      );
+    }
   };
 
   return (
@@ -163,6 +213,14 @@ function BillingTableFinance() {
         emptyTitle={emptyStateConfig.title}
         emptyDescription={emptyStateConfig.description}
         showCount={true}
+      />
+
+      {/* Billing Verify Dialog */}
+      <FinanceVerifyDialog
+        showModal={showVerifyDialog}
+        billingId={selectedBillingId}
+        onCloseModal={handleCloseVerifyDialog}
+        onVerificationComplete={handleVerificationComplete}
       />
     </div>
   );
