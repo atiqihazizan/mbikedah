@@ -54,9 +54,19 @@ function TButton({
 	const currentSize = sizeConfig[size] || sizeConfig.md;
 	classes = [...classes, currentSize.text];
 
+	// Tambah disabled styling untuk semua variant
+	if (isDisable || onChecking) {
+		classes = [...classes, "disabled:opacity-75"];
+	}
+
 	// Variant: Link (text only dengan underline)
 	if (variant === "link") {
 		classes = [...classes, "transition-colors", "duration-200", "hover:underline"];
+		
+		// Tambah disabled state untuk link variant
+		if (isDisable || onChecking) {
+			classes = [...classes, "cursor-not-allowed"];
+		}
 
 		switch (color) {
 			case "indigo": classes = [...classes, "text-indigo-600", "hover:text-indigo-700", "focus:text-indigo-800"]; break;
@@ -72,6 +82,11 @@ function TButton({
 	// Variant: Subtle (text berwarna dengan background hover ringan)
 	else if (variant === "subtle") {
 		classes = [...classes, "transition-colors", "duration-200", "rounded"];
+		
+		// Tambah disabled state untuk subtle variant
+		if (isDisable || onChecking) {
+			classes = [...classes, "cursor-not-allowed"];
+		}
 
 		switch (color) {
 			case "indigo": classes = [...classes, "text-indigo-600", "hover:text-indigo-900", "hover:bg-indigo-50"];break;
@@ -87,6 +102,11 @@ function TButton({
 	// Variant: Outline (border dengan background putih)
 	else if (variant === "outline") {
 		classes = [...classes, "font-medium", "bg-white", "border", "transition-colors", "duration-200", "focus:outline-none", "focus:ring-2", "focus:ring-offset-2"];
+		
+		// Tambah disabled state untuk outline variant
+		if (isDisable || onChecking) {
+			classes = [...classes, "cursor-not-allowed"];
+		}
 
 		switch (color) {
 			case "indigo": classes = [...classes, "text-indigo-700", "border-indigo-300", "hover:bg-indigo-50", "focus:ring-indigo-500"]; break;
@@ -104,6 +124,11 @@ function TButton({
 	// Variant: Solid (default - button dengan background solid)
 	else {
 		classes = [...classes, "focus:ring-2", "focus:ring-offset-2"];
+		
+		// Tambah disabled state untuk solid variant
+		if (isDisable || onChecking) {
+			classes = [...classes, "cursor-not-allowed"];
+		}
 
 		if (isDisable || onChecking) color = "waiting";
 		switch (color) {

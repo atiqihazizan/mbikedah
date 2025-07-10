@@ -57,12 +57,9 @@ export default function BillingCheck() {
     });
     
     // Show success message
-    toast.success(message);
-    
+    toast.success(message);  
     // Navigate back to finance page
-    setTimeout(() => {
-      navigate("/finance");
-    }, 1000);
+    navigate("/finance");
   }, [queryClient, currentUser?.id, navigate]);
   
   useEffect(() => {

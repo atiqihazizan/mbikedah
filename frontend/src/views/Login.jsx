@@ -35,7 +35,7 @@ function Login() {
       setUserToken(token);
       
     } catch (error) {
-      console.error('Ralat semasa log masuk:', error);
+      console.error('Error:', error);
       
       let errorMessage;
       if (error.response?.status === 404) {
@@ -47,7 +47,7 @@ function Login() {
       } else if (error.message === 'Tiada response dari server') {
         errorMessage = "Tidak dapat berhubung dengan pelayan. Sila cuba sebentar lagi.";
       } else {
-        errorMessage = "Ralat semasa log masuk. Sila cuba sebentar lagi.";
+        errorMessage = "Internet sedang bermasalah. Sila cuba sebentar lagi.";
       }
       
       setError({ __html: errorMessage });

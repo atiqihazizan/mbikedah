@@ -33,9 +33,7 @@ export default function BillingVerify() {
         console.error("Error fetching data:", error);
         toast.error("Tiada maklumat untuk semakan");
       }
-      setTimeout(() => {
-        navigate("/finance");
-      }, 500);
+      navigate("/finance");
     } finally {
       setLoading(false);
     }

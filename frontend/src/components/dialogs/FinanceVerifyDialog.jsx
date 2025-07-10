@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { ChevronLeft, X, Check } from "lucide-react";
+import { ChevronLeft, X, Check, AlertCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate, formatCurrency } from "../../config/format";
@@ -14,6 +14,7 @@ function FinanceVerifyDialog({ showModal, billingId, onCloseModal, onVerificatio
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [verificationSuccess, setVerificationSuccess] = useState(false);
+  const [remarksError, setRemarksError] = useState('');
 
   const fetchBillingData = useCallback(async () => {
     if (!billingId || !showModal) return;
@@ -36,12 +37,15 @@ function FinanceVerifyDialog({ showModal, billingId, onCloseModal, onVerificatio
   }, [billingId, showModal]);
 
   const handleApprove = async () => {
-    const reason = window.prompt("Adakah anda pasti untuk mengesahkan bil ini?\nNyatakan ulasan jika ada:");
-    if(reason === null) return;
+    // Clear any previous errors
+    setRemarksError('');
     
+    // For approve, remarks are optional - no validation needed
     try {
       setProcessing(true);
-      await apiClient.post(`/billings/${billing.id}/finance-verify`, {remarks: reason});
+      await apiClient.post(`/billings/${billing.id}/finance-verify`, {
+        remarks: billing.remarks || ''
+      });
       
       // Invalidate queries to refresh dashboard data
       await queryClient.invalidateQueries({
@@ -52,12 +56,10 @@ function FinanceVerifyDialog({ showModal, billingId, onCloseModal, onVerificatio
       toast.success("Bil berjaya disahkan");
       
       // Tunggu sebentar untuk show success state
-      setTimeout(() => {
-        handleCloseModal();
-        if (onVerificationComplete) {
-          onVerificationComplete('verify', "Bil berjaya disahkan");
-        }
-      }, 1000);
+      handleCloseModal();
+      if (onVerificationComplete) {
+        onVerificationComplete('verify', "Bil berjaya disahkan");
+      }
       
     } catch (error) {
       console.error("Error approving billing:", error.response?.data?.message || error.message);
@@ -67,12 +69,21 @@ function FinanceVerifyDialog({ showModal, billingId, onCloseModal, onVerificatio
   };
 
   const handleReject = async () => {
-    const reason = window.prompt("Sila nyatakan sebab penolakan:");
-    if (!reason) return;
+    // Clear any previous errors
+    setRemarksError('');
+    
+    // For reject, remarks are mandatory
+    if (!billing.remarks || billing.remarks.trim() === '') {
+      setRemarksError('Catatan penolakan adalah wajib');
+      toast.error('Sila nyatakan catatan penolakan');
+      return;
+    }
     
     try {
       setProcessing(true);
-      await apiClient.post(`/billings/${billing.id}/reject`, { reason });
+      await apiClient.post(`/billings/${billing.id}/reject`, { 
+        reason: billing.remarks.trim() 
+      });
       
       // Invalidate queries to refresh dashboard data
       await queryClient.invalidateQueries({
@@ -83,17 +94,23 @@ function FinanceVerifyDialog({ showModal, billingId, onCloseModal, onVerificatio
       toast.success("Bil berjaya ditolak");
       
       // Tunggu sebentar untuk show success state
-      setTimeout(() => {
-        handleCloseModal();
-        if (onVerificationComplete) {
-          onVerificationComplete('reject', "Bil berjaya ditolak");
-        }
-      }, 1000);
+      handleCloseModal();
+      if (onVerificationComplete) {
+        onVerificationComplete('reject', "Bil berjaya ditolak");
+      }
       
     } catch (error) {
       console.error("Error rejecting billing:", error);
       toast.error(error.response?.data?.message || "Tidak berjaya ditolak");
       setProcessing(false);
+    }
+  };
+
+  const handleRemarksChange = (e) => {
+    setBilling({ ...billing, remarks: e.target.value });
+    // Clear error when user starts typing
+    if (remarksError) {
+      setRemarksError('');
     }
   };
 
@@ -103,6 +120,7 @@ function FinanceVerifyDialog({ showModal, billingId, onCloseModal, onVerificatio
       setLoading(false);
       setProcessing(false);
       setVerificationSuccess(false);
+      setRemarksError('');
       onCloseModal();
     }
   };
@@ -120,38 +138,23 @@ function FinanceVerifyDialog({ showModal, billingId, onCloseModal, onVerificatio
     if (verificationSuccess) {
       return (
         <div className="flex justify-end space-x-3">
-          <button disabled className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md disabled:opacity-75 flex items-center space-x-2">
+          <TButton color="green" size="md" variant="solid" isDisable={true}>
             <Check className="w-4 h-4" />
             <span>Berjaya Diproses!</span>
-          </button>
+          </TButton>
         </div>
       );
     }
     
     return (
       <div className="flex justify-end space-x-3">
-        <TButton 
-          onClick={handleCloseModal} 
-          disabled={processing} 
-          color="light"
-          className="px-4 py-2"
-        >
+        <TButton onClick={handleCloseModal} disabled={processing} color="light"className="px-4 py-2">
           <ChevronLeft className="w-4 h-4 mr-2" /> Tutup
         </TButton>
-        <TButton 
-          onClick={handleReject} 
-          disabled={processing} 
-          color="red" 
-          className="px-4 py-2"
-        >
+        <TButton onClick={handleReject} disabled={processing} color="red" className="px-4 py-2">
           <X className="w-4 h-4 mr-2" /> Tolak
         </TButton>
-        <TButton 
-          onClick={handleApprove} 
-          disabled={processing} 
-          color="green" 
-          className="px-4 py-2"
-        >
+        <TButton onClick={handleApprove} disabled={processing} color="green" className="px-4 py-2">
           <Check className="w-4 h-4 mr-2" />
           Pengesahan 
           {processing && <TSpinner className="-mr-1 ml-2" />}
@@ -184,17 +187,18 @@ function FinanceVerifyDialog({ showModal, billingId, onCloseModal, onVerificatio
               <h1 className="text-2xl font-bold text-gray-900">
                 {loading ? "Memuatkan..." : billing ? `Pengesahan Bil #${billing.running_no}` : "Pengesahan Bil"}
               </h1>
-              {billing && (
-                <p className="mt-1 text-sm text-gray-500">Dicipta pada: {formatDate(billing.created_at)}</p>
-              )}
+              {billing && <p className="mt-1 text-sm text-gray-500">Dicipta pada: {formatDate(billing.created_at)}</p>}
             </div>
-            <button
+            {/* <button
               onClick={handleCloseModal}
               disabled={processing}
               className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
             >
               <X className="w-6 h-6" />
-            </button>
+            </button> */}
+            <TButton onClick={handleCloseModal} isDisable={processing} color="ghost" size="lg" variant="subtle" circle={true} className="disabled:opacity-50">
+              <X className="w-6 h-6" />
+            </TButton>
           </div>
         </div>
 
@@ -218,6 +222,35 @@ function FinanceVerifyDialog({ showModal, billingId, onCloseModal, onVerificatio
               
               {/* Bank Details */}
               <BillingVerifyBankDialog billing={billing} />
+              
+              {/* Remarks Section with Conditional Requirements */}
+              <div>
+                <div className="flex items-center mb-4">
+                  <h2 className="text-lg font-medium text-gray-900">Catatan</h2>
+                </div>
+                
+                <div className="space-y-2">
+                  <textarea 
+                    value={billing.remarks || ''} 
+                    onChange={handleRemarksChange}
+                    className={`mt-2 border rounded w-full p-3 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      remarksError ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    }`}
+                    placeholder="Nyatakan catatan di sini..."
+                  />
+                  
+                  {remarksError && (
+                    <div className="flex items-center text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {remarksError}
+                    </div>
+                  )}
+                  
+                  <div className="text-xs text-gray-500">
+                    • Untuk <strong>penolakan</strong>: Catatan adalah wajib dan mesti diisi
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
