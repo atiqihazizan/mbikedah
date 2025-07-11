@@ -1,9 +1,9 @@
 import { useState, useContext } from "react";
-import { FormContext } from "../../components/FormContext";
+import { FormContext } from "../FormContext";
 import { Trash2Icon } from "lucide-react";
 import { formatCurrency } from "../../config/format";
 
-export default function BillingFormDetailsRows({ FormC, data, def, idx = false, setChange, budgets, error, dataLen=-1 }) {
+export default function ApplicantDetailsRows({ FormC, data, def, idx = false, setChange, budgets, error, dataLen=-1 }) {
   const { disabled } = useContext(FormContext);
   const [detail, setDetail] = useState(data || def);
   

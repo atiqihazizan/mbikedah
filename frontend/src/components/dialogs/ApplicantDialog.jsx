@@ -3,14 +3,14 @@ import { useStateContext } from "../../contexts/ContextProvider";
 import { FaPlus, FaEdit, FaTimes } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { formatCurrency } from "../../config/format";
-import Pulse from "../../components/Core/Pulse";
-import FormC from "../../components/FormContext";
-import TButton from "../../components/Core/TButton";
+import Pulse from "../Core/Pulse";
+import FormC from "../FormContext";
+import TButton from "../Core/TButton";
 import RecipientDialog from "./RecipientDialog";
-import BillingHistory from "../../views/billing/BillingHistory"; // Import component baru
+// import BillingHistory from "../../views/billing/BillingHistory"; // Import component baru
 import apiClient from "../../utils/axios";
 import Select from "react-select";
-import BillingFormDetailsRows from "./BillingFormDetailsRows";
+import ApplicantDetailsRows from "./ApplicantDetailsRows";
 
 // Import TanStack Query hook
 import { useBillingForm } from '../../hooks/useBillingForm';
@@ -234,7 +234,7 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
                     // View Mode - Read Only Display
                     <div className="space-y-6">
                       {/* Current Status Card */}
-                      {petition.current_status && (
+                      {/* {petition.current_status && (
                         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border-l-4 border-blue-500">
                           <div className="flex items-center justify-between">
                             <div>
@@ -271,7 +271,7 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
                             )}
                           </div>
                         </div>
-                      )}
+                      )} */}
 
                       {/* Basic Information */}
                       <div className="bg-gray-50 rounded-lg p-6">
@@ -375,7 +375,7 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
                       </div>
 
                       {/* Approval Dates */}
-                      {(petition.hod_approved_at || petition.reviewed_at || petition.verified_at || petition.approved_at || petition.paid_at) && (
+                      {/* {(petition.hod_approved_at || petition.reviewed_at || petition.verified_at || petition.approved_at || petition.paid_at) && (
                         <div className="bg-green-50 rounded-lg p-6">
                           <h4 className="text-lg font-semibold text-gray-900 mb-4">Tarikh Kelulusan</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -411,12 +411,12 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
                             )}
                           </div>
                         </div>
-                      )}
+                      )} */}
 
                       {/* Enhanced History using new BillingHistory component */}
-                      {petition.history && petition.history.length > 0 && (
+                      {/* {petition.history && petition.history.length > 0 && (
                         <BillingHistory history={petition.history}currentUser={currentUser}billing={petition}compact={false}/>
-                      )}
+                      )} */}
 
                     </div>
                   ) : (
@@ -495,7 +495,7 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
                                 {(petition?.details || []).map((d, i) => (
-                                  <BillingFormDetailsRows key={i} FormC={FormC} data={d} def={defaultDetail}idx={i} setChange={setPetition} budgets={budgets} error={error} dataLen={petition?.details?.length-1}/>
+                                  <ApplicantDetailsRows key={i} FormC={FormC} data={d} def={defaultDetail}idx={i} setChange={setPetition} budgets={budgets} error={error} dataLen={petition?.details?.length-1}/>
                                 ))}
                               </tbody>
                               <tfoot className="bg-gray-50">

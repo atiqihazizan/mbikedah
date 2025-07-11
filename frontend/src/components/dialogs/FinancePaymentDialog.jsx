@@ -4,15 +4,13 @@ import { toast } from "react-toastify";
 import { useQueryClient } from '@tanstack/react-query';
 import { useStateContext } from "../../contexts/ContextProvider";
 import { formatDate, formatCurrency } from "../../config/format";
-import TButton from "../../components/Core/TButton";
-import TSelect from "../../components/Core/TSelect";
-import TInput from "../../components/Core/TInput";
-import TLoadingSpinner from "../../components/Core/TLoadingSpinner";
-import TSpinner from "../../components/Core/TSpinner";
-import FormC from "../../components/FormContext";
+import TButton from "../Core/TButton";
+import TLoadingSpinner from "../Core/TLoadingSpinner";
+import TSpinner from "../Core/TSpinner";
+import FormC from "../FormContext";
 import apiClient from "../../utils/axios";
 
-const BillingPaymentDialog = ({ isOpen, onClose, idBilling, onProcessComplete }) => {
+const FinancePaymentDialog = ({ isOpen, onClose, idBilling, onProcessComplete }) => {
   const queryClient = useQueryClient();
   const { currentUser } = useStateContext();
   const abortControllerRef = useRef(null);
@@ -483,4 +481,4 @@ const RowTransaction = ({ banks, transactions, setTransactions, index, setIncomp
   );
 };
 
-export default BillingPaymentDialog;
+export default FinancePaymentDialog;

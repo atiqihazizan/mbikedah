@@ -14,7 +14,7 @@ export { default as FinanceVerifyDialog } from './FinanceVerifyDialog';
 // export { default as FinanceViewDialog } from './FinanceViewDialog';
 
 // ==================== BILLING DIALOGS ====================
-export { default as BillingFormDialog } from './BillingFormDialog';
+export { default as BillingFormDialog } from './ApplicantDialog';
 export { default as RecipientDialog } from './RecipientDialog';
 
 // ==================== USER DIALOGS ====================

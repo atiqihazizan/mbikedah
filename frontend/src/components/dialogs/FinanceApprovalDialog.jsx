@@ -4,14 +4,14 @@ import { toast } from "react-toastify";
 import { useQueryClient } from '@tanstack/react-query';
 import { useStateContext } from "../../contexts/ContextProvider";
 import { formatDate } from "../../config/format";
-import TButton from "../../components/Core/TButton";
-import TSelect from "../../components/Core/TSelect";
-import TInput from "../../components/Core/TInput";
-import TLoadingSpinner from "../../components/Core/TLoadingSpinner";
+import TButton from "../Core/TButton";
+import TSelect from "../Core/TSelect";
+import TInput from "../Core/TInput";
+import TLoadingSpinner from "../Core/TLoadingSpinner";
 // import BillingPrint from "./BillingPrint";
 import apiClient from "../../utils/axios";
 
-const BillingApprovalDialog = ({ isOpen, onClose, idBilling, onApprovalComplete, onPrint }) => {
+const FinanceApprovalDialog = ({ isOpen, onClose, idBilling, onApprovalComplete, onPrint }) => {
   const queryClient = useQueryClient();
   const { currentUser } = useStateContext();
   const printRef = useRef(null);
@@ -345,4 +345,4 @@ const BillingApprovalDialog = ({ isOpen, onClose, idBilling, onApprovalComplete,
   );
 };
 
-export default BillingApprovalDialog;
+export default FinanceApprovalDialog;

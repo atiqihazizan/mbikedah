@@ -3,10 +3,10 @@ import { useStateContext } from '../../contexts/ContextProvider';
 import { useUserData, useBillingTableFinance } from '../../hooks';
 import { TButton, UnifiedCard, UnifiedBillingTable } from '../../components/Core';
 import { FinanceVerifyDialog } from '../../components/dialogs';
-import BillingApprovalDialog from '../../components/dialogs/BillingApprovalDialog';
+import FinanceApprovalDialog from '../../components/dialogs/FinanceApprovalDialog';
 import BillingPrint from './BillingPrint';
 import { toast } from 'react-toastify';
-import BillingPaymentDialog from '../../components/dialogs/BillingPaymentDialog';
+import BillingPaymentDialog from '../../components/dialogs/FinancePaymentDialog';
 
 function BillingTableFinance() {
   const printRef = useRef(null);
@@ -334,7 +334,7 @@ function BillingTableFinance() {
       />
 
       {/* Billing Approval Dialog with loading state */}
-      <BillingApprovalDialog 
+      <FinanceApprovalDialog 
         isOpen={showApprovalDialog}
         onClose={handleCloseDialog}
         idBilling={selectedBillingId}
