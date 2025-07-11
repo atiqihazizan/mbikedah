@@ -8,10 +8,6 @@ import {
   FaFire
 } from 'react-icons/fa';
 
-/**
- * Custom hook untuk BillingTableFinance component
- * Mengurus semua state management dan business logic untuk Finance billing operations
- */
 export const useBillingTableFinance = (dashboardData, refetch) => {
   // ==================== STATE MANAGEMENT ====================
   const [activeTab, setActiveTab] = useState('review');
@@ -23,9 +19,6 @@ export const useBillingTableFinance = (dashboardData, refetch) => {
 
   // ==================== HELPER FUNCTIONS ====================
 
-  /**
-   * Filter billings berdasarkan active tab
-   */
   const getFilteredBillings = () => {
     if (activeTab === 'all') return allBillings;
     
@@ -204,6 +197,25 @@ export const useBillingTableFinance = (dashboardData, refetch) => {
     }
   };
 
+  /**
+   * Get print count className berdasarkan count
+   */
+  const getPrintCountClassName = (count) => {
+    if (count === 0 || !count) {
+      return 'inline-flex items-center justify-center px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded-full';
+    } else {
+      return 'inline-flex items-center justify-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full';
+    }
+  };
+
+  /**
+   * Format print count value
+   */
+  const formatPrintCount = (value) => {
+    const count = value || 0;
+    return count === 0 ? 'Belum' : `${count}x`;
+  };
+
   // ==================== EVENT HANDLERS ====================
 
   /**
@@ -347,6 +359,21 @@ export const useBillingTableFinance = (dashboardData, refetch) => {
           field: 'days_pending_display'
         }
       }
+    },
+    {
+      key: 'print_count',
+      label: 'Print',
+      headerClassName: 'text-center',
+      cellClassName: 'text-center',
+      width: '80px',
+      render: {
+        type: 'print_count',
+        config: {
+          getClassName: getPrintCountClassName,
+          field: 'print_count',
+          formatter: formatPrintCount
+        }
+      }
     }
   ];
 
@@ -392,6 +419,8 @@ export const useBillingTableFinance = (dashboardData, refetch) => {
     getActionColor,
     getPriorityBadgeClass,
     getStatusBadgeClass,
+    getPrintCountClassName,
+    formatPrintCount,
     isBillingUrgent,
     isBillingCritical,
     

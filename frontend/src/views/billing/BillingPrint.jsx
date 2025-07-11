@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { formatCurrency, formatDate, formatTitle } from '../../config/format';
+import { toast } from 'react-toastify';
 import logoMBI from "../../assets/logo/mbi-head.png"
 import apiClient from '../../utils/axios';
 
-const BillingPrint = React.forwardRef(({ billingData, onPrintComplete }, ref) => {
+const PRINT_STATUS = 5;
+const PRINT_ACTION = 'process';
+const MIN_DETAIL_ROWS = 15;
+const PRINT_DELAY = 500;
+
+const BillingPrint = React.forwardRef(({ billingId, onPrintComplete }, ref) => {
+  const [billingData, setBillingData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [pendingPrint, setPendingPrint] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+  const abortControllerRef = useRef(null);
+
   const agency = {
     name: "MENTERI BESAR KEDAH INCORPORATED",
     address: "Aras 2 Blok A, Wisma Darulaman, 05503 Alor Setar, Kedah Darulaman",
@@ -11,65 +24,104 @@ const BillingPrint = React.forwardRef(({ billingData, onPrintComplete }, ref) =>
     fax: "04-774 4076",
   };
 
-  const generateApprovalInfoTable = (remarks, createdBy, position, createdAt) => {
+  const generateApprovalInfoTable = useCallback((approval) => {
+    const { remarks = '', created_by = '', position = '', created_at = '' } = approval || {};
+    
     return `
       <table class="w-full border-collapse child-table approval-info-table">
         <tbody>
           <tr class="h-10">
             <th class="text-left">ULASAN</th>
-            <td>${remarks || ''}</td>
+            <td>${remarks}</td>
           </tr>
           <tr>
             <th class="text-left">NAMA</th>
-            <td>${formatTitle(createdBy) || ''}</td>
+            <td>${formatTitle(created_by)}</td>
           </tr>
           <tr>
             <th class="text-left">JAWATAN</th>
-            <td>${formatTitle(position) || ''}</td>
+            <td>${formatTitle(position)}</td>
           </tr>
           <tr>
             <th class="text-left">TARIKH</th>
-            <td>${formatDate(createdAt) || ''}</td>
+            <td>${formatDate(created_at)}</td>
           </tr>
         </tbody>
       </table>
     `;
-  };
+  }, []);
 
-  const handlePrint = async () => {
-    try {
-      
-      await apiClient.post(`/billings/${billingData?.id}/record-print`);
-      const printContent = generatePrintContent();
-      const iframe = document.createElement("iframe");
-      iframe.style.position = "absolute";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "none";
-      document.body.appendChild(iframe);
-      
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(printContent);
-      doc.close();
-      
-      setTimeout(() => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        document.body.removeChild(iframe);
-        
-        // if (onPrintComplete) {
-        //   onPrintComplete();
-        // }
-      }, 500);
-    } catch (error) {
-      console.error("Error printing:", error);
+  // Initialize - load data for the first time
+  const initialize = useCallback(async (targetBillingId, shouldPrintAfter = false) => {
+    if (!targetBillingId) {
+      setError('ID bil tidak diberikan');
+      setLoading(false);
+      return;
     }
-  };
 
-  const generatePrintContent = () => {
-    const details = billingData?.details?.filter(detail => detail.accept === 1) || [];
-    const history = billingData?.history?.filter((h) => h.old_status > 0)?.sort((a, b) => a.old_status - b.old_status) || [];
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+    
+    setLoading(true);
+    setError(null);
+    setBillingData(null);
+    setPendingPrint(shouldPrintAfter);
+    
+    try {
+      const { data } = await apiClient.post(`/status-validation/validate`, {
+          billing_id: targetBillingId, 
+          status: PRINT_STATUS, 
+          action: PRINT_ACTION
+        }, { signal: abortControllerRef.current.signal });
+      
+      if (!data) throw new Error('Tiada data yang diterima');
+      
+      setBillingData(data);
+      setInitialized(true);
+      
+      // Auto print if requested
+      if (shouldPrintAfter) {
+        setPendingPrint(false);
+        setTimeout(() => handlePrintInternal(data), 200);
+      }
+      
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      
+      const errorMessage = error.response?.data?.message || error.message || "Ralat semasa mendapatkan maklumat bil";
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+      abortControllerRef.current = null;
+    }
+  }, []);
+
+  // Reset when billingId changes
+  useEffect(() => {
+    if (billingId) {
+      setInitialized(false);
+      setBillingData(null);
+      setError(null);
+    }
+  }, [billingId]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, []);
+
+  const generatePrintContent = useCallback((data) => {
+    if (!data) return '';
+
+    const details = data.details?.filter(detail => detail.accept === 1) || [];
+    const history = data.history?.filter((h) => h.old_status > 0)?.sort((a, b) => a.old_status - b.old_status) || [];
+    const totalPayment = data.transactions?.reduce((total, tx) => total + parseFloat(tx.amount || 0), 0) || 0;
+    const detailRows = [...details];
+    while (detailRows.length < MIN_DETAIL_ROWS) detailRows.push({});
 
     return `
       <html>
@@ -78,7 +130,7 @@ const BillingPrint = React.forwardRef(({ billingData, onPrintComplete }, ref) =>
           <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
           <style>
             body { padding: 5mm; margin: 0; font-size: 7pt; }
-            .table-payment { width: 100%; border-collapse: collapse; }
+            .table-payment { width: 100%; border-collapse: collapse; cell-spacing: 0; cell-padding: 0; }
             .table-payment td, .table-payment th { border: 1px solid; padding: 0.3rem 0.5rem; }
             .table-payment th { text-align: center; }
             .table-payment th { font-size: 7.5pt; }
@@ -122,35 +174,42 @@ const BillingPrint = React.forwardRef(({ billingData, onPrintComplete }, ref) =>
                 <tr>
                   <th class="th-block" colspan="12">PERMOHONAN PEMBAYARAN</th>
                 </tr>
+                
                 <tr>
                   <th class="text-left th-block" colspan="12">A: MAKLUMAT PERMOHONAN</th>
                 </tr>
+                
                 <tr>
-                  <th class="th-title" colspan="5">TARIKH PERMOHONAN</th>
-                  <td class="text-left" colspan="4">${formatDate(billingData?.created_at)}</td>
+                  <th class="th-title whitespace-nowrap" colspan="5">TARIKH PERMOHONAN</th>
+                  <td class="text-left" colspan="4">${formatDate(data.created_at)}</td>
                   <th class="text-center font-bold">NO. SIRI</th>
-                  <td colspan="2">${billingData?.running_no || ''}</td>
+                  <td colspan="2">${data.running_no || ''}</td>
                 </tr>
+                
                 <tr>
-                  <th class="th-title" colspan="5">PERMOHONAN OLEH</th>
-                  <td colspan="7">${billingData?.creator?.name?.toUpperCase() || ''}</td>
+                  <th class="th-title whitespace-nowrap" colspan="5">PERMOHONAN OLEH</th>
+                  <td colspan="7">${(data.creator?.name || '').toUpperCase()}</td>
                 </tr>
+                
                 <tr>
-                  <th class="th-title" colspan="5">JABATAN</th>
-                  <td colspan="7">${billingData?.department?.toUpperCase() || ''}</td>
+                  <th class="th-title whitespace-nowrap" colspan="5">JABATAN</th>
+                  <td colspan="7">${(data.department || '').toUpperCase()}</td>
                 </tr>
+                
                 <tr>
-                  <th class="th-title" colspan="5">NO. PROJEK</th>
-                  <td colspan="7">${billingData?.no_project?.toUpperCase() || ''}</td>
+                  <th class="th-title whitespace-nowrap" colspan="5">NO. PROJEK</th>
+                  <td colspan="7">${(data.no_project || '').toUpperCase()}</td>
                 </tr>
+                
                 <tr>
                   <th class="th-title whitespace-nowrap" colspan="5">NAMA PEMBEKAL/KONTRAKTOR/PENERIMA</th>
-                  <td colspan="7">${billingData?.recipient?.toUpperCase() || ''}</td>
+                  <td colspan="7">${(data.recipient || '').toUpperCase()}</td>
                 </tr>
 
                 <tr>
                   <th class="text-left th-block" colspan="12">B: MAKLUMAT KEPERLUAN</th>
                 </tr>
+                
                 <tr>
                   <th class="text-center th-detail whitespace-nowrap">BIL</th>
                   <th class="text-center th-detail whitespace-nowrap">KOD BAJET</th>
@@ -161,71 +220,46 @@ const BillingPrint = React.forwardRef(({ billingData, onPrintComplete }, ref) =>
                   <th class="text-center th-detail whitespace-nowrap" colspan="2">JUMLAH</th>
                 </tr>
                 
-                ${details.map((detail, index) => `
+                ${detailRows.map((detail, index) => `
                   <tr>
-                    <td class="text-center">${index + 1}</td>
-                    <td class="text-center">${detail.budget_code || ''}</td>
-                    <td colspan="4">${detail.description || ''}</td>
-                    <td colspan="2">${detail.reference || ''}</td>
-                    <td class="text-center">${detail.quantity || ''}</td>
-                    <td class="text-right">${formatCurrency(detail.price)}</td>
-                    <td class="text-right" colspan="2">${formatCurrency(detail.total)}</td>
-                  </tr>
-                `).join('')}
-                
-                ${Array(15 - details.length).fill(0).map((_, index) => `
-                  <tr>
-                    <td class="text-center">&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td colspan="4">&nbsp;</td>
-                    <td colspan="2">&nbsp;</td>
-                    <td class="text-center">&nbsp;</td>
-                    <td class="text-right">&nbsp;</td>
-                    <td class="text-right" colspan="2">&nbsp;</td>
+                    <td class="text-center">${detail.budget_code ? index + 1 : '&nbsp;'}</td>
+                    <td class="text-center">${detail.budget_code || '&nbsp;'}</td>
+                    <td colspan="4">${detail.description || '&nbsp;'}</td>
+                    <td colspan="2">${detail.reference || '&nbsp;'}</td>
+                    <td class="text-center">${detail.quantity || '&nbsp;'}</td>
+                    <td class="text-right">${detail.price ? formatCurrency(detail.price) : '&nbsp;'}</td>
+                    <td class="text-right" colspan="2">${detail.total ? formatCurrency(detail.total) : '&nbsp;'}</td>
                   </tr>
                 `).join('')}
 
-                <tr>
-                  <td colspan="12">&nbsp;</td>
-                </tr>
+                <tr><td colspan="12">&nbsp;</td></tr>
                 
                 <tr>
                   <th class="text-left th-block whitespace-nowrap" colspan="6">C: PERAKUAN KETUA JABATAN</th>
                   <th class="text-left th-block whitespace-nowrap" colspan="3">D: SEMAKAN PEGAWAI KEWANGAN</th>
                   <th class="text-left th-block whitespace-nowrap" colspan="3">MAKLUMAT BAYARAN</th>
                 </tr>
+                
                 <tr>
                   <td class="text-left align-top" colspan="6">
-                    ${generateApprovalInfoTable(
-                      history[0]?.remarks,
-                      history[0]?.created_by,
-                      history[0]?.position,
-                      history[0]?.created_at
-                    )}
+                    ${generateApprovalInfoTable(history[0])}
                   </td>
                   <td class="text-left align-top" colspan="3">
-                    ${generateApprovalInfoTable(
-                      history[1]?.remarks,
-                      history[1]?.created_by,
-                      history[1]?.position,
-                      history[1]?.created_at
-                    )}
+                    ${generateApprovalInfoTable(history[1])}
                   </td>
                   <td class="text-left align-top" colspan="3">
                     <div class="flex flex-col justify-between" style="min-height: 90px;">
                       <div class="flex flex-col">
-                        ${billingData?.transactions?.map(tx => `
-                          <div class="flex justify-between gap-4">
-                            <strong class="whitespace-nowrap">${tx.bank_name || ''}</strong>
+                        ${data.transactions?.map(tx => `
+                          <div class="flex justify-between gap-4 text-[8px]">
+                            <span class="whitespace-nowrap font-bold">${tx.bank_name || ''}</span>
                             <span class="whitespace-nowrap">${formatCurrency(tx.amount)}</span>
                           </div>
                         `).join('') || ''}
                       </div>
                       <div class="flex justify-between gap-4">
-                        <strong class="whitespace-nowrap">JUMLAH BAYARAN</strong>
-                        <span class="whitespace-nowrap">
-                          ${formatCurrency(billingData?.transactions?.reduce((total, tx) => total + parseFloat(tx.amount || 0), 0) || 0)}
-                        </span>
+                        <strong>JUMLAH BAYARAN</strong>
+                        <span><strong>${formatCurrency(totalPayment)}</strong></span>
                       </div>
                     </div>
                   </td>
@@ -235,22 +269,13 @@ const BillingPrint = React.forwardRef(({ billingData, onPrintComplete }, ref) =>
                   <th class="text-left th-block whitespace-nowrap" colspan="6">E: PENGESAHAN PEGAWAI</th>
                   <th class="text-left th-block whitespace-nowrap" colspan="6">F: KELULUSAN KETUA PEGAWAI KEWANGAN</th>
                 </tr>
+                
                 <tr>
                   <td class="text-left align-top" colspan="6">
-                    ${generateApprovalInfoTable(
-                      history[2]?.remarks,
-                      history[2]?.created_by,
-                      history[2]?.position,
-                      history[2]?.created_at
-                    )}
+                    ${generateApprovalInfoTable(history[2])}
                   </td>
-                  <td colspan="6">
-                    ${generateApprovalInfoTable(
-                      history[3]?.remarks,
-                      history[3]?.created_by,
-                      history[3]?.position,
-                      history[3]?.created_at
-                    )}
+                  <td class="text-left align-top" colspan="6">
+                    ${generateApprovalInfoTable(history[3])}
                   </td>
                 </tr>
               </tbody>
@@ -259,14 +284,103 @@ const BillingPrint = React.forwardRef(({ billingData, onPrintComplete }, ref) =>
         </body>
       </html>
     `;
-  };
+  }, [generateApprovalInfoTable]);
 
-  // Expose print function melalui ref
+  const handlePrintInternal = useCallback((data) => {
+    const printData = data || billingData;
+    
+    if (!printData) {
+      toast.error("Tiada maklumat untuk dicetak");
+      return;
+    }
+
+    try {
+      const printContent = generatePrintContent(printData);
+      const iframe = document.createElement("iframe");
+      iframe.style.cssText = `
+        position: absolute;
+        width: 0;
+        height: 0;
+        border: none;
+        visibility: hidden;
+      `;
+      
+      document.body.appendChild(iframe);
+      
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(printContent);
+      doc.close();
+      
+      setTimeout(() => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          
+          setTimeout(() => {
+            if (document.body.contains(iframe)) apiClient.post(`/billings/${billingData?.id}/record-print`).then(() => document.body.removeChild(iframe));
+            if (onPrintComplete) onPrintComplete();
+          }, 1000);
+        } catch (printError) {
+          console.error("Error printing", printError);
+          if (document.body.contains(iframe)) document.body.removeChild(iframe);
+        }
+      }, PRINT_DELAY);
+      
+    } catch (error) {
+      console.error("Error generating print content", error);
+    }
+  }, [billingData, generatePrintContent, onPrintComplete]);
+
+  // Main print function
+  const handlePrint = useCallback(() => {
+    if (loading) {
+      toast.warning("Sila tunggu data selesai dimuat");
+      return;
+    }
+
+    if (error) {
+      toast.error("Ralat: " + error);
+      return;
+    }
+
+    if (!billingData) {
+      // If no data, initialize and print
+      if (billingId) {
+        initialize(billingId, true);
+      } else {
+        toast.error("ID bil tidak sah");
+      }
+      return;
+    }
+
+    handlePrintInternal();
+  }, [loading, error, billingData, billingId, initialize, handlePrintInternal]);
+
+  // Refresh/reload data function
+  const refreshData = useCallback(() => {
+    if (billingId) initialize(billingId, false);
+  }, [billingId, initialize]);
+
+  // Print with fresh data
+  const printWithFreshData = useCallback(() => {
+    if (billingId) initialize(billingId, true);
+    else toast.error("ID bil tidak sah");
+  }, [billingId, initialize]);
+
   React.useImperativeHandle(ref, () => ({
-    print: handlePrint
-  }));
+    print: handlePrint,
+    printWithFreshData: printWithFreshData,
+    initialize: initialize,
+    refreshData: refreshData,
+    isReady: !loading && !error && !!billingData && initialized,
+    isLoading: loading,
+    hasError: !!error,
+    billingData,
+    initialized
+  }), [handlePrint, printWithFreshData, initialize, refreshData, loading, error, billingData, initialized]);
 
-  return null; // Tidak render apa-apa
+  return null;
 });
 
 BillingPrint.displayName = 'BillingPrint';
