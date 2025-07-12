@@ -177,7 +177,6 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
       try {
         setLocalLoading(true);
         const {data} = await apiClient.get(`/billings/${billingId}`);
-        console.log(data);
         if (data) {
           setPetition({
             ...data,

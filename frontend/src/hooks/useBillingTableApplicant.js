@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import { FileText, Clock, Edit, Plus, Eye, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { FileText, Clock, Edit, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
-/**
- * Custom hook untuk BillingTableApplicant component
- * Mengurus semua state management dan business logic untuk Applicant billing operations
- */
+const getDefaultTab = (statusCounts) => {
+  if (statusCounts?.returned > 0) return 'returned';
+  if (statusCounts?.draft > 0) return 'draft';
+  return 'pending';
+};
+
 export const useBillingTableApplicant = (dashboardData, refetch) => {
   // ==================== STATE MANAGEMENT ====================
   const [activeTab, setActiveTab] = useState('pending');
@@ -23,9 +25,6 @@ export const useBillingTableApplicant = (dashboardData, refetch) => {
 
   // ==================== CONSTANTS & CONFIGURATIONS ====================
 
-  /**
-   * Status mapping untuk filter dan display
-   */
   const statusMapping = {
     'all': { 
       statuses: [], 
@@ -51,14 +50,16 @@ export const useBillingTableApplicant = (dashboardData, refetch) => {
       statuses: ['Ditolak'], 
       label: 'Ditolak',
       description: 'Perlu tindakan'
+    },
+    'returned': { 
+      statuses: ['Dikembalikan'], 
+      label: 'Dikembalikan',
+      description: 'Perlu tindakan'
     }
   };
 
   // ==================== HELPER FUNCTIONS ====================
 
-  /**
-   * Get status color class untuk badge styling
-   */
   const getStatusColor = (status, statusClass) => {
     if (statusClass) return statusClass;
     
@@ -71,11 +72,16 @@ export const useBillingTableApplicant = (dashboardData, refetch) => {
       'selesai': 'bg-green-100 text-green-800',
       'draf': 'bg-gray-100 text-gray-800',
       'menunggu kelulusan': 'bg-yellow-100 text-yellow-800',
-      'ditolak': 'bg-red-100 text-red-800'
+      'ditolak': 'bg-red-100 text-red-800',
+      'dikembalikan': 'bg-red-100 text-red-800'
     };
     
     return statusColorMapping[status?.toLowerCase()] || 'bg-gray-100 text-gray-800';
   };
+
+  useEffect(() => {
+    setActiveTab(getDefaultTab(statusCounts));
+  }, [statusCounts]);
 
   /**
    * Filter applications berdasarkan active tab
@@ -86,9 +92,7 @@ export const useBillingTableApplicant = (dashboardData, refetch) => {
     const tabConfig = statusMapping[activeTab];
     if (!tabConfig) return applications;
     
-    return applications.filter(app => 
-      tabConfig.statuses.includes(app.status)
-    );
+    return applications.filter(app => tabConfig.statuses.includes(app.status));
   };
 
   const filteredApplications = getFilteredApplications();
@@ -110,23 +114,17 @@ export const useBillingTableApplicant = (dashboardData, refetch) => {
   /**
    * Check if user can create new billing
    */
-  const canCreateNew = () => {
-    return quickActions.can_create_new === true;
-  };
+  const canCreateNew = () => quickActions.can_create_new === true;
 
   /**
    * Check if there are returned billings that need fixing
    */
-  const hasReturnedBillings = () => {
-    return (quickActions.returned_to_fix || 0) > 0;
-  };
+  const hasReturnedBillings = () => (quickActions.returned_to_fix || 0) > 0;
 
   /**
    * Check if billing can be edited
    */
-  const canEditBilling = (billing) => {
-    return billing.can_edit === true;
-  };
+  const canEditBilling = (billing) => billing.can_edit === true;
 
   /**
    * Get tab icon berdasarkan tab key
@@ -148,9 +146,7 @@ export const useBillingTableApplicant = (dashboardData, refetch) => {
   /**
    * Handle tab change
    */
-  const handleTabChange = (tabKey) => {
-    setActiveTab(tabKey);
-  };
+  const handleTabChange = (tabKey) => setActiveTab(tabKey);
 
   /**
    * Handle create new billing
@@ -192,7 +188,6 @@ export const useBillingTableApplicant = (dashboardData, refetch) => {
    * Handle dialog saved callback
    */
   const handleDialogSaved = (savedData) => {
-    console.log('Billing saved:', savedData);
     // TanStack Query mutation handles cache updates automatically
     // Optional: Add any additional logic here if needed
   };
@@ -201,9 +196,7 @@ export const useBillingTableApplicant = (dashboardData, refetch) => {
    * Handle refresh data
    */
   const handleRefresh = () => {
-    if (refetch) {
-      refetch();
-    }
+    if (refetch) refetch();
   };
 
   // ==================== COMPUTED VALUES ====================
@@ -216,6 +209,7 @@ export const useBillingTableApplicant = (dashboardData, refetch) => {
     pending: statusCounts.pending || 0,
     completed: statusCounts.completed || 0,
     rejected: statusCounts.rejected || 0,
+    returned: statusCounts.returned || 0,
     total: applications.length || 0
   };
 
@@ -258,6 +252,15 @@ export const useBillingTableApplicant = (dashboardData, refetch) => {
       description: "Perlu tindakan",
       tabKey: "rejected",
       ariaTitle: "Lihat permohonan ditolak"
+    },
+    {
+      icon: AlertTriangle,
+      title: "Dikembalikan",
+      value: statistics.returned,
+      color: "bg-red-500",
+      description: "Perlu tindakan",
+      tabKey: "returned",
+      ariaTitle: "Lihat permohonan dikembalikan"
     }
   ];
 

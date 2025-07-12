@@ -211,8 +211,7 @@ const FinanceApprovalDialog = ({ isOpen, onClose, idBilling, onApprovalComplete,
                   <TButton onClick={() => onPrint()} color="light" size="sm">
                     <Printer className="w-4 h-4 mr-2" /> Cetak
                   </TButton>
-                  <button
-                    onClick={handleClose}
+                  <button onClick={handleClose}
                     className="text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <X className="w-6 h-6" />
@@ -318,7 +317,8 @@ const FinanceApprovalDialog = ({ isOpen, onClose, idBilling, onApprovalComplete,
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-row gap-3 mt-6 pt-4 border-t border-gray-200">
+                {/* <div className="flex flex-row gap-3 mt-6 pt-4 border-t border-gray-200"> */}
+                <div className="flex flex-row gap-3 mt-6 pt-4">
                   <TButton color="red" size="lg" onClick={handleReject} onChecking={formLoading} isDisable={formLoading} className="w-full">
                     <XCircle className="w-5 h-5 mx-2" />
                     Tolak Permohonan
@@ -336,6 +336,12 @@ const FinanceApprovalDialog = ({ isOpen, onClose, idBilling, onApprovalComplete,
                     Permohonan yang diluluskan akan diteruskan ke peringkat seterusnya untuk pemprosesan bayaran.
                   </p>
                 </div> */}
+              </div>
+
+              <div className="flex flex-row justify-end gap-3 p-4 border-t border-gray-200">
+                <TButton onClick={handleClose} color="light" className="px-4 py-2">
+                  Tutup
+                </TButton>
               </div>
             </>
           )}

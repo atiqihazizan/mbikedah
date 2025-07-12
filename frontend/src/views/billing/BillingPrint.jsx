@@ -290,7 +290,7 @@ const BillingPrint = React.forwardRef(({ billingId, onPrintComplete }, ref) => {
     const printData = data || billingData;
     
     if (!printData) {
-      toast.error("Tiada maklumat untuk dicetak");
+      console.log("Tiada maklumat untuk dicetak");
       return;
     }
 
@@ -318,7 +318,7 @@ const BillingPrint = React.forwardRef(({ billingId, onPrintComplete }, ref) => {
           iframe.contentWindow.print();
           
           setTimeout(() => {
-            if (document.body.contains(iframe)) apiClient.post(`/billings/${billingData?.id}/record-print`).then(() => document.body.removeChild(iframe));
+            if (document.body.contains(iframe)) apiClient.post(`/billings/${printData?.id}/record-print`).then(() => document.body.removeChild(iframe));
             if (onPrintComplete) onPrintComplete();
           }, 1000);
         } catch (printError) {
@@ -334,23 +334,15 @@ const BillingPrint = React.forwardRef(({ billingId, onPrintComplete }, ref) => {
 
   // Main print function
   const handlePrint = useCallback(() => {
-    if (loading) {
-      toast.warning("Sila tunggu data selesai dimuat");
-      return;
-    }
-
+    if (loading) return;
     if (error) {
-      toast.error("Ralat: " + error);
+      console.log("Ralat: " + error);
       return;
     }
 
     if (!billingData) {
       // If no data, initialize and print
-      if (billingId) {
-        initialize(billingId, true);
-      } else {
-        toast.error("ID bil tidak sah");
-      }
+      if (billingId) initialize(billingId, true);
       return;
     }
 
@@ -365,7 +357,6 @@ const BillingPrint = React.forwardRef(({ billingId, onPrintComplete }, ref) => {
   // Print with fresh data
   const printWithFreshData = useCallback(() => {
     if (billingId) initialize(billingId, true);
-    else toast.error("ID bil tidak sah");
   }, [billingId, initialize]);
 
   React.useImperativeHandle(ref, () => ({

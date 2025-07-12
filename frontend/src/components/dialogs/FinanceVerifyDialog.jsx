@@ -147,18 +147,30 @@ function FinanceVerifyDialog({ showModal, billingId, onCloseModal, onVerificatio
     }
     
     return (
-      <div className="flex justify-end space-x-3">
-        <TButton onClick={handleCloseModal} disabled={processing} color="light"className="px-4 py-2">
-          <ChevronLeft className="w-4 h-4 mr-2" /> Tutup
-        </TButton>
-        <TButton onClick={handleReject} disabled={processing} color="red" className="px-4 py-2">
+      <div className="mt-4 flex flex-row space-x-3">
+        {/* <TButton onClick={handleCloseModal} disabled={processing} color="light"className="px-4 py-2">
+          Tutup
+        </TButton> */}
+        {/* <TButton onClick={handleReject} disabled={processing} color="red" className="w-full">
           <X className="w-4 h-4 mr-2" /> Tolak
         </TButton>
-        <TButton onClick={handleApprove} disabled={processing} color="green" className="px-4 py-2">
+        <TButton onClick={handleApprove} disabled={processing} color="green" className="w-full">
           <Check className="w-4 h-4 mr-2" />
           Pengesahan 
           {processing && <TSpinner className="-mr-1 ml-2" />}
-        </TButton>
+        </TButton> */}
+
+        <div className="flex flex-row gap-3 mt-6 pt-4 border-t border-gray-200">
+          <TButton color="red" size="lg" onClick={handleReject} isDisable={processing} className="w-full">
+            <XCircle className="w-5 h-5 mx-2" />
+            Tolak Permohonan
+          </TButton>
+          <TButton color="green" size="lg" onClick={handleApprove} isDisable={processing} className="w-full">
+            <CheckCircle className="w-5 h-5 mx-2" />
+            Luluskan Permohonan
+          </TButton>
+        </div>
+
       </div>
     );
   };
@@ -253,14 +265,16 @@ function FinanceVerifyDialog({ showModal, billingId, onCloseModal, onVerificatio
               </div>
             </div>
           )}
+
+          {billing && !loading && renderActionButtons()}
         </div>
 
         {/* Footer with Action Buttons */}
-        {billing && !loading && (
-          <div className="px-6 py-4 border-t border-gray-200 flex-shrink-0">
-            {renderActionButtons()}
-          </div>
-        )}
+        <div className="px-6 py-4 border-t border-gray-200 flex justify-end flex-shrink-0">
+          <TButton onClick={handleCloseModal} disabled={processing} color="light"className="px-4 py-2">
+            Tutup
+          </TButton>
+        </div>
       </div>
     </div>
   );

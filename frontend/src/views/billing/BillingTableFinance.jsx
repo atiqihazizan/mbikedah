@@ -5,7 +5,6 @@ import { TButton, UnifiedCard, UnifiedBillingTable } from '../../components/Core
 import { FinanceVerifyDialog } from '../../components/dialogs';
 import FinanceApprovalDialog from '../../components/dialogs/FinanceApprovalDialog';
 import BillingPrint from './BillingPrint';
-import { toast } from 'react-toastify';
 import BillingPaymentDialog from '../../components/dialogs/FinancePaymentDialog';
 
 function BillingTableFinance() {
@@ -64,7 +63,7 @@ function BillingTableFinance() {
   const handleOpenDialog = useCallback(async (data, billingId, statusId) => {
     // Validation
     if (!billingId || !data) {
-      toast.error("Data tidak sah");
+      console.log("Data tidak sah");
       return;
     }
 
@@ -85,7 +84,7 @@ function BillingTableFinance() {
           if (printRef.current) await printRef.current.initialize(billingId, false);
           setShowApprovalDialog(true);
         } catch (error) {
-          toast.error("Ralat memuat data bil");
+          console.log("Ralat memuat data bil");
         } finally {
           setIsPrintLoading(false);
         }
@@ -95,9 +94,9 @@ function BillingTableFinance() {
         
         try {
           if (printRef.current) await printRef.current.initialize(billingId, true);
-          else toast.error("Print service tidak tersedia");
+          else console.log("Print service tidak tersedia");
         } catch (error) {
-          toast.error("Ralat mencetak dokumen");
+          console.log("Ralat mencetak dokumen");
         } finally {
           setIsPrintLoading(false);
         }
@@ -134,12 +133,9 @@ function BillingTableFinance() {
         setTimeout(async () => {
           try {
             // Print with fresh data
-            if (printRef.current) {
-              await printRef.current.printWithFreshData();
-              toast.success("Dokumen telah diluluskan dan dicetak");
-            }
+            if (printRef.current) await printRef.current.printWithFreshData();
           } catch (error) {
-            toast.error("Dokumen diluluskan tetapi gagal dicetak");
+            console.log("Dokumen diluluskan tetapi gagal dicetak");
           } finally {
             setIsPrintLoading(false);
             setPendingPrintAfterApproval(false);
@@ -151,7 +147,7 @@ function BillingTableFinance() {
         handleCloseDialog();
       }
     } catch (error) {
-      toast.error("Ralat semasa memproses kelulusan");
+      console.log("Ralat semasa memproses kelulusan");
       setIsPrintLoading(false);
       setPendingPrintAfterApproval(false);
     }
@@ -183,9 +179,7 @@ function BillingTableFinance() {
         
         return (
           <span className={baseClasses}>
-            {PriorityIconComponent && (
-              <PriorityIconComponent className={priorityIcon?.className || ''} />
-            )}
+            {PriorityIconComponent && <PriorityIconComponent className={priorityIcon?.className || ''} />}
             <span className="ml-1">{item[config?.field]}</span>
           </span>
         );
@@ -194,7 +188,6 @@ function BillingTableFinance() {
         const printCount = item[config?.field] || 0;
         const printClassName = config?.getClassName ? config.getClassName(printCount) || '' : '';
         const printValue = config?.formatter ? config.formatter(printCount) : printCount;
-        
         return <span className={printClassName}>{printValue}</span>;
 
       default:

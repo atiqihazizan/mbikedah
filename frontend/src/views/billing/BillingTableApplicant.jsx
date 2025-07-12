@@ -61,15 +61,7 @@ function BillingTableApplicant() {
         {actions.map((action, index) => {
           const IconComponent = action.icon === 'Eye' ? Eye : Edit;
           return (
-            <TButton
-              key={index}
-              onClick={action.onClick}
-              variant="link"
-              color={action.color}
-              size="sm"
-              circle
-              title={action.title}
-            >
+            <TButton key={index} onClick={action.onClick} variant="link" color={action.color} size="sm" circle title={action.title}>
               <IconComponent className="w-4 h-4" />
             </TButton>
           );
@@ -84,12 +76,7 @@ function BillingTableApplicant() {
     if (!actionConfig) return null;
 
     return (
-      <TButton
-        onClick={actionConfig.onClick}
-        color={actionConfig.color}
-        size={actionConfig.size}
-        title={actionConfig.title}
-      >
+      <TButton onClick={actionConfig.onClick} color={actionConfig.color} size={actionConfig.size} title={actionConfig.title}>
         <Plus className="w-4 h-4 mr-2" />
         {actionConfig.text}
       </TButton>
@@ -112,12 +99,7 @@ function BillingTableApplicant() {
           </div>
           <div className="flex space-x-3">
             {features.canCreate && (
-              <TButton 
-                onClick={handleCreateNew} 
-                color='primary' 
-                size='sm' 
-                title="Buat Permohonan Baru"
-              >
+              <TButton onClick={handleCreateNew} color='primary' size='sm' title="Buat Permohonan Baru">
                 <Plus className="w-4 h-4 mr-2" />
                 Permohonan Baru
               </TButton>
@@ -127,7 +109,7 @@ function BillingTableApplicant() {
       </div>
 
       {/* Statistics/Filter Tabs Grid */}
-      <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-5 md:grid-cols-5 lg:grid-cols-5 gap-6 mb-8">
         {cardConfigurations.map((card) => {
           const IconComponent = card.icon;
           return (
