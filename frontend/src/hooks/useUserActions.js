@@ -10,10 +10,8 @@ export const useUserActions = (logout) => {
   const handleLogout = useCallback(async () => {
     try {
       logout();
-      toast.success('Berjaya log keluar');
     } catch (error) {
       console.error('Logout error:', error);
-      toast.error('Ralat semasa log keluar');
     }
   }, [logout]);
 
