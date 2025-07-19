@@ -96,10 +96,21 @@ class User extends Authenticatable
   {
     $names = [];
     foreach ($this->abilities as $ability) {
-      $name = UserAbilities::getAbilitiesName()[$ability];
-      if ($name) {
-        $names[] = $name;
-      }
+      // $name = UserAbilities::getAbilitiesName()[$ability];
+      // if ($name) {
+      //   $names[] = $name;
+      // }
+      $finance = [
+        UserAbilities::FINANCE_CHECKER,
+        UserAbilities::FINANCE_VERIFIER,
+        UserAbilities::FINANCE_APPROVER,
+        UserAbilities::PAYMENT_MAKER,
+      ];
+
+      if($ability === UserAbilities::ADMIN) $names[] = 'admin';
+      if($ability === UserAbilities::APPLICANT) $names[] = 'applicant';
+      if($ability === UserAbilities::HOD) $names[] = 'hod';
+      if(in_array($ability,$finance) && !in_array('finance',$names)) $names[] = 'finance';
     }
     return $names;
   }

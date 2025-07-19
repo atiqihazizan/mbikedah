@@ -7,7 +7,7 @@ import Pulse from "../Core/Pulse";
 import FormC from "../FormContext";
 import TButton from "../Core/TButton";
 import RecipientDialog from "./RecipientDialog";
-// import BillingHistory from "../../views/billing/BillingHistory"; // Import component baru
+import BillingHistory from "../../views/billing/BillingHistory"; // Import component baru
 import apiClient from "../../utils/axios";
 import Select from "react-select";
 import ApplicantDetailsRows from "./ApplicantDetailsRows";
@@ -232,46 +232,6 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
                   {isViewMode ? (
                     // View Mode - Read Only Display
                     <div className="space-y-6">
-                      {/* Current Status Card */}
-                      {/* {petition.current_status && (
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border-l-4 border-blue-500">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="text-lg font-semibold text-gray-900 mb-2">Status Semasa</h4>
-                              <div className="flex items-center space-x-3">
-                                <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
-                                  petition.current_status.color === 'green' ? 'bg-green-100 text-green-800' :
-                                  petition.current_status.color === 'red' ? 'bg-red-100 text-red-800' :
-                                  petition.current_status.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
-                                  petition.current_status.color === 'blue' ? 'bg-blue-100 text-blue-800' :
-                                  petition.current_status.color === 'orange' ? 'bg-orange-100 text-orange-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {petition.current_status.stage}
-                                </span>
-                                {petition.current_status.is_final && (
-                                  <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-                                    Final
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-600 mt-2">{petition.current_status.status}</p>
-                              {petition.current_status.next_action && (
-                                <p className="text-xs text-gray-500 mt-1 italic">{petition.current_status.next_action}</p>
-                              )}
-                            </div>
-                            {petition.summary?.workflow_progress && (
-                              <div className="text-right">
-                                <div className="text-2xl font-bold text-blue-600">
-                                  {petition.summary.workflow_progress.percentage}%
-                                </div>
-                                <div className="text-xs text-gray-500">Kemajuan</div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )} */}
-
                       {/* Basic Information */}
                       <div className="bg-gray-50 rounded-lg p-6">
                         <h4 className="text-lg font-semibold text-gray-900 mb-4">Maklumat Permohonan</h4>
@@ -373,49 +333,10 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
                         </div>
                       </div>
 
-                      {/* Approval Dates */}
-                      {/* {(petition.hod_approved_at || petition.reviewed_at || petition.verified_at || petition.approved_at || petition.paid_at) && (
-                        <div className="bg-green-50 rounded-lg p-6">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-4">Tarikh Kelulusan</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {petition.hod_approved_at && (
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Diluluskan HOD</label>
-                                <p className="text-sm text-gray-900">{new Date(petition.hod_approved_at).toLocaleDateString('ms-MY')}</p>
-                              </div>
-                            )}
-                            {petition.reviewed_at && (
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Disemak</label>
-                                <p className="text-sm text-gray-900">{new Date(petition.reviewed_at).toLocaleDateString('ms-MY')}</p>
-                              </div>
-                            )}
-                            {petition.verified_at && (
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Disahkan</label>
-                                <p className="text-sm text-gray-900">{new Date(petition.verified_at).toLocaleDateString('ms-MY')}</p>
-                              </div>
-                            )}
-                            {petition.approved_at && (
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Diluluskan</label>
-                                <p className="text-sm text-gray-900">{new Date(petition.approved_at).toLocaleDateString('ms-MY')}</p>
-                              </div>
-                            )}
-                            {petition.paid_at && (
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Dibayar</label>
-                                <p className="text-sm text-gray-900">{new Date(petition.paid_at).toLocaleDateString('ms-MY')}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )} */}
-
                       {/* Enhanced History using new BillingHistory component */}
-                      {/* {petition.history && petition.history.length > 0 && (
+                      {petition.history && petition.history.length > 0 && (
                         <BillingHistory history={petition.history}currentUser={currentUser}billing={petition}compact={false}/>
-                      )} */}
+                      )}
 
                     </div>
                   ) : (

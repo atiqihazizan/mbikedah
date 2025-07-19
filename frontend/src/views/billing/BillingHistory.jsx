@@ -17,12 +17,13 @@ const BillingHistory = ({ history = [], currentUser, billing = {}, compact = fal
   const filteredHistory = useMemo(() => {
     if (!history || history.length === 0) return [];
     
-    const userRole = currentUser?.abilities?.[0] || '';
+    // const userRole = currentUser?.abilities?.[0] || '';
+    const userRole = currentUser?.ability?.[0] || '';
     const userDepartment = currentUser?.department_id;
     
     return history.filter(entry => {
       // Pemohon - full history untuk billing mereka sendiri
-      if (userRole === 'applicant') return billing.created_by === currentUser.id;
+      if (userRole === 'applicant') return billing.creator.id === currentUser.id;
       
       // Ketua Jabatan - history untuk department mereka sahaja + relevant transitions
       if (userRole === 'hod') {
@@ -153,7 +154,8 @@ const BillingHistory = ({ history = [], currentUser, billing = {}, compact = fal
           <p className="text-gray-500">Tiada sejarah untuk dipaparkan</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        // <div className="space-y-4">
+        <div className="">
           {filteredHistory.map((entry, i) => (
             <div key={i} className="relative">
               {/* Timeline line */}

@@ -11,11 +11,8 @@ import BillingTableApplicant from "./views/billing/BillingTableApplicant";
 import BillingTableHOD from "./views/billing/BillingTableHOD";
 import BillingTableFinance from "./views/billing/BillingTableFinance";
 
-// import BillingApproval from "./views/billing/BillingApproval";
 import BillingView from "./views/billing/BillingView";
 import BillingCheck from "./views/billing/BillingCheck";
-// import BillingPayment from "./views/billing/BillingPayment";
-// import BillingVerify from "./views/billing/BillingVerify";
 
 const router = createBrowserRouter([
 	{
@@ -37,9 +34,6 @@ const router = createBrowserRouter([
 			// Shared routes (accessible by all roles)
 			{ path: "finance/:idBilling/view", element: <BillingView /> },
 			{ path: "finance/:idBilling/check", element: <BillingCheck /> },
-			// { path: "finance/:idBilling/verify", element: <BillingVerify /> },
-			// { path: "finance/:idBilling/approval", element: <BillingApproval /> },
-			// { path: "finance/:idBilling/payment", element: <BillingPayment /> },
 		],
 	},
 	{
