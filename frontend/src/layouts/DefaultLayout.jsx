@@ -25,7 +25,7 @@ export default function DefaultLayout() {
   
   // Custom hooks usage
   const { dashboardData, userRoles, isLoading, error, refreshUserData } = useUserData(currentUser);
-  const { handleLogout, handleSettings } = useUserActions(logout);
+  const { handleLogout, handleSettings,handleProfile } = useUserActions(logout);
   const { isPasswordDialogOpen, setIsPasswordDialogOpen, handleChangePassword, handlePasswordSubmit } = usePasswordChange(handleLogout);
   const { currentActiveRole, hasMultipleRoles } = useActiveRole(userRoles);
   const userDisplayInfo = useUserDisplayInfo(currentUser);
@@ -48,6 +48,7 @@ export default function DefaultLayout() {
         onLogout={handleLogout}
         onChangePassword={handleChangePassword}
         onSettings={handleSettings}
+        onProfile={handleProfile}
         onRefresh={refreshUserData}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -95,6 +96,7 @@ const Header = ({
   error, 
   onLogout, 
   onChangePassword, 
+  onProfile,
   onSettings, 
   onRefresh,
   theme,
@@ -135,6 +137,7 @@ const Header = ({
           onLogout={onLogout}
           onChangePassword={onChangePassword}
           onSettings={onSettings}
+          onProfile={onProfile}
           theme={theme}
           onToggleTheme={onToggleTheme}
           isDark={isDark}

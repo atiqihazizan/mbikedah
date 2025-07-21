@@ -1,51 +1,283 @@
-import { useEffect } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+// components/RootLoading.jsx - Updated dengan isLoading state
+import { Navigate } from 'react-router-dom';
+import { useStateContext } from '../contexts/ContextProvider';
+import { useTheme } from '../hooks/useTheme';
 
-function RootLoading() {
-  const navigate = useNavigate();
-  const { userRoles, currentActiveRole } = useOutletContext();
+/**
+ * Root Loading Component with isLoading integration
+ */
+export default function RootLoading() {
+  const { currentUser, isLoading } = useStateContext();
+  const { isDark } = useTheme();
 
-  // Redirect to appropriate role page
-  useEffect(() => {
-    if (userRoles && userRoles.length > 0) {
-      const firstRole = userRoles[0];
-      
-      // Define role routes
-      const roleRoutes = {
-        'Pemohon': '/applicant',
-        'Ketua Jabatan': '/hod',
-        'Kewangan': '/finance'
-      };
-      
-      const targetRoute = roleRoutes[firstRole] || '/applicant';
-      navigate(targetRoute, { replace: true });
-    }
-  }, [userRoles, navigate]);
+  // Show loading screen while authenticating
+  if (isLoading) {
+    return <AuthLoadingScreen isDark={isDark} />;
+  }
 
+  // Redirect to login if not authenticated
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Smart redirect based on user role
+  const defaultRoute = getDefaultRouteForUser(currentUser);
+  return <Navigate to={defaultRoute} replace />;
+}
+
+/**
+ * Get default route based on user roles
+ */
+function getDefaultRouteForUser(user) {
+  if (!user || !user.roles || user.roles.length === 0) {
+    return '/applicant'; // Default fallback
+  }
+
+  const roles = Array.isArray(user.roles) ? user.roles : [user.roles];
+
+  // Priority-based routing
+  if (roles.some(role => ['finance', 'kewangan'].includes(role))) {
+    return '/finance';
+  }
+  
+  if (roles.some(role => ['hod', 'head_of_department'].includes(role))) {
+    return '/hod';
+  }
+  
+  if (roles.some(role => ['admin', 'superuser'].includes(role))) {
+    return '/admin';
+  }
+
+  // Default to applicant
+  return '/applicant';
+}
+
+/**
+ * Authentication Loading Screen Component
+ */
+function AuthLoadingScreen({ isDark }) {
   return (
-    <div className="flex items-center justify-center h-full min-h-[400px]">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <div className="absolute top-2 left-2">
-            <div className="w-8 h-8 bg-blue-100 rounded-full"></div>
-          </div>
+    <div className={`min-h-screen flex items-center justify-center ${
+      isDark ? 'bg-gray-900' : 'bg-gray-50'
+    }`}>
+      <div className="text-center max-w-md mx-auto px-4">
+        {/* Loading Spinner */}
+        <div className="relative mb-8">
+          <div className={`animate-spin rounded-full h-20 w-20 border-4 border-transparent mx-auto ${
+            isDark ? 'border-t-blue-400 border-r-blue-400' : 'border-t-blue-600 border-r-blue-600'
+          }`}></div>
+          <div className={`absolute inset-0 rounded-full h-20 w-20 border-4 border-transparent mx-auto animate-ping ${
+            isDark ? 'border-blue-400' : 'border-blue-600'
+          } opacity-20`}></div>
         </div>
-        <div className="text-center">
-          <p className="text-gray-600 text-lg font-medium">Memuat sistem...</p>
-          <p className="text-gray-500 text-sm mt-1">Mengenal pasti role pengguna</p>
-        </div>
+
+        {/* Loading Text */}
+        <h2 className={`text-2xl font-bold mb-4 ${
+          isDark ? 'text-white' : 'text-gray-900'
+        }`}>
+          Mengesahkan Akses
+        </h2>
         
-        {currentActiveRole && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-800 text-sm">
-              <span className="font-medium">Role dikesan:</span> {currentActiveRole}
-            </p>
-          </div>
-        )}
+        <p className={`text-lg mb-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+          Sedang menentukan dashboard berdasarkan peranan anda...
+        </p>
+
+        {/* Loading Steps */}
+        <div className="space-y-2">
+          <LoadingStep 
+            text="Mengesahkan token"
+            isDark={isDark}
+            delay={0}
+          />
+          <LoadingStep 
+            text="Mendapatkan maklumat pengguna"
+            isDark={isDark}
+            delay={500}
+          />
+          <LoadingStep 
+            text="Menyediakan dashboard"
+            isDark={isDark}
+            delay={1000}
+          />
+        </div>
       </div>
     </div>
   );
 }
 
-export default RootLoading;
+/**
+ * Loading Step Component with Animation
+ */
+function LoadingStep({ text, isDark, delay }) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  return (
+    <div className={`flex items-center justify-center text-sm transition-opacity duration-500 ${
+      isVisible ? 'opacity-100' : 'opacity-30'
+    } ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+      <div className={`w-2 h-2 rounded-full mr-3 ${
+        isVisible 
+          ? isDark ? 'bg-blue-400' : 'bg-blue-600'
+          : isDark ? 'bg-gray-600' : 'bg-gray-300'
+      } ${isVisible ? 'animate-pulse' : ''}`}></div>
+      {text}
+    </div>
+  );
+}
+
+/**
+ * Alternative Simple Loading Component
+ */
+export function SimpleRootLoading() {
+  const { currentUser, isLoading } = useStateContext();
+  const { isDark } = useTheme();
+
+  if (isLoading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${
+        isDark ? 'bg-gray-900' : 'bg-gray-50'
+      }`}>
+        <div className="text-center">
+          <div className={`animate-spin rounded-full h-16 w-16 border-b-2 mx-auto mb-4 ${
+            isDark ? 'border-blue-400' : 'border-blue-600'
+          }`}></div>
+          <p className={`text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Memuat...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Navigate to={getDefaultRouteForUser(currentUser)} replace />;
+}
+
+/**
+ * Hook for using loading state in components
+ */
+export function useLoadingState() {
+  const { isLoading } = useStateContext();
+  return isLoading;
+}
+
+/**
+ * Higher-Order Component for loading state
+ */
+export function withLoadingState(Component) {
+  return function LoadingWrappedComponent(props) {
+    const isLoading = useLoadingState();
+    
+    if (isLoading) {
+      return <AuthLoadingScreen isDark={false} />; // Default theme
+    }
+    
+    return <Component {...props} />;
+  };
+}
+
+/**
+ * Usage Examples for Other Components
+ */
+
+// Example 1: Using isLoading in a component
+function ExampleComponent() {
+  const { currentUser, isLoading } = useStateContext();
+
+  if (isLoading) {
+    return <div>Loading user data...</div>;
+  }
+
+  if (!currentUser) {
+    return <div>Please log in</div>;
+  }
+
+  return <div>Welcome, {currentUser.name}!</div>;
+}
+
+// Example 2: Conditional rendering based on loading state
+function ExampleDashboard() {
+  const { currentUser, isLoading } = useStateContext();
+  const { isDark } = useTheme();
+
+  return (
+    <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className={`animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2 ${
+              isDark ? 'border-blue-400' : 'border-blue-600'
+            }`}></div>
+            <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>
+              Loading dashboard...
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <h1>Dashboard Content</h1>
+          {/* Your dashboard content */}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Example 3: Loading overlay component
+function LoadingOverlay({ show, message = "Loading..." }) {
+  const { isDark } = useTheme();
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className={`p-6 rounded-lg shadow-lg ${
+        isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+      }`}>
+        <div className="flex items-center">
+          <div className={`animate-spin rounded-full h-6 w-6 border-b-2 mr-3 ${
+            isDark ? 'border-blue-400' : 'border-blue-600'
+          }`}></div>
+          {message}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Example 4: Button with loading state
+function ExampleButton({ onClick, isLoading, children, ...props }) {
+  const { isDark } = useTheme();
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={isLoading}
+      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+        isLoading
+          ? isDark 
+            ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          : 'bg-blue-600 text-white hover:bg-blue-700'
+      }`}
+      {...props}
+    >
+      {isLoading ? (
+        <div className="flex items-center">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+          Loading...
+        </div>
+      ) : (
+        children
+      )}
+    </button>
+  );
+}

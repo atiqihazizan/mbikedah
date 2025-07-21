@@ -14,6 +14,9 @@ import BillingTableFinance from "./views/billing/BillingTableFinance";
 import BillingView from "./views/billing/BillingView";
 import BillingCheck from "./views/billing/BillingCheck";
 
+import ProtectedRoute from "./components/ProtectedRouter";
+import SettingsLayout from "./layouts/SettingsLayout";
+
 const router = createBrowserRouter([
 	{
 		path: "/",
@@ -36,6 +39,16 @@ const router = createBrowserRouter([
 			{ path: "finance/:idBilling/check", element: <BillingCheck /> },
 		],
 	},
+	// Settings Route - Protected for all authenticated users
+	{
+		path: "/settings",
+		element: (
+			<ProtectedRoute>
+				<SettingsLayout />
+			</ProtectedRoute>
+		)
+	},
+	//
 	{
 		path: "/",
 		element: <GuestLayout />,

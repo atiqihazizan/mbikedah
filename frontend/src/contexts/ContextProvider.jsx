@@ -4,6 +4,7 @@ import apiClient from "../utils/axios";
 const StateContext = createContext({
   currentUser: {},
   userToken: null,
+  isLoading: true,
   spinner: { message: null, show: false },
   setCurrentUser: () => {},
   setUserToken: () => {},
@@ -13,8 +14,9 @@ const StateContext = createContext({
 });
 
 export const ContextProvider = ({ children }) => {
-  const [countActive, setCountActive] = useState(0)
+  const [countActive, setCountActive] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // Loading state for authentication
   const [userToken, _setUserToken] = useState(() => {
     const token = localStorage.getItem("MBI_TOKEN");
     // Redirect segera jika token tidak sah semasa permulaan
@@ -39,6 +41,9 @@ export const ContextProvider = ({ children }) => {
 
   const logout = async (ev) => {
     if (ev) ev.preventDefault();
+    
+    setIsLoading(true); // Set loading during logout process
+    
     try {
       // Hanya cuba panggilan API jika token wujud
       if (userToken && userToken !== "undefined" && userToken !== "null" && userToken.trim() !== "") {
@@ -53,6 +58,8 @@ export const ContextProvider = ({ children }) => {
       setCurrentUser({});
       setUserToken(null);
       // Redirect will be handled by useEffect
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -60,6 +67,7 @@ export const ContextProvider = ({ children }) => {
     // Periksa token tidak sah dan redirect jika perlu
     if (!userToken || userToken === "undefined" || userToken === "null" || userToken.trim() === "") {
       setCurrentUser({});
+      setIsLoading(false); // Stop loading when no token
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
       }
@@ -70,6 +78,7 @@ export const ContextProvider = ({ children }) => {
 
     const getMaklumatPengguna = async () => {
       try {
+        setIsLoading(true); // Start loading
         requestInProgress.current = true;
         apiClient.defaults.headers.common["Authorization"] = `Bearer ${userToken}`;
         const response = await apiClient.get("/auth/me");
@@ -90,6 +99,7 @@ export const ContextProvider = ({ children }) => {
         setCurrentUser({});
         setUserToken(null); // Ini akan mencetuskan navigasi ke login
       } finally {
+        setIsLoading(false); // Stop loading after request completes
         requestInProgress.current = false;
       }
     };
@@ -100,6 +110,7 @@ export const ContextProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem("MBI_TOKEN");
     if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+      setIsLoading(false); // Stop loading if no token on mount
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
       }
@@ -113,6 +124,7 @@ export const ContextProvider = ({ children }) => {
         setCurrentUser,
         userToken,
         setUserToken,
+        isLoading,
         spinner,
         countActive,
         setCountActive,

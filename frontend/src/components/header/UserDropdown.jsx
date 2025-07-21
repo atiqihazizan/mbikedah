@@ -24,6 +24,7 @@ const UserDropdown = ({
   tabNotifications, 
   onLogout,
   onChangePassword,
+  onProfile,
   onSettings 
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -69,7 +70,7 @@ const UserDropdown = ({
       icon: FaUserCog,
       label: 'Profil Pengguna',
       action: () => {
-        onSettings?.();
+        onProfile?.();
         setIsOpen(false);
       },
       description: 'Kemaskini maklumat profil',
@@ -187,31 +188,18 @@ const UserAvatarButton = ({ user, isOpen, onClick, getUserInitials }) => (
 const DropdownMenu = ({ currentUser, menuItems, totalNotifications, getUserInitials }) => (
   <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
     {/* User Info Header */}
-    <UserInfoHeader 
-      user={currentUser} 
-      getUserInitials={getUserInitials}
-    />
+    <UserInfoHeader user={currentUser} getUserInitials={getUserInitials}/>
 
     {/* Menu Items */}
     <div className="py-1">
       {menuItems.map((item, index) => {
-        if (item.type === 'divider') {
-          return <MenuDivider key={index} />;
-        }
-        
-        return (
-          <MenuItem 
-            key={index}
-            item={item}
-          />
-        );
+        if (item.type === 'divider') return <MenuDivider key={index} />;
+        return <MenuItem key={index}item={item}/>
       })}
     </div>
 
     {/* Notifications Footer */}
-    {totalNotifications > 0 && (
-      <NotificationsFooter count={totalNotifications} />
-    )}
+    {totalNotifications > 0 && (<NotificationsFooter count={totalNotifications} />)}
   </div>
 );
 
@@ -262,11 +250,11 @@ const MenuItem = ({ item }) => {
           {item.description}
         </div>
       </div>
-      {item.shortcut && (
+      {/* {item.shortcut && (
         <div className="text-xs text-gray-400 font-mono">
           {item.shortcut}
         </div>
-      )}
+      )} */}
     </button>
   );
 };
