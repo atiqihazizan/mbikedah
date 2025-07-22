@@ -21,6 +21,8 @@ return new class extends Migration
 			$table->timestamp('email_verified_at')->nullable();
 			$table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('set null');
 			$table->integer('ability_id')->default(Config::get('constants.abilities.applicant'));
+			$table->string('phone',20)->nullable();
+			$table->boolean('is_admin')->default(false);
 			$table->rememberToken();
 			$table->timestamps();
 		});

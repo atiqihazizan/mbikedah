@@ -58,7 +58,7 @@ class AuthController extends Controller
 
     if (!$user || !Hash::check($request->password, $user->password)) {
       throw ValidationException::withMessages([
-        'username' => ['Kredensial yang dimasukkan tidak betul.'],
+        'username' => ['Nama pengguna atau kata laluan tidak sah.'],
       ]);
     }
 
@@ -114,6 +114,8 @@ class AuthController extends Controller
           'username' => $user->username,
           'department_id' => $user->department_id,
           'department' => $user->department ? $user->department->name : null,
+          'email' => $user->email,
+          'phone' => $user->phone,
           'abilities' => $user->abilities,
           'ability' => $user->getAbilityNames(),
           'allowed_menus' => $user->getAllowedMenus(), // Menambah allowed_menus

@@ -1,5 +1,6 @@
 <?php
 
+use App\Constants\BillingStatus;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BillingActivitiesController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\StatusValidationController;
 use App\Http\Controllers\UserController;
+use App\Models\Billing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
@@ -105,11 +107,17 @@ Route::middleware('auth:sanctum')->group(function () {
    * |--------------------------------------------------------------------------
    */
   Route::prefix('budgets')->group(function () {
+    // Basic CRUD Routes
     Route::get('/', [BudgetController::class, 'index']);
     Route::post('/', [BudgetController::class, 'store']);
     Route::get('/{id}', [BudgetController::class, 'show']);
     Route::put('/{id}', [BudgetController::class, 'update']);
     Route::delete('/{id}', [BudgetController::class, 'destroy']);
+
+    // Additional Routes
+    Route::get('/summary/dashboard', [BudgetController::class, 'getSummary']);
+    Route::get('/department/{departmentId}', [BudgetController::class, 'getByDepartment']);
+    Route::get('/year/{year}', [BudgetController::class, 'getByYear']);
   });
 
   /*
@@ -216,7 +224,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Route untuk kemaskini abilities pengguna
     Route::put('/{id}/abilities', [UserController::class, 'updateAbilities']);
-    
+
     // Route untuk kemaskini kata laluan pengguna tertentu (admin only)
     Route::post('/{id}/change-password', [UserController::class, 'changePassword']);
   });
@@ -239,31 +247,31 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->prefix('status-validation')->group(function () {
   // Main page route
   Route::get('/', [StatusValidationController::class, 'index']);
-  
+
   // Core validation functionality
   Route::post('/validate', [StatusValidationController::class, 'validateBillingStatus']);
-  
+
   // Individual billing status info
   Route::get('/billing/{billing}/info', [StatusValidationController::class, 'getBillingStatusInfo']);
-  
+
   // Complete workflow information
   Route::get('/workflow', [StatusValidationController::class, 'getWorkflowInfo']);
-  
+
   // Batch validation for multiple billings
   Route::post('/batch-validate', [StatusValidationController::class, 'batchValidate']);
-  
+
   // Quick status check (lightweight)
   Route::get('/quick-check/{billing}', function (Billing $billing) {
-      return response()->json([
-          'success' => true,
-          'data' => [
-              'billing_id' => $billing->id,
-              'current_status' => $billing->status_id,
-              'current_status_name' => BillingStatus::getStatusName($billing->status_id),
-              'is_active' => $billing->is_active,
-              'created_at' => $billing->created_at,
-              'updated_at' => $billing->updated_at
-          ]
-      ]);
+    return response()->json([
+      'success' => true,
+      'data' => [
+        'billing_id' => $billing->id,
+        'current_status' => $billing->status_id,
+        'current_status_name' => BillingStatus::getStatusName($billing->status_id),
+        'is_active' => $billing->is_active,
+        'created_at' => $billing->created_at,
+        'updated_at' => $billing->updated_at
+      ]
+    ]);
   });
 });

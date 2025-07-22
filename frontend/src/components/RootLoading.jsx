@@ -2,6 +2,7 @@
 import { Navigate } from 'react-router-dom';
 import { useStateContext } from '../contexts/ContextProvider';
 import { useTheme } from '../hooks/useTheme';
+import { useEffect, useState } from 'react';
 
 /**
  * Root Loading Component with isLoading integration

@@ -1,7 +1,8 @@
-// components/SettingsLayout.jsx
+// components/SettingsLayout.jsx (Updated with currentUser context update)
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStateContext } from '../contexts/ContextProvider';
+import apiClient from '../utils/axios';
 
 // Import custom hooks
 import { useTheme } from "../hooks/useTheme";
@@ -30,10 +31,10 @@ import BankBalanceSettings from "../views/settings/BankBalanceSettings";
 import SecuritySettings from "../views/settings/SecuritySettings";
 
 /**
- * Settings Layout Component with current user protection
+ * Settings Layout Component with current user protection and context update
  */
 export default function SettingsLayout() {
-  const { currentUser, logout } = useStateContext();
+  const { currentUser, logout, setCurrentUser } = useStateContext(); // Add setCurrentUser
   const navigate = useNavigate();
   
   // Custom hooks
@@ -67,6 +68,28 @@ export default function SettingsLayout() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
+
+  // Enhanced refresh function that updates context
+  const refreshUserDataWithContext = async () => {
+    try {
+      // Call original refreshUserData if available
+      if (refreshUserData) {
+        await refreshUserData();
+      }
+      
+      // Also refresh the currentUser in context
+      const authResponse = await apiClient.get('/auth/me');
+      if (authResponse.success && authResponse.user) {
+        setCurrentUser(authResponse.user);
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      // If auth/me fails, might need to logout user
+      if (error.response?.status === 401) {
+        handleLogout();
+      }
+    }
+  };
 
   // Don't render if no current user
   if (!currentUser) {
@@ -110,7 +133,7 @@ export default function SettingsLayout() {
               onToggleTheme={toggleTheme}
               onChangePassword={handleChangePassword}
               onUnsavedChanges={setHasUnsavedChanges}
-              refreshUserData={refreshUserData}
+              refreshUserData={refreshUserDataWithContext} // Pass enhanced function
             />
           </div>
         </div>
@@ -260,7 +283,7 @@ const SettingsContent = ({
             currentUser={currentUser}
             isDark={isDark}
             onUnsavedChanges={onUnsavedChanges}
-            refreshUserData={refreshUserData}
+            refreshUserData={refreshUserData} // This now updates context too
           />
         );
       case 'security':

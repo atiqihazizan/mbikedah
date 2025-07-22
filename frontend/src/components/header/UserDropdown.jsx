@@ -67,16 +67,6 @@ const UserDropdown = ({
    */
   const menuItems = [
     {
-      icon: FaUserCog,
-      label: 'Profil Pengguna',
-      action: () => {
-        onProfile?.();
-        setIsOpen(false);
-      },
-      description: 'Kemaskini maklumat profil',
-      shortcut: 'Ctrl+P'
-    },
-    {
       icon: FaKey,
       label: 'Tukar Kata Laluan',
       action: () => {
@@ -84,7 +74,6 @@ const UserDropdown = ({
         setIsOpen(false);
       },
       description: 'Kemaskini kata laluan akaun',
-      shortcut: 'Ctrl+K'
     },
     {
       icon: FaCog,
@@ -94,7 +83,6 @@ const UserDropdown = ({
         setIsOpen(false);
       },
       description: 'Konfigurasi tetapan sistem',
-      shortcut: 'Ctrl+,'
     },
     {
       type: 'divider'
@@ -107,7 +95,6 @@ const UserDropdown = ({
         setIsOpen(false);
       },
       description: 'Keluar dari sistem',
-      shortcut: 'Ctrl+Q',
       danger: true
     }
   ];
@@ -239,7 +226,7 @@ const MenuItem = ({ item }) => {
       className={`w-full px-4 py-3 text-left flex items-center space-x-3 hover:bg-gray-50 transition-colors duration-200 ${
         item.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700'
       }`}
-      title={item.shortcut ? `${item.description} (${item.shortcut})` : item.description}
+      title={item.description}
     >
       <IconComponent className={`w-4 h-4 ${item.danger ? 'text-red-500' : 'text-gray-400'}`} />
       <div className="flex-1">
@@ -250,11 +237,6 @@ const MenuItem = ({ item }) => {
           {item.description}
         </div>
       </div>
-      {/* {item.shortcut && (
-        <div className="text-xs text-gray-400 font-mono">
-          {item.shortcut}
-        </div>
-      )} */}
     </button>
   );
 };
