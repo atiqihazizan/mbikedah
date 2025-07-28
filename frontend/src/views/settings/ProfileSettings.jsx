@@ -340,7 +340,7 @@ const ProfileSettings = ({ userDisplayInfo, userRoles, currentUser, isDark, onUn
         </div>
 
         {/* Department Field - Read Only */}
-        <div>
+        {/* <div>
           <label className={`block text-sm font-medium mb-2 ${
             isDark ? 'text-gray-300' : 'text-gray-700'
           }`}>
@@ -359,10 +359,10 @@ const ProfileSettings = ({ userDisplayInfo, userRoles, currentUser, isDark, onUn
           <p className={`mt-1 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             Hubungi pentadbir untuk mengemas kini jabatan
           </p>
-        </div>
+        </div> */}
 
         {/* User Roles Display - Read Only */}
-        <div>
+        {/* <div>
           <label className={`block text-sm font-medium mb-2 ${
             isDark ? 'text-gray-300' : 'text-gray-700'
           }`}>
@@ -391,7 +391,7 @@ const ProfileSettings = ({ userDisplayInfo, userRoles, currentUser, isDark, onUn
           <p className={`mt-1 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             Hubungi pentadbir untuk mengemas kini peranan anda
           </p>
-        </div>
+        </div> */}
 
         {/* Action Buttons */}
         <div className="flex justify-end space-x-3">

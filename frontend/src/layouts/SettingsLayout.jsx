@@ -17,8 +17,6 @@ import PasswordChangeDialog from '../components/dialogs/PasswordChangeDialog';
 // Import icons
 import { 
   FaUser, 
-  FaLock, 
-  FaBell, 
   FaArrowLeft,
   FaExclamationTriangle,
   FaShieldAlt,
@@ -73,9 +71,7 @@ export default function SettingsLayout() {
   const refreshUserDataWithContext = async () => {
     try {
       // Call original refreshUserData if available
-      if (refreshUserData) {
-        await refreshUserData();
-      }
+      if (refreshUserData) await refreshUserData();
       
       // Also refresh the currentUser in context
       const authResponse = await apiClient.get('/auth/me');
@@ -92,9 +88,7 @@ export default function SettingsLayout() {
   };
 
   // Don't render if no current user
-  if (!currentUser) {
-    return null;
-  }
+  if (!currentUser) return null;
 
   // Loading state
   if (isLoading && !userDisplayInfo.name) return <SettingsLoadingState isDark={isDark} />;
@@ -109,7 +103,7 @@ export default function SettingsLayout() {
         hasUnsavedChanges={hasUnsavedChanges}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-4 lg:grid-cols-4 gap-8">
           {/* Sidebar Navigation */}
           <div className="lg:col-span-1">
@@ -158,7 +152,8 @@ const SettingsHeader = ({ userDisplayInfo, isDark, onBack, hasUnsavedChanges }) 
       ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 border-gray-600' 
       : 'bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-blue-200'
   } border-b shadow-lg`}>
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    {/* <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"> */}
+    <div className="mx-auto px-4 sm:px-6 lg:px-8">
       <div className="py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -287,26 +282,18 @@ const SettingsContent = ({
           />
         );
       case 'security':
-        return (
-          <SecuritySettings isDark={isDark} onChangePassword={onChangePassword}/>
-        );
+        return (<SecuritySettings isDark={isDark} onChangePassword={onChangePassword}/>);
       case 'budget':
-        return (
-          <BudgetSettings isDark={isDark} currentUser={currentUser} onUnsavedChanges={onUnsavedChanges}/>
-        );
+        return (<BudgetSettings isDark={isDark} currentUser={currentUser} onUnsavedChanges={onUnsavedChanges}/>);
       case 'bank-balance':
-        return (
-          <BankBalanceSettings isDark={isDark} currentUser={currentUser} onUnsavedChanges={onUnsavedChanges}/>
-        );
+        return (<BankBalanceSettings isDark={isDark} currentUser={currentUser} onUnsavedChanges={onUnsavedChanges}/>);
       default:
         return <ProfileSettings userDisplayInfo={userDisplayInfo} isDark={isDark} />;
     }
   };
 
   return (
-    <div className={`${
-      isDark ? 'bg-gray-800' : 'bg-white'
-    } rounded-lg shadow-sm p-6`}>
+    <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-sm p-6`}>
       {renderContent()}
     </div>
   );

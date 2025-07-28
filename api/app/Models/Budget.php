@@ -17,6 +17,10 @@ class Budget extends Model
         'code',
         'yearly',
         'type',
+        'level',
+        'is_group',
+        'group_type',
+        'sort_order',
         'bdg1', 'bdg2', 'bdg3', 'bdg4', 'bdg5', 'bdg6',
         'bdg7', 'bdg8', 'bdg9', 'bdg10', 'bdg11', 'bdg12',
         'bdgtotal',
@@ -29,6 +33,9 @@ class Budget extends Model
     protected $casts = [
         'yearly' => 'integer',
         'type' => 'integer',
+        'level' => 'integer',
+        'sort_order' => 'integer',
+        'is_group' => 'boolean',
         'parent_id' => 'integer',
         'department_id' => 'integer',
         'bdg1' => 'decimal:2', 'bdg2' => 'decimal:2', 'bdg3' => 'decimal:2',
@@ -44,44 +51,55 @@ class Budget extends Model
         'balance' => 'decimal:2',
     ];
 
-    /**
-     * Relationship dengan Department
-     */
+    // Relationships
     public function department()
     {
         return $this->belongsTo(Department::class);
     }
 
-    /**
-     * Relationship dengan parent budget (untuk hierarchical budgets)
-     */
     public function parent()
     {
         return $this->belongsTo(Budget::class, 'parent_id');
     }
 
-    /**
-     * Relationship dengan child budgets
-     */
     public function children()
     {
-        return $this->hasMany(Budget::class, 'parent_id');
+        return $this->hasMany(Budget::class, 'parent_id')->orderBy('sort_order');
     }
 
-    /**
-     * Relationship dengan transaction budgets
-     */
     public function transactions()
     {
         return $this->hasMany(TransactionBudget::class);
     }
 
-    /**
-     * Mengira jumlah budget tahunan dari monthly allocations
-     * 
-     * @return float
-     */
-    public function getTotalBudget()
+    // Scopes
+    public function scopeGroups($query)
+    {
+        return $query->where('is_group', true);
+    }
+
+    public function scopeItems($query)
+    {
+        return $query->where('is_group', false);
+    }
+
+    public function scopeByDepartment($query, $departmentId)
+    {
+        return $query->where('department_id', $departmentId);
+    }
+
+    public function scopeByYear($query, $year)
+    {
+        return $query->where('yearly', $year);
+    }
+
+    public function scopeByType($query, $type)
+    {
+        return $query->where('type', $type);
+    }
+
+    // Budget Calculations
+    public function calculateBudgetTotal()
     {
         $total = 0;
         for ($i = 1; $i <= 12; $i++) {
@@ -91,12 +109,7 @@ class Budget extends Model
         return $total;
     }
 
-    /**
-     * Mengira jumlah actual spending dari monthly actuals
-     * 
-     * @return float
-     */
-    public function getTotalActual()
+    public function calculateActualTotal()
     {
         $total = 0;
         for ($i = 1; $i <= 12; $i++) {
@@ -106,135 +119,127 @@ class Budget extends Model
         return $total;
     }
 
-    /**
-     * Mengira jumlah perbelanjaan dari TransactionBudget
-     * 
-     * @return float
-     */
+    public function calculateBalance()
+    {
+        return $this->bdgtotal - $this->acttotal;
+    }
+
+    // Update Methods
+    public function updateBudgetTotal()
+    {
+        $this->bdgtotal = $this->calculateBudgetTotal();
+        $this->balance = $this->calculateBalance();
+        $this->save();
+        return $this;
+    }
+
+    public function updateActualTotal()
+    {
+        $this->acttotal = $this->calculateActualTotal();
+        $this->balance = $this->calculateBalance();
+        $this->save();
+        return $this;
+    }
+
+    // Legacy methods (keep for compatibility)
+    public function getTotalBudget()
+    {
+        return $this->calculateBudgetTotal();
+    }
+
+    public function getTotalActual()
+    {
+        return $this->calculateActualTotal();
+    }
+
     public function getTotalSpending()
     {
         if (class_exists(TransactionBudget::class)) {
             return TransactionBudget::where('budget_id', $this->id)->sum('amount');
         }
-        
-        // Fallback to actual total if TransactionBudget doesn't exist
         return $this->getTotalActual();
     }
 
-    /**
-     * Mengira baki budget
-     * 
-     * @return float
-     */
     public function getBalance()
     {
-        return $this->getTotalBudget() - $this->getTotalSpending();
+        return $this->calculateBalance();
     }
 
-    /**
-     * Update balance berdasarkan current spending
-     */
-    public function updateBalance()
-    {
-        $this->balance = $this->getBalance();
-        $this->save();
-    }
-
-    /**
-     * Get budget type label
-     * 
-     * @return string
-     */
+    // Other methods
     public function getTypeLabel()
     {
         switch ($this->type) {
-            case 1:
-                return 'Debit';
-            case 2:
-                return 'Kredit';
-            default:
-                return 'Operasi';
+            case 1: return 'Debit';
+            case 2: return 'Kredit';
+            default: return 'Operasi';
         }
     }
 
-    /**
-     * Scope untuk filter by department
-     */
-    public function scopeByDepartment($query, $departmentId)
-    {
-        return $query->where('department_id', $departmentId);
-    }
-
-    /**
-     * Scope untuk filter by year
-     */
-    public function scopeByYear($query, $year)
-    {
-        return $query->where('yearly', $year);
-    }
-
-    /**
-     * Scope untuk filter by type
-     */
-    public function scopeByType($query, $type)
-    {
-        return $query->where('type', $type);
-    }
-
-    /**
-     * Accessor untuk formatted budget total
-     */
     public function getFormattedBudgetTotalAttribute()
     {
         return 'RM ' . number_format($this->bdgtotal, 2);
     }
 
-    /**
-     * Accessor untuk formatted balance
-     */
     public function getFormattedBalanceAttribute()
     {
         return 'RM ' . number_format($this->balance, 2);
     }
 
-    /**
-     * Get percentage of budget utilized
-     */
     public function getUtilizationPercentage()
     {
-        if ($this->bdgtotal <= 0) {
-            return 0;
-        }
-        
-        $spent = $this->getTotalSpending();
-        return ($spent / $this->bdgtotal) * 100;
+        if ($this->bdgtotal <= 0) return 0;
+        return ($this->acttotal / $this->bdgtotal) * 100;
     }
 
-    /**
-     * Check if budget is over-utilized
-     */
     public function isOverBudget()
     {
-        return $this->getTotalSpending() > $this->bdgtotal;
+        return $this->acttotal > $this->bdgtotal;
     }
-
     /**
-     * Auto-update bdgtotal when monthly budgets change
+     * Get all ancestors (parents, grandparents, etc.)
      */
-    protected static function boot()
+    public function ancestors()
     {
-        parent::boot();
-
-        static::saving(function ($budget) {
-            // Auto-calculate total budget if not set
-            if (!isset($budget->attributes['bdgtotal']) || $budget->isDirty(['bdg1', 'bdg2', 'bdg3', 'bdg4', 'bdg5', 'bdg6', 'bdg7', 'bdg8', 'bdg9', 'bdg10', 'bdg11', 'bdg12'])) {
-                $budget->bdgtotal = $budget->getTotalBudget();
-            }
-
-            // Auto-calculate total actual if monthly actuals are set
-            if ($budget->isDirty(['act1', 'act2', 'act3', 'act4', 'act5', 'act6', 'act7', 'act8', 'act9', 'act10', 'act11', 'act12'])) {
-                $budget->acttotal = $budget->getTotalActual();
-            }
-        });
+        $ancestors = collect();
+        $parent = $this->parent;
+        
+        while ($parent) {
+            $ancestors->push($parent);
+            $parent = $parent->parent;
+        }
+        
+        return $ancestors;
+    }
+    
+    /**
+     * Get all descendants (children, grandchildren, etc.)
+     */
+    public function descendants()
+    {
+        return $this->children()->with('descendants');
+    }
+    
+    /**
+     * Get breadcrumb path from root to this budget
+     */
+    public function getBreadcrumb()
+    {
+        return $this->ancestors()->reverse()->push($this);
+    }
+    
+    /**
+     * Check if this budget can be parent of another budget
+     */
+    public function canBeParentOf($childLevel)
+    {
+        return $this->level < $childLevel;
+    }
+    
+    /**
+     * Get full hierarchical path
+     */
+    public function getFullPath()
+    {
+        return $this->getBreadcrumb()->pluck('code')->implode(' → ');
     }
 }

@@ -1,56 +1,67 @@
 import { useState, useEffect } from "react";
-import { FaChartLine, FaPiggyBank, FaSave, FaTimes, FaBuilding } from "react-icons/fa";
+import { FaChartLine, FaSave, FaTimes, FaBuilding, FaSitemap, FaLayerGroup } from "react-icons/fa";
 import TInput from "../Core/TInput"; // Adjust path as needed
 import TSelect from "../Core/TSelect"; // Adjust path as needed
 
 /**
- * Budget Form Dialog Component
+ * Budget Form Dialog Component - Infrastructure Setup Only (Simplified)
  */
 const BudgetFormDialog = ({ 
   isOpen, 
   onClose, 
   selectedBudget, 
-  departments, 
+  departments = [], 
+  budgets = [],
   isDark, 
   onSave,
   onUnsavedChanges 
 }) => {
+  console.log('BudgetFormDialog render:', { isOpen, selectedBudget, departments: departments.length, budgets: budgets.length });
+
   const [budgetData, setBudgetData] = useState({
     name: '',
     code: '',
     department_id: '',
     type: 0,
-    bdg1: 0, bdg2: 0, bdg3: 0, bdg4: 0, bdg5: 0, bdg6: 0,
-    bdg7: 0, bdg8: 0, bdg9: 0, bdg10: 0, bdg11: 0, bdg12: 0,
-    bdgtotal: 0
+    level: 0,
+    is_group: false,
+    group_type: 'detail',
+    sort_order: 1,
+    parent_id: ''
   });
   const [errors, setErrors] = useState({});
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [notification, setNotification] = useState({ type: '', message: '' });
 
-  const monthNames = [
-    'Januari', 'Februari', 'Mac', 'April', 'Mei', 'Jun',
-    'Julai', 'Ogos', 'September', 'Oktober', 'November', 'Disember'
-  ];
-
   // Reset form when dialog opens/closes
   useEffect(() => {
+    console.log('useEffect triggered:', { isOpen, selectedBudget });
     if (isOpen) {
       if (selectedBudget) {
+        console.log('Loading selected budget:', selectedBudget);
         setBudgetData({ 
-          ...selectedBudget,
+          name: selectedBudget.name || '',
+          code: selectedBudget.code || '',
           department_id: selectedBudget.department_id || '',
-          bdgtotal: selectedBudget.bdgtotal || 0
+          type: selectedBudget.type || 0,
+          level: selectedBudget.level || 0,
+          is_group: selectedBudget.is_group || false,
+          group_type: selectedBudget.group_type || 'detail',
+          sort_order: selectedBudget.sort_order || 1,
+          parent_id: selectedBudget.parent_id || ''
         });
       } else {
+        console.log('Setting default budget data');
         setBudgetData({
           name: '',
           code: '',
           department_id: '',
           type: 0,
-          bdg1: 0, bdg2: 0, bdg3: 0, bdg4: 0, bdg5: 0, bdg6: 0,
-          bdg7: 0, bdg8: 0, bdg9: 0, bdg10: 0, bdg11: 0, bdg12: 0,
-          bdgtotal: 0
+          level: 0,
+          is_group: false,
+          group_type: 'detail',
+          sort_order: 1,
+          parent_id: ''
         });
       }
       setErrors({});
@@ -58,23 +69,43 @@ const BudgetFormDialog = ({
     }
   }, [isOpen, selectedBudget]);
 
-  // Auto calculate total budget
+  // Auto-set group_type based on level and is_group, and clear parent_id for level 0
   useEffect(() => {
-    if (isOpen) {
-      const total = Object.keys(budgetData)
-        .filter(key => key.startsWith('bdg') && key !== 'bdgtotal' && key.length <= 5)
-        .reduce((sum, key) => sum + (parseFloat(budgetData[key]) || 0), 0);
+    if (budgetData.is_group) {
+      let groupType = 'detail';
+      if (budgetData.level === 1) groupType = 'main';
+      else if (budgetData.level === 2) groupType = 'sub';
+      else if (budgetData.level >= 3) groupType = 'detail';
       
-      setBudgetData(prev => ({ ...prev, bdgtotal: total }));
+      if (budgetData.group_type !== groupType) {
+        setBudgetData(prev => ({ ...prev, group_type: groupType }));
+      }
     }
-  }, [budgetData.bdg1, budgetData.bdg2, budgetData.bdg3, budgetData.bdg4, 
-      budgetData.bdg5, budgetData.bdg6, budgetData.bdg7, budgetData.bdg8,
-      budgetData.bdg9, budgetData.bdg10, budgetData.bdg11, budgetData.bdg12, isOpen]);
+
+    // Clear parent_id when level is 0
+    if (budgetData.level === 0 && budgetData.parent_id) {
+      setBudgetData(prev => ({ ...prev, parent_id: '' }));
+    }
+  }, [budgetData.level, budgetData.is_group]);
 
   // Custom onChange handler untuk TInput
   const handleTInputChange = (newData) => {
+    console.log('TInput change:', newData);
     setBudgetData(newData);
-    onUnsavedChanges(true);
+    if (onUnsavedChanges) onUnsavedChanges(true);
+  };
+
+  // Handle direct field changes
+  const handleDirectChange = (field, value) => {
+    console.log('Direct change:', field, value);
+    const newData = { ...budgetData, [field]: value };
+    setBudgetData(newData);
+    if (onUnsavedChanges) onUnsavedChanges(true);
+    
+    // Clear error for this field
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: null }));
+    }
   };
 
   // Clear errors when field changes
@@ -97,8 +128,20 @@ const BudgetFormDialog = ({
       newErrors.code = 'Kod budget minimum 3 aksara';
     }
 
-    if (budgetData.bdgtotal <= 0) {
-      newErrors.budget = 'Jumlah budget mesti lebih dari RM 0.00';
+    if (budgetData.level < 0) {
+      newErrors.level = 'Level tidak boleh kurang dari 0';
+    }
+
+    // Parent validation rules
+    if (budgetData.level > 1 && !budgetData.parent_id) {
+      newErrors.parent_id = `Parent diperlukan untuk level ${budgetData.level}`;
+    }
+    
+    if (budgetData.parent_id) {
+      const parent = budgets.find(b => b.id === parseInt(budgetData.parent_id));
+      if (parent && parent.level !== (budgetData.level - 1)) {
+        newErrors.parent_id = `Parent mesti Level ${budgetData.level - 1}`;
+      }
     }
 
     setErrors(newErrors);
@@ -106,6 +149,8 @@ const BudgetFormDialog = ({
   };
 
   const handleSave = async () => {
+    console.log('Save clicked, data:', budgetData);
+    
     if (!validateForm()) {
       setNotification({ type: 'error', message: 'Sila betulkan ralat pada borang' });
       return;
@@ -117,28 +162,20 @@ const BudgetFormDialog = ({
       const cleanedData = {
         ...budgetData,
         type: parseInt(budgetData.type) || 0,
+        level: parseInt(budgetData.level) || 0,
+        sort_order: parseInt(budgetData.sort_order) || 1,
         department_id: budgetData.department_id ? parseInt(budgetData.department_id) : null,
-        // Ensure monthly budgets are numbers
-        bdg1: parseFloat(budgetData.bdg1) || 0,
-        bdg2: parseFloat(budgetData.bdg2) || 0,
-        bdg3: parseFloat(budgetData.bdg3) || 0,
-        bdg4: parseFloat(budgetData.bdg4) || 0,
-        bdg5: parseFloat(budgetData.bdg5) || 0,
-        bdg6: parseFloat(budgetData.bdg6) || 0,
-        bdg7: parseFloat(budgetData.bdg7) || 0,
-        bdg8: parseFloat(budgetData.bdg8) || 0,
-        bdg9: parseFloat(budgetData.bdg9) || 0,
-        bdg10: parseFloat(budgetData.bdg10) || 0,
-        bdg11: parseFloat(budgetData.bdg11) || 0,
-        bdg12: parseFloat(budgetData.bdg12) || 0,
+        parent_id: budgetData.parent_id ? parseInt(budgetData.parent_id) : null,
+        is_group: Boolean(budgetData.is_group)
       };
 
+      console.log('Sending cleaned data:', cleanedData);
       await onSave(cleanedData, selectedBudget);
       setNotification({ type: 'success', message: `Budget ${selectedBudget ? 'dikemaskini' : 'disimpan'} berjaya!` });
       
       setTimeout(() => {
         onClose();
-        onUnsavedChanges(false);
+        if (onUnsavedChanges) onUnsavedChanges(false);
       }, 1500);
     } catch (error) {
       console.error('Save error:', error);
@@ -159,27 +196,41 @@ const BudgetFormDialog = ({
     }
   };
 
-  const handleQuickFill = () => {
-    const monthlyAmount = budgetData.bdgtotal / 12;
-    const updatedData = { ...budgetData };
-    for (let i = 1; i <= 12; i++) {
-      updatedData[`bdg${i}`] = parseFloat(monthlyAmount.toFixed(2));
-    }
-    setBudgetData(updatedData);
+  // Get potential parent budgets (exclude self and children)
+  const getParentOptions = () => {
+    if (budgetData.level === 0) return []; // Level 0 has no parent
+    
+    console.log('Getting parent options for level:', budgetData.level);
+    console.log('Available budgets:', budgets);
+    
+    const options = budgets.filter(budget => {
+      // Don't include self as parent
+      if (selectedBudget && budget.id === selectedBudget.id) return false;
+      
+      // Only show budgets with level exactly one less than current level
+      const requiredParentLevel = budgetData.level - 1;
+      if (budget.level !== requiredParentLevel) return false;
+      
+      return true;
+    }).map(budget => ({
+      id: budget.id,
+      name: `${budget.code} - ${budget.name} (L${budget.level})`
+    }));
+    
+    console.log('Parent options:', options);
+    return options;
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('ms-MY', {
-      style: 'currency',
-      currency: 'MYR'
-    }).format(amount || 0);
-  };
+  if (!isOpen) {
+    console.log('Dialog not open, returning null');
+    return null;
+  }
 
-  if (!isOpen) return null;
+  console.log('Rendering dialog with data:', budgetData);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className={`max-w-5xl w-full max-h-[95vh] overflow-y-auto rounded-xl shadow-2xl ${
+      <div className={`max-w-4xl w-full max-h-[95vh] overflow-y-auto rounded-xl shadow-2xl ${
         isDark ? 'bg-gray-800' : 'bg-white'
       }`}>
         {/* Dialog Header */}
@@ -194,15 +245,18 @@ const BudgetFormDialog = ({
             </div>
             <div>
               <h3 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {selectedBudget ? 'Kemaskini Budget' : 'Tambah Budget Baru'}
+                {selectedBudget ? 'Kemaskini Struktur Budget' : 'Tambah Struktur Budget'}
               </h3>
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                {selectedBudget ? 'Ubah maklumat budget sedia ada' : 'Cipta budget baharu untuk organisasi'}
+                {selectedBudget ? 'Ubah maklumat struktur budget' : 'Cipta struktur budget baharu'}
               </p>
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => {
+              console.log('Close button clicked');
+              onClose();
+            }}
             className={`p-2 rounded-lg transition-colors ${
               isDark 
                 ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-700' 
@@ -226,6 +280,12 @@ const BudgetFormDialog = ({
 
         {/* Dialog Body */}
         <div className="p-6 space-y-8">
+          {/* Debug Info */}
+          <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded text-xs">
+            <strong>Debug:</strong> Level {budgetData.level}, Parent: {budgetData.parent_id || 'none'}, 
+            Budgets available: {budgets.length}, Departments: {departments.length}
+          </div>
+
           {/* Basic Information Section */}
           <div>
             <h4 className={`text-lg font-medium mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -239,20 +299,22 @@ const BudgetFormDialog = ({
                 }`}>
                   Nama Budget *
                 </label>
-                <TInput
-                  field="name"
-                  setValue={handleTInputChange}
-                  data={budgetData}
-                  holder="cth: Budget Operasi 2025"
-                  error={errors}
+                <input
                   type="text"
-                  inputCss={`${errors.name ? 'border-red-500' : isDark ? 'border-gray-600' : 'border-gray-300'} ${
+                  value={budgetData.name}
+                  onChange={(e) => handleDirectChange('name', e.target.value)}
+                  placeholder="cth: Budget Operasi Utama"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.name ? 'border-red-500' : isDark ? 'border-gray-600' : 'border-gray-300'
+                  } ${
                     isDark
                       ? 'bg-gray-700 text-white placeholder-gray-400'
                       : 'bg-white text-gray-900 placeholder-gray-500'
-                  } px-4 py-3`}
-                  onChange={() => handleFieldChange('name')}
+                  }`}
                 />
+                {errors.name && (
+                  <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                )}
               </div>
 
               <div>
@@ -261,20 +323,22 @@ const BudgetFormDialog = ({
                 }`}>
                   Kod Budget *
                 </label>
-                <TInput
-                  field="code"
-                  setValue={handleTInputChange}
-                  data={budgetData}
-                  holder="cth: BGT001"
-                  error={errors}
+                <input
                   type="text"
-                  inputCss={`${errors.code ? 'border-red-500' : isDark ? 'border-gray-600' : 'border-gray-300'} ${
+                  value={budgetData.code}
+                  onChange={(e) => handleDirectChange('code', e.target.value.toUpperCase())}
+                  placeholder="cth: BGT-OPR-001"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.code ? 'border-red-500' : isDark ? 'border-gray-600' : 'border-gray-300'
+                  } ${
                     isDark
                       ? 'bg-gray-700 text-white placeholder-gray-400'
                       : 'bg-white text-gray-900 placeholder-gray-500'
-                  } px-4 py-3 uppercase`}
-                  onChange={() => handleFieldChange('code')}
+                  }`}
                 />
+                {errors.code && (
+                  <p className="text-red-500 text-sm mt-1">{errors.code}</p>
+                )}
               </div>
             </div>
 
@@ -283,22 +347,22 @@ const BudgetFormDialog = ({
                 <label className={`block text-sm font-medium mb-2 ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  Jabatan
+                  Jabatan (Pilihan)
                 </label>
-                <TSelect
-                  field="department_id"
-                  setValue={handleTInputChange}
-                  data={budgetData}
-                  list={departments}
-                  keyval="id,name"
-                  error={errors}
-                  placeholder="Pilih Jabatan"
-                  className={`${
+                <select
+                  value={budgetData.department_id}
+                  onChange={(e) => handleDirectChange('department_id', e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     isDark
                       ? 'bg-gray-700 border-gray-600 text-white'
                       : 'bg-white border-gray-300 text-gray-900'
-                  } px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                />
+                  }`}
+                >
+                  <option value="">Pilih Jabatan</option>
+                  {departments.map(dept => (
+                    <option key={dept.id} value={dept.id}>{dept.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -307,125 +371,178 @@ const BudgetFormDialog = ({
                 }`}>
                   Jenis Budget
                 </label>
-                <TSelect
-                  field="type"
-                  setValue={handleTInputChange}
-                  data={budgetData}
-                  list={[
-                    { id: 0, name: 'Operasi' },
-                    { id: 1, name: 'Debit' },
-                    { id: 2, name: 'Kredit' }
-                  ]}
-                  keyval="id,name"
-                  error={errors}
-                  placeholder="Pilih Jenis Budget"
-                  className={`${
+                <select
+                  value={budgetData.type}
+                  onChange={(e) => handleDirectChange('type', parseInt(e.target.value))}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     isDark
                       ? 'bg-gray-700 border-gray-600 text-white'
                       : 'bg-white border-gray-300 text-gray-900'
-                  } px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                />
+                  }`}
+                >
+                  <option value={0}>Operasi</option>
+                  <option value={1}>Debit</option>
+                  <option value={2}>Kredit</option>
+                </select>
               </div>
             </div>
           </div>
 
-          {/* Monthly Budget Section */}
+          {/* Hierarchy Section */}
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <h4 className={`text-lg font-medium flex items-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                <FaPiggyBank className="w-5 h-5 mr-2" />
-                Peruntukan Bulanan
-              </h4>
-              <button
-                type="button"
-                onClick={handleQuickFill}
-                className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                  isDark
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Agih Sama Rata
-              </button>
-            </div>
-
-            <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4">
-              {Array.from({ length: 12 }, (_, i) => (
-                <div key={i}>
-                  <label className={`block text-sm font-medium mb-2 ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
-                    {monthNames[i]}
-                  </label>
-                  <div className="relative">
-                    <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-sm z-10 ${
-                      isDark ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      RM
-                    </span>
-                    <TInput
-                      field={`bdg${i + 1}`}
-                      setValue={handleTInputChange}
-                      data={budgetData}
-                      error={errors}
-                      type="number"
-                      option={{ step: 0.01, min: 0 }}
-                      inputCss={`${
-                        isDark
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                      } pl-10 pr-3 py-3 text-right`}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <h4 className={`text-lg font-medium mb-4 flex items-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <FaSitemap className="w-5 h-5 mr-2" />
+              Struktur Hierarki
+            </h4>
             
-            {errors.budget && <p className="text-red-500 text-sm mt-2 flex items-center">
-              <span className="w-1 h-1 bg-red-500 rounded-full mr-2"></span>
-              {errors.budget}
-            </p>}
-          </div>
-
-          {/* Total Budget Display */}
-          <div className={`p-6 rounded-xl border-2 border-dashed ${
-            isDark 
-              ? budgetData.bdgtotal > 0 ? 'bg-green-900 border-green-700' : 'bg-gray-700 border-gray-600'
-              : budgetData.bdgtotal > 0 ? 'bg-green-50 border-green-300' : 'bg-gray-50 border-gray-300'
-          }`}>
-            <div className="flex justify-between items-center">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <p className={`text-sm font-medium ${
+                <label className={`block text-sm font-medium mb-2 ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  Jumlah Budget Tahunan
-                </p>
-                <p className={`text-xs ${
-                  isDark ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  Hasil daripada semua peruntukan bulanan
+                  Level Hierarki
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  value={budgetData.level}
+                  onChange={(e) => handleDirectChange('level', parseInt(e.target.value) || 0)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.level ? 'border-red-500' : isDark ? 'border-gray-600' : 'border-gray-300'
+                  } ${
+                    isDark
+                      ? 'bg-gray-700 text-white placeholder-gray-400'
+                      : 'bg-white text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+                {errors.level && (
+                  <p className="text-red-500 text-sm mt-1">{errors.level}</p>
+                )}
+                <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  0 = Root, 1 = Utama, 2 = Sub, 3+ = Detail
                 </p>
               </div>
-              <div className="text-right">
-                <p className={`text-2xl font-bold ${
-                  budgetData.bdgtotal > 0 
-                    ? isDark ? 'text-green-400' : 'text-green-600'
-                    : isDark ? 'text-gray-400' : 'text-gray-500'
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  {formatCurrency(budgetData.bdgtotal)}
+                  Susunan Dalam Level
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={budgetData.sort_order}
+                  onChange={(e) => handleDirectChange('sort_order', parseInt(e.target.value) || 1)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    isDark
+                      ? 'bg-gray-700 text-white placeholder-gray-400 border-gray-600'
+                      : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'
+                  }`}
+                />
+                <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Nombor untuk menyusun item dalam level yang sama
                 </p>
-                <p className={`text-xs ${
-                  isDark ? 'text-gray-400' : 'text-gray-600'
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  Purata bulanan: {formatCurrency(budgetData.bdgtotal / 12)}
+                  Jenis Item
+                </label>
+                <div className="flex items-center space-x-4 pt-3">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={budgetData.is_group}
+                      onChange={(e) => handleDirectChange('is_group', e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className={`ml-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      <FaLayerGroup className="inline w-4 h-4 mr-1" />
+                      Kumpulan/Header
+                    </span>
+                  </label>
+                </div>
+                <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Centang jika ini adalah header/kumpulan
                 </p>
               </div>
             </div>
+
+            {/* Parent Selection */}
+            {budgetData.level > 0 && (
+              <div className="mt-6">
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Parent Budget {budgetData.level > 1 && '*'}
+                </label>
+                <select
+                  value={budgetData.parent_id}
+                  onChange={(e) => handleDirectChange('parent_id', e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.parent_id ? 'border-red-500' : isDark ? 'border-gray-600' : 'border-gray-300'
+                  } ${
+                    isDark
+                      ? 'bg-gray-700 text-white'
+                      : 'bg-white text-gray-900'
+                  }`}
+                >
+                  <option value="">Pilih Parent Level {budgetData.level - 1}</option>
+                  {getParentOptions().map(parent => (
+                    <option key={parent.id} value={parent.id}>{parent.name}</option>
+                  ))}
+                </select>
+                {errors.parent_id && (
+                  <p className="text-red-500 text-sm mt-1">{errors.parent_id}</p>
+                )}
+                <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {budgetData.level === 1 
+                    ? 'Pilihan: Boleh pilih Level 0 sebagai parent atau biarkan kosong'
+                    : `Diperlukan: Mesti pilih satu Level ${budgetData.level - 1} sebagai parent`
+                  }
+                </p>
+              </div>
+            )}
+
+            {budgetData.level === 0 && (
+              <div className="mt-6 p-4 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                <div className="flex items-center">
+                  <FaSitemap className="w-5 h-5 text-gray-500 dark:text-gray-400 mr-2" />
+                  <div>
+                    <p className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                      Level Root (0)
+                    </p>
+                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Item ini adalah root level dan tidak memerlukan parent
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {budgetData.is_group && (
+              <div className="mt-4 p-4 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 dark:bg-blue-900 dark:border-blue-700">
+                <div className="flex items-center">
+                  <FaLayerGroup className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
+                  <div>
+                    <p className={`text-sm font-medium ${isDark ? 'text-blue-200' : 'text-blue-800'}`}>
+                      Jenis Kumpulan: {budgetData.group_type === 'main' ? 'Utama' : budgetData.group_type === 'sub' ? 'Sub' : 'Detail'}
+                    </p>
+                    <p className={`text-xs ${isDark ? 'text-blue-300' : 'text-blue-600'}`}>
+                      Jenis kumpulan ditetapkan automatik berdasarkan level hierarki
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Dialog Footer */}
-        {/* <div className={`sticky bottom-0 flex justify-end space-x-3 p-6 border-t ${ */}
         <div className={`flex justify-end space-x-3 p-6 border-t ${
           isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'
         }`}>
@@ -457,7 +574,7 @@ const BudgetFormDialog = ({
             ) : (
               <div className="flex items-center">
                 <FaSave className="w-4 h-4 mr-2" />
-                {selectedBudget ? 'Kemaskini Budget' : 'Simpan Budget'}
+                {selectedBudget ? 'Kemaskini Struktur' : 'Simpan Struktur'}
               </div>
             )}
           </button>

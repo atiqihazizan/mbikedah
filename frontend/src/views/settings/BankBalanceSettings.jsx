@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
-import { FaWallet, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { FaWallet, FaPlus, FaEdit, FaTrash, FaSearch, FaTimes } from "react-icons/fa";
 import apiClient from "../../utils/axios";
 import BankDialog from "../../components/dialogs/BankDialog";
+import TButton from "../../components/Core/TButton";
 
 /**
  * Bank Balance Settings Component (Finance Role Only)
  */
 const BankBalanceSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
   const [banks, setBanks] = useState([]);
+  const [filteredBanks, setFilteredBanks] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBank, setEditingBank] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,9 +24,24 @@ const BankBalanceSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
   ];
 
   // Load banks data on component mount
+  useEffect(() => {fetchBanks();}, []);
+
+  // Filter banks based on search term
   useEffect(() => {
-    fetchBanks();
-  }, []);
+    if (!searchTerm.trim()) {
+      setFilteredBanks(banks);
+    } else {
+      const filtered = banks.filter(bank => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          bank.bank_name?.toLowerCase().includes(searchLower) ||
+          bank.bank_account?.toLowerCase().includes(searchLower) ||
+          bank.branch_name?.toLowerCase().includes(searchLower)
+        );
+      });
+      setFilteredBanks(filtered);
+    }
+  }, [banks, searchTerm]);
 
   const fetchBanks = async () => {
     try {
@@ -106,6 +124,10 @@ const BankBalanceSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
     }
   };
 
+  const handleClearSearch = () => {
+    setSearchTerm("");
+  };
+
   const calculateTotalBalance = () => {
     return banks.reduce((total, bank) => {
       // Support both amount and balance fields
@@ -156,12 +178,12 @@ const BankBalanceSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
     }
   };
 
-  // Group accounts by category
+  // Group accounts by category (use filtered banks for display)
   const groupedAccounts = {
-    bank_account: banks.filter(bank => categorizeAccount(bank).type === 'bank_account'),
-    petty_cash: banks.filter(bank => categorizeAccount(bank).type === 'petty_cash'),
-    cash: banks.filter(bank => categorizeAccount(bank).type === 'cash'),
-    other: banks.filter(bank => categorizeAccount(bank).type === 'other')
+    bank_account: filteredBanks.filter(bank => categorizeAccount(bank).type === 'bank_account'),
+    petty_cash: filteredBanks.filter(bank => categorizeAccount(bank).type === 'petty_cash'),
+    cash: filteredBanks.filter(bank => categorizeAccount(bank).type === 'cash'),
+    other: filteredBanks.filter(bank => categorizeAccount(bank).type === 'other')
   };
 
   const calculateCategoryTotal = (accounts) => {
@@ -199,6 +221,11 @@ const BankBalanceSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                 </h3>
                 <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Semua akaun ({banks.length} akaun)
+                  {searchTerm && (
+                    <span className={`ml-2 ${isDark ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                      • Menunjukkan {filteredBanks.length} hasil carian
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
@@ -213,12 +240,10 @@ const BankBalanceSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
         </div>
 
         {/* Category Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-4">
           {/* Bank Accounts */}
           {groupedAccounts.bank_account.length > 0 && (
-            <div className={`p-4 rounded-lg border ${
-              isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
-            }`}>
+            <div className={`p-4 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center mb-2">
                 <span className="text-2xl mr-2">🏦</span>
                 <div>
@@ -238,9 +263,7 @@ const BankBalanceSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
 
           {/* Petty Cash */}
           {groupedAccounts.petty_cash.length > 0 && (
-            <div className={`p-4 rounded-lg border ${
-              isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
-            }`}>
+            <div className={`p-4 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center mb-2">
                 <span className="text-2xl mr-2">💰</span>
                 <div>
@@ -260,9 +283,7 @@ const BankBalanceSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
 
           {/* Cash */}
           {groupedAccounts.cash.length > 0 && (
-            <div className={`p-4 rounded-lg border ${
-              isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
-            }`}>
+            <div className={`p-4 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
               <div className="flex items-center mb-2">
                 <span className="text-2xl mr-2">💵</span>
                 <div>
@@ -282,53 +303,76 @@ const BankBalanceSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
         </div>
       </div>
 
-      {/* Debug Info (can be removed in production) */}
-      {process.env.NODE_ENV === 'development' && banks.length > 0 && (
-        <div className={`mb-4 p-3 rounded text-xs ${
-          isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-600'
-        }`}>
-          <details>
-            <summary className="cursor-pointer">Debug: Data yang dimuatkan ({banks.length} items)</summary>
-            <pre className="mt-2 text-xs overflow-auto">
-              {JSON.stringify(banks, null, 2)}
-            </pre>
-          </details>
+      {/* Search and Add New Account Button */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        {/* Search Input */}
+        <div className="relative flex-1 max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FaSearch className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+          </div>
+          <input
+            type="text"
+            placeholder="Cari nama bank, nombor akaun, atau cawangan..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`w-full pl-10 pr-10 py-2 text-sm rounded-lg border transition-colors ${
+              isDark
+                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500'
+                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+            } focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20`}
+          />
+          {searchTerm && (
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <TButton variant="subtle" size="xs" color="ghost" onClick={handleClearSearch} circle={true}>
+                <FaTimes className="w-3 h-3" />
+              </TButton>
+            </div>
+          )}
+        </div>
+
+        {/* Add New Account Button */}
+        <TButton color="primary" size="md" variant="solid" onClick={openAddDialog} isDisable={isLoading}>
+          <FaPlus className="w-4 h-4" />
+          <span>Tambah Akaun Kewangan Baru</span>
+        </TButton>
+      </div>
+
+      {/* Search Results Info */}
+      {searchTerm && (
+        <div className="mb-4">
+          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            {filteredBanks.length === 0 ? (
+              <>Tiada hasil ditemui untuk "<span className="font-medium">{searchTerm}</span>"</>
+            ) : (
+              <>Menunjukkan {filteredBanks.length} daripada {banks.length} akaun untuk "<span className="font-medium">{searchTerm}</span>"</>
+            )}
+          </p>
         </div>
       )}
 
-      {/* Add New Account Button */}
-      <div className="mb-6">
-        <button
-          onClick={openAddDialog}
-          disabled={isLoading}
-          className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-            isDark
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          } focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-        >
-          <FaPlus className="w-4 h-4 mr-2" />
-          Tambah Akaun Kewangan Baru
-        </button>
-      </div>
-
       {/* Accounts List */}
-      <div className="space-y-4">
-        {banks.length === 0 && !isLoading ? (
-          <div className={`p-6 rounded-lg border text-center ${
-            isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
-          }`}>
+      <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-38rem)] ">
+        {filteredBanks.length === 0 && !isLoading ? (
+          <div className={`p-6 rounded-lg border text-center ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Tiada maklumat akaun kewangan. Klik "Tambah Akaun Kewangan Baru" untuk memulakan.
+              {searchTerm ? (
+                <>
+                  Tiada akaun kewangan ditemui yang sepadan dengan carian anda.
+                  <br />
+                  <TButton variant="link" color="primary" size="sm" onClick={handleClearSearch} className="mt-2">
+                    Kosongkan carian
+                  </TButton>
+                </>
+              ) : (
+                <>Tiada maklumat akaun kewangan. Klik "Tambah Akaun Kewangan Baru" untuk memulakan.</>
+              )}
             </p>
           </div>
         ) : (
-          banks.map((bank) => {
+          filteredBanks.map((bank) => {
             const category = categorizeAccount(bank);
             return (
-              <div key={bank.id} className={`p-6 rounded-lg border ${
-                isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
-              }`}>
+              <div key={bank.id} className={`p-6 rounded-lg border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'}`}>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center mb-2">
@@ -395,30 +439,26 @@ const BankBalanceSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                     </div>
                   </div>
                   <div className="flex space-x-2 ml-4">
-                    <button
+                    <TButton
+                      variant="subtle"
+                      color="blue"
+                      size="sm"
                       onClick={() => openEditDialog(bank)}
-                      disabled={isLoading}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isDark
-                          ? 'bg-blue-600 text-white hover:bg-blue-700'
-                          : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                      }`}
-                      title="Edit Akaun"
+                      isDisable={isLoading}
+                      circle={true}
                     >
                       <FaEdit className="w-4 h-4" />
-                    </button>
-                    <button
+                    </TButton>
+                    <TButton
+                      variant="subtle"
+                      color="red"
+                      size="sm"
                       onClick={() => handleDeleteAccount(bank.id)}
-                      disabled={isLoading}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isDark
-                          ? 'bg-red-600 text-white hover:bg-red-700'
-                          : 'bg-red-100 text-red-700 hover:bg-red-200'
-                      }`}
-                      title="Padam Akaun"
+                      isDisable={isLoading}
+                      circle={true}
                     >
                       <FaTrash className="w-4 h-4" />
-                    </button>
+                    </TButton>
                   </div>
                 </div>
               </div>
@@ -437,14 +477,7 @@ const BankBalanceSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
       )}
 
       {/* BANK DIALOG - INI YANG HILANG DALAM KOD ASAL! */}
-      <BankDialog
-        isOpen={isDialogOpen}
-        onClose={closeDialog}
-        onSave={handleSaveBank}
-        bank={editingBank}
-        isDark={isDark}
-        isLoading={isSaving}
-      />
+      <BankDialog isOpen={isDialogOpen} onClose={closeDialog} onSave={handleSaveBank} bank={editingBank} isDark={isDark} isLoading={isSaving}/>
     </div>
   );
 };

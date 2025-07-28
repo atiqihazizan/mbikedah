@@ -20,6 +20,7 @@ import { getTotalNotifications } from '../../hooks/useTabNotifications';
  * @param {Function} onSettings - Settings handler
  */
 const UserDropdown = ({ 
+  userRoles,
   currentUser, 
   tabNotifications, 
   onLogout,
@@ -102,9 +103,7 @@ const UserDropdown = ({
   /**
    * Toggle dropdown visibility
    */
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
+  const toggleDropdown = () => setIsOpen(!isOpen);
 
   return (
     <div className="relative" ref={dropdownRef}>
