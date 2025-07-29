@@ -107,9 +107,15 @@ Route::middleware('auth:sanctum')->group(function () {
    * |--------------------------------------------------------------------------
    */
   Route::prefix('budgets')->group(function () {
+    // Special routes (must come before {id} routes)
+    Route::get('/summary/dashboard', [BudgetController::class, 'getSummary']);
+    Route::get('/structure/hierarchical', [BudgetController::class, 'getHierarchical']);
+    Route::post('/cache/clear', [BudgetController::class, 'clearCache']);
+    Route::get('/department/{departmentId}', [BudgetController::class, 'getByDepartment']);
+    Route::get('/year/{year}', [BudgetController::class, 'getByYear']);
+
     // Basic CRUD Routes
     Route::get('/', [BudgetController::class, 'index']);
-    Route::get('/hierarchical', [BudgetController::class, 'getHierarchical']);
     Route::post('/', [BudgetController::class, 'store']);
     Route::get('/{id}', [BudgetController::class, 'show']);
     Route::put('/{id}', [BudgetController::class, 'update']);
@@ -119,11 +125,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/{id}/name-level', [BudgetController::class, 'updateNameAndLevel']);
     Route::put('/{id}/budget-allocation', [BudgetController::class, 'updateBudgetAllocation']);
     Route::put('/{id}/actual-spending', [BudgetController::class, 'updateActualSpending']);
-
-    // Additional Routes
-    Route::get('/summary/dashboard', [BudgetController::class, 'getSummary']);
-    Route::get('/department/{departmentId}', [BudgetController::class, 'getByDepartment']);
-    Route::get('/year/{year}', [BudgetController::class, 'getByYear']);
   });
 
   /*

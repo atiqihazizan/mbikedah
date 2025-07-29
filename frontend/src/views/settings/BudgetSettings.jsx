@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { FaChartLine, FaPlus, FaEdit, FaTrash, FaLayerGroup, FaSitemap } from "react-icons/fa";
+import { toast } from "react-toastify";
 import apiClient from "../../utils/axios"; // Adjust path as needed
 import BudgetFormDialog from "../../components/dialogs/BudgetFormDialog"; // Import the separated dialog
+import TButton from "../../components/Core/TButton"; // Import TButton component
 
 /**
  * Main Budget Settings Component (Finance Role Only) - Infrastructure Setup
@@ -12,7 +14,6 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
   const [selectedBudget, setSelectedBudget] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
-  const [notification, setNotification] = useState({ type: '', message: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterLevel, setFilterLevel] = useState('');
@@ -29,7 +30,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
       const response = await apiClient.get('/budgets');
       setBudgets(response.data.data || response.data || []);
     } catch (error) {
-      showNotification('error', 'Ralat memuat senarai budget');
+      toast.error('Ralat memuat senarai budget');
       console.error('Error loading budgets:', error);
     } finally {
       setIsLoading(false);
@@ -49,17 +50,17 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
     try {
       if (isEdit) {
         await apiClient.put(`/budgets/${isEdit.id}/name-level`, budgetData);
-        showNotification('success', 'Budget berjaya dikemaskini');
+        toast.success('Budget berjaya dikemaskini');
       } else {
         await apiClient.post('/budgets', budgetData);
-        showNotification('success', 'Budget baru berjaya disimpan');
+        toast.success('Budget baru berjaya disimpan');
       }
       
       await loadBudgets();
     } catch (error) {
       console.log(error);
       const errorMessage = error.response?.data?.message || 'Ralat menyimpan budget';
-      showNotification('error', errorMessage);
+      toast.error(errorMessage);
       throw error;
     }
   };
@@ -81,17 +82,12 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
 
     try {
       await apiClient.delete(`/budgets/${budgetId}`);
-      showNotification('success', 'Budget berjaya dipadam');
+      toast.success('Budget berjaya dipadam');
       await loadBudgets();
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Ralat memadam budget';
-      showNotification('error', errorMessage);
+      toast.error(errorMessage);
     }
-  };
-
-  const showNotification = (type, message) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification({ type: '', message: '' }), 5000);
   };
 
   const handleQuickSetParent = async (childBudget, parentBudget) => {
@@ -100,10 +96,10 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
         ...childBudget,
         parent_id: parentBudget.id
       });
-      showNotification('success', `${childBudget.code} telah diset sebagai child kepada ${parentBudget.code}`);
+      toast.success(`${childBudget.code} telah diset sebagai child kepada ${parentBudget.code}`);
       await loadBudgets();
     } catch (error) {
-      showNotification('error', 'Ralat mengemas kini parent-child relationship');
+      toast.error('Ralat mengemas kini parent-child relationship');
     }
   };
 
@@ -123,7 +119,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
   };
 
   const getBudgetTypeLabel = (type) => {
-    return type === 2 ? 'Kredit' : type === 1 ? 'Debit' : 'Operasi';
+    return type === 2 ? 'Perbelanjaan' : type === 1 ? 'Pendapatan' : 'Operasi';
   };
 
   const getGroupTypeLabel = (groupType) => {
@@ -159,9 +155,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
     const rootBudgets = [];
     
     // Create map for quick lookup
-    budgets.forEach(budget => {
-      budgetMap[budget.id] = { ...budget, children: [] };
-    });
+    budgets.forEach(budget => {budgetMap[budget.id] = { ...budget, children: [] }});
     
     // Build parent-child relationships
     budgets.forEach(budget => {
@@ -180,9 +174,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
           displayLevel: level,
           indentation: '  '.repeat(level)
         });
-        if (item.children.length > 0) {
-          flattenWithHierarchy(item.children, level + 1, result);
-        }
+        if (item.children.length > 0) flattenWithHierarchy(item.children, level + 1, result);
       });
       return result;
     };
@@ -223,18 +215,21 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
               Urus struktur hierarki dan kategori budget organisasi
             </p>
           </div>
-          <button
+          <TButton
+            variant="solid"
+            color="blue"
+            size="lg"
             onClick={handleNewBudget}
-            className="flex items-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+            className="shadow-lg hover:shadow-xl px-4 py-2"
           >
-            <FaPlus className="w-4 h-4 mr-2" />
-            Tambah Budget
-          </button>
+            <FaPlus className="w-4 h-4" />
+            <span>Tambah Budget</span>
+          </TButton>
         </div>
 
         {/* Search and Filters */}
         <div className="grid grid-cols-8 gap-4">
-          <div className="col-span-6">
+          <div className="col-span-4">
             <input
               type="text"
               placeholder="Cari nama atau kod budget..."
@@ -250,7 +245,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent col-span-2 ${
               isDark
                 ? 'bg-gray-700 border-gray-600 text-white'
                 : 'bg-white border-gray-300 text-gray-900'
@@ -258,13 +253,13 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
           >
             <option value="">Semua Jenis</option>
             <option value="0">Operasi</option>
-            <option value="1">Debit</option>
-            <option value="2">Kredit</option>
+            <option value="1">Pendapatan</option>
+            <option value="2">Perbelanjaan</option>
           </select>
           <select
             value={filterLevel}
             onChange={(e) => setFilterLevel(e.target.value)}
-            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent col-span-2 ${
               isDark
                 ? 'bg-gray-700 border-gray-600 text-white'
                 : 'bg-white border-gray-300 text-gray-900'
@@ -345,20 +340,6 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
           </div>
         </div>
       )}
-      {notification.message && (
-        <div className={`mb-4 p-4 rounded-lg border ${
-          notification.type === 'success' 
-            ? isDark ? 'bg-green-900 text-green-200 border-green-700' : 'bg-green-100 text-green-700 border-green-200'
-            : isDark ? 'bg-red-900 text-red-200 border-red-700' : 'bg-red-100 text-red-700 border-red-200'
-        }`}>
-          <div className="flex items-center">
-            <div className={`w-2 h-2 rounded-full mr-2 ${
-              notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-            }`}></div>
-            {notification.message}
-          </div>
-        </div>
-      )}
 
       {/* Budget Table */}
       <div className={`rounded-xl border shadow-lg ${
@@ -382,7 +363,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                 Memuat data budget...
               </p>
             </div>
-                      ) : hierarchicalBudgets.length === 0 ? (
+          ) : hierarchicalBudgets.length === 0 ? (
             <div className={`text-center py-12 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               <FaChartLine className="w-16 h-16 mx-auto mb-4 opacity-30" />
               <h4 className="text-lg font-medium mb-2">
@@ -395,12 +376,13 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                 }
               </p>
               {budgets.length === 0 && (
-                <button
+                <TButton
+                  variant="link"
+                  color="blue"
                   onClick={handleNewBudget}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
                 >
                   Tambah struktur budget pertama
-                </button>
+                </TButton>
               )}
             </div>
           ) : (
@@ -408,9 +390,9 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
               <table className="w-full">
                 <thead>
                   <tr className={`border-b-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <th className={`text-left py-4 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {/* <th className={`text-left py-4 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Hierarki
-                    </th>
+                    </th> */}
                     <th className={`text-left py-4 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Kod Budget
                     </th>
@@ -435,9 +417,9 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                         ? 'border-gray-700 hover:bg-gray-750' 
                         : 'border-gray-100 hover:bg-gray-50'
                     }`}>
-                      <td className={`py-4 px-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {/* <td className={`py-4 px-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <div className="flex items-center">
-                          {/* Hierarchical indentation */}
+                          {/* Hierarchical indentation * /}
                           <div className="flex items-center" style={{ marginLeft: `${budget.displayLevel * 20}px` }}>
                             {budget.displayLevel > 0 && (
                               <div className="flex items-center mr-2">
@@ -467,7 +449,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                             {budget.is_group ? getGroupTypeLabel(budget.group_type) : `L${budget.level || 0}`}
                           </span>
                         </div>
-                      </td>
+                      </td> */}
                       <td className={`py-4 px-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <code className={`px-2 py-1 rounded text-sm font-mono ${
                           isDark ? 'bg-gray-700 text-blue-300' : 'bg-gray-100 text-blue-600'
@@ -481,7 +463,22 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                         )}
                       </td>
                       <td className={`py-4 px-4 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {budget.name}
+                        {/* {budget.name} */}
+                        <div className="flex items-center">
+                          <div className="flex items-center" style={{ marginLeft: `${budget.displayLevel * 20}px` }}>
+                            {budget.displayLevel > 0 && (
+                              <div className="flex items-center mr-2">
+                                {Array.from({ length: budget.displayLevel }, (_, i) => (
+                                  <div key={i} className="w-4 h-px bg-gray-400 mr-1"></div>
+                                ))}
+                                {/* <div className="w-2 h-2 border-l border-b border-gray-400 mr-2"></div> */}
+                              </div>
+                            )}
+                          </div>
+                          <span className={`ml-2 text-xs px-2 py-1 rounded`}>
+                            {budget.name}
+                          </span>
+                        </div>
                       </td>
                       <td className={`py-4 px-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -499,28 +496,26 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex justify-center space-x-2">
-                          <button
+                          <TButton
+                            variant="subtle"
+                            color="blue"
+                            size="sm"
+                            circle
                             onClick={() => handleEditBudget(budget)}
-                            className={`p-2 rounded-lg transition-all duration-200 ${
-                              isDark 
-                                ? 'text-blue-400 hover:bg-gray-700 hover:text-blue-300' 
-                                : 'text-blue-600 hover:bg-blue-50 hover:text-blue-800'
-                            }`}
-                            title="Edit Budget"
+                            className="transition-all duration-200"
                           >
                             <FaEdit className="w-4 h-4" />
-                          </button>
-                          <button
+                          </TButton>
+                          <TButton
+                            variant="subtle"
+                            color="red"
+                            size="sm"
+                            circle
                             onClick={() => handleDeleteBudget(budget.id, budget.name)}
-                            className={`p-2 rounded-lg transition-all duration-200 ${
-                              isDark 
-                                ? 'text-red-400 hover:bg-gray-700 hover:text-red-300' 
-                                : 'text-red-600 hover:bg-red-50 hover:text-red-800'
-                            }`}
-                            title="Padam Budget"
+                            className="transition-all duration-200"
                           >
                             <FaTrash className="w-4 h-4" />
-                          </button>
+                          </TButton>
                         </div>
                       </td>
                     </tr>
