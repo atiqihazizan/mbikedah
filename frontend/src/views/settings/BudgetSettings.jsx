@@ -128,16 +128,18 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
     setShowDialog(true);
   };
 
-  // New function to handle adding child budget
   const handleAddChild = (parentBudget) => {
-    setSelectedBudget(null); // This is create mode
+    // Calculate the next sort_order for the new child
+    const existingChildrenCount = getChildrenCount(parentBudget.id);
+    const nextSortOrder = existingChildrenCount + 1;
+    
     setInitialFormData({
       parent_id: parentBudget.id.toString(),
       level: (parentBudget.level + 1),
-      type: parentBudget.type, // Inherit parent's type
+      type: parentBudget.type,
       department_id: parentBudget.department_id ? parentBudget.department_id.toString() : '',
       yearly: parentBudget.yearly || new Date().getFullYear(),
-      sort_order: 1
+      sort_order: nextSortOrder // Smart sort_order based on existing children
     });
     setShowDialog(true);
   };
