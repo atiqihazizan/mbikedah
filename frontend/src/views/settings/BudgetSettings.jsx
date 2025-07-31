@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaChartLine, FaPlus, FaEdit, FaTrash, FaLayerGroup, FaSitemap } from "react-icons/fa";
+import { FaChartLine, FaPlus, FaEdit, FaTrash, FaLayerGroup, FaSitemap, FaBaby } from "react-icons/fa";
 import { toast } from "react-toastify";
 import apiClient from "../../utils/axios"; // Adjust path as needed
 import BudgetFormDialog from "../../components/dialogs/BudgetFormDialog"; // Import the separated dialog
@@ -12,6 +12,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
   const [budgets, setBudgets] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [selectedBudget, setSelectedBudget] = useState(null);
+  const [initialFormData, setInitialFormData] = useState(null); // New state for initial form data
   const [isLoading, setIsLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,12 +49,34 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
 
   const handleSaveBudget = async (budgetData, isEdit) => {
     try {
+      let newBudget;
+      
       if (isEdit) {
         await apiClient.put(`/budgets/${isEdit.id}/name-level`, budgetData);
         toast.success('Budget berjaya dikemaskini');
+        newBudget = { ...isEdit, ...budgetData };
       } else {
-        await apiClient.post('/budgets', budgetData);
+        const response = await apiClient.post('/budgets', budgetData);
         toast.success('Budget baru berjaya disimpan');
+        newBudget = response.data.data || response.data;
+      }
+
+      // Handle Insert Parent special case
+      if (initialFormData?._insertParentFor && newBudget) {
+        try {
+          // Update the child budget to point to new parent
+          const childBudgetId = initialFormData._insertParentFor;
+          const childBudget = budgets.find(b => b.id === childBudgetId);
+          
+          if (childBudget) {
+            // Update child budget's parent_id and increment its level and all descendants
+            await updateBudgetHierarchy(childBudgetId, newBudget.id);
+            toast.success(`${initialFormData._childBudgetCode} telah diassign kepada parent baru`);
+          }
+        } catch (hierarchyError) {
+          console.error('Error updating hierarchy:', hierarchyError);
+          toast.warning('Parent berjaya disimpan, tetapi terdapat masalah mengemas kini hierarki. Sila refresh page.');
+        }
       }
       
       await loadBudgets();
@@ -65,13 +88,84 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
     }
   };
 
+  // Helper function to update budget hierarchy after inserting parent
+  const updateBudgetHierarchy = async (childBudgetId, newParentId) => {
+    const childBudget = budgets.find(b => b.id === childBudgetId);
+    if (!childBudget) return;
+
+    // Update child budget to point to new parent and increment level
+    await apiClient.put(`/budgets/${childBudgetId}/name-level`, {
+      ...childBudget,
+      parent_id: newParentId,
+      level: childBudget.level + 1
+    });
+
+    // Recursively update all descendants
+    const updateDescendants = async (parentId, levelIncrement) => {
+      const children = budgets.filter(b => b.parent_id === parentId);
+      for (const child of children) {
+        await apiClient.put(`/budgets/${child.id}/name-level`, {
+          ...child,
+          level: child.level + levelIncrement
+        });
+        // Recursively update grandchildren
+        await updateDescendants(child.id, levelIncrement);
+      }
+    };
+
+    await updateDescendants(childBudgetId, 1);
+  };
+
   const handleEditBudget = (budget) => {
     setSelectedBudget(budget);
+    setInitialFormData(null); // Clear any initial form data
     setShowDialog(true);
   };
 
   const handleNewBudget = () => {
     setSelectedBudget(null);
+    setInitialFormData(null); // Clear any initial form data
+    setShowDialog(true);
+  };
+
+  // New function to handle adding child budget
+  const handleAddChild = (parentBudget) => {
+    setSelectedBudget(null); // This is create mode
+    setInitialFormData({
+      parent_id: parentBudget.id.toString(),
+      level: (parentBudget.level + 1),
+      type: parentBudget.type, // Inherit parent's type
+      department_id: parentBudget.department_id ? parentBudget.department_id.toString() : '',
+      yearly: parentBudget.yearly || new Date().getFullYear(),
+      sort_order: 1
+    });
+    setShowDialog(true);
+  };
+
+  // New function to handle inserting parent above existing budget
+  const handleInsertParent = (childBudget) => {
+    // Check if this will cause level overflow
+    const maxChildLevel = getMaxChildLevel(childBudget.id);
+    if (maxChildLevel >= 10) {
+      toast.error('Tidak dapat insert parent kerana akan melebihi had level maksimum (10)');
+      return;
+    }
+
+    // Calculate new level for the parent
+    const newParentLevel = Math.max(0, childBudget.level);
+    
+    setSelectedBudget(null); // This is create mode
+    setInitialFormData({
+      parent_id: childBudget.parent_id ? childBudget.parent_id.toString() : '',
+      level: newParentLevel,
+      type: childBudget.type, // Inherit child's type
+      department_id: childBudget.department_id ? childBudget.department_id.toString() : '',
+      yearly: childBudget.yearly || new Date().getFullYear(),
+      sort_order: 1,
+      _insertParentFor: childBudget.id, // Special flag to indicate this is insert parent mode
+      _childBudgetName: childBudget.name,
+      _childBudgetCode: childBudget.code
+    });
     setShowDialog(true);
   };
 
@@ -101,6 +195,12 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
     } catch (error) {
       toast.error('Ralat mengemas kini parent-child relationship');
     }
+  };
+
+  const handleDialogClose = () => {
+    setShowDialog(false);
+    setSelectedBudget(null);
+    setInitialFormData(null); // Clear initial form data when closing
   };
 
   const getOrphanedBudgets = () => {
@@ -134,6 +234,34 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
   const getDepartmentName = (departmentId) => {
     const dept = departments.find(d => d.id === departmentId);
     return dept ? dept.name : 'Tiada Jabatan';
+  };
+
+  // Check if budget can have children (max level check)
+  const canHaveChildren = (budget) => {
+    return (budget.level || 0) < 10; // Assuming max level is 10
+  };
+
+  // Get children count for display
+  const getChildrenCount = (budgetId) => {
+    return budgets.filter(b => b.parent_id === budgetId).length;
+  };
+
+  // Get maximum level of all descendants (for insert parent validation)
+  const getMaxChildLevel = (budgetId) => {
+    const getChildrenRecursive = (parentId) => {
+      const directChildren = budgets.filter(b => b.parent_id === parentId);
+      if (directChildren.length === 0) return 0;
+      
+      let maxLevel = 0;
+      directChildren.forEach(child => {
+        const childMaxLevel = Math.max(child.level, getChildrenRecursive(child.id));
+        maxLevel = Math.max(maxLevel, childMaxLevel);
+      });
+      return maxLevel;
+    };
+    
+    const budget = budgets.find(b => b.id === budgetId);
+    return budget ? Math.max(budget.level, getChildrenRecursive(budgetId)) : 0;
   };
 
   // Filter budgets based on search and filters
@@ -390,20 +518,23 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
               <table className="w-full">
                 <thead>
                   <tr className={`border-b-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                    {/* <th className={`text-left py-4 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Hierarki
-                    </th> */}
                     <th className={`text-left py-4 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Kod Budget
                     </th>
                     <th className={`text-left py-4 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Nama Budget
                     </th>
+                    {/* <th className={`text-left py-4 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Susunan
+                    </th> */}
                     <th className={`text-left py-4 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Jenis
                     </th>
                     <th className={`text-left py-4 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Jabatan
+                    </th>
+                    <th className={`text-center py-4 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Children
                     </th>
                     <th className={`text-center py-4 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       Tindakan
@@ -417,41 +548,8 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                         ? 'border-gray-700 hover:bg-gray-750' 
                         : 'border-gray-100 hover:bg-gray-50'
                     }`}>
-                      {/* <td className={`py-4 px-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        <div className="flex items-center">
-                          {/* Hierarchical indentation * /}
-                          <div className="flex items-center" style={{ marginLeft: `${budget.displayLevel * 20}px` }}>
-                            {budget.displayLevel > 0 && (
-                              <div className="flex items-center mr-2">
-                                {Array.from({ length: budget.displayLevel }, (_, i) => (
-                                  <div key={i} className="w-4 h-px bg-gray-400 mr-1"></div>
-                                ))}
-                                <div className="w-2 h-2 border-l border-b border-gray-400 mr-2"></div>
-                              </div>
-                            )}
-                            {budget.is_group ? (
-                              <FaLayerGroup className={`w-4 h-4 ${
-                                budget.level === 1 ? 'text-blue-500' : 
-                                budget.level === 2 ? 'text-green-500' : 'text-orange-500'
-                              }`} />
-                            ) : (
-                              <div className={`w-2 h-2 rounded-full ${
-                                budget.level === 1 ? 'bg-blue-500' : 
-                                budget.level === 2 ? 'bg-green-500' : 'bg-orange-500'
-                              }`}></div>
-                            )}
-                          </div>
-                          <span className={`ml-2 text-xs px-2 py-1 rounded ${
-                            budget.is_group 
-                              ? isDark ? 'bg-blue-800 text-blue-200' : 'bg-blue-100 text-blue-800'
-                              : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {budget.is_group ? getGroupTypeLabel(budget.group_type) : `L${budget.level || 0}`}
-                          </span>
-                        </div>
-                      </td> */}
                       <td className={`py-4 px-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        <code className={`px-2 py-1 rounded text-sm font-mono ${
+                        {/* <code className={`px-2 py-1 rounded text-sm font-mono ${
                           isDark ? 'bg-gray-700 text-blue-300' : 'bg-gray-100 text-blue-600'
                         }`}>
                           {budget.code}
@@ -460,26 +558,44 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                           <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                             {getParentBreadcrumb(budget)}{budget.code}
                           </div>
-                        )}
-                      </td>
-                      <td className={`py-4 px-4 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {/* {budget.name} */}
+                        )} */}
                         <div className="flex items-center">
                           <div className="flex items-center" style={{ marginLeft: `${budget.displayLevel * 20}px` }}>
                             {budget.displayLevel > 0 && (
                               <div className="flex items-center mr-2">
-                                {Array.from({ length: budget.displayLevel }, (_, i) => (
-                                  <div key={i} className="w-4 h-px bg-gray-400 mr-1"></div>
-                                ))}
-                                {/* <div className="w-2 h-2 border-l border-b border-gray-400 mr-2"></div> */}
+                                <div className="w-2 h-2 border-l border-b border-gray-400 mr-2"></div>
                               </div>
                             )}
                           </div>
-                          <span className={`ml-2 text-xs px-2 py-1 rounded`}>
-                            {budget.name}
+                          <span className={`text-xs py-1 rounded`}>
+                            <code className={`px-2 py-1 rounded text-sm font-mono ${isDark ? 'bg-gray-700 text-blue-300' : 'bg-gray-100 text-blue-600'}`}>
+                              {budget.code}
+                            </code>
+                            {/* {budget.displayLevel > 0 && (
+                              <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                {getParentBreadcrumb(budget)}{budget.code}
+                              </div>
+                            )} */}
                           </span>
                         </div>
                       </td>
+                      <td className={`py-4 px-4 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {/* <div className="flex items-center">
+                          <div className="flex items-center" style={{ marginLeft: `${budget.displayLevel * 20}px` }}>
+                            {budget.displayLevel > 0 && (
+                              <div className="flex items-center mr-2">
+                                <div className="w-2 h-2 border-l border-b border-gray-400 mr-2"></div>
+                              </div>
+                            )}
+                          </div>
+                          </div> */}
+                        <span className={`text-xs py-1 rounded`}>
+                          {budget.name}
+                        </span>
+                      </td>
+                      {/* <td className={`py-4 px-4 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {budget.sort_order}
+                      </td> */}
                       <td className={`py-4 px-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                           budget.type === 2
@@ -494,8 +610,48 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                       <td className={`py-4 px-4 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                         {getDepartmentName(budget.department_id)}
                       </td>
+                      <td className={`py-4 px-4 text-center ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          getChildrenCount(budget.id) > 0
+                            ? isDark ? 'bg-blue-800 text-blue-200' : 'bg-blue-100 text-blue-800'
+                            : isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {getChildrenCount(budget.id)}
+                        </span>
+                      </td>
                       <td className="py-4 px-4">
-                        <div className="flex justify-center space-x-2">
+                        <div className="flex justify-center space-x-1">
+                          {/* Add Child Button */}
+                          {canHaveChildren(budget) && (
+                            <TButton
+                              variant="subtle"
+                              color="green"
+                              size="sm"
+                              circle
+                              onClick={() => handleAddChild(budget)}
+                              className="transition-all duration-200"
+                              title={`Tambah child budget untuk ${budget.name}`}
+                            >
+                              <FaBaby className="w-3 h-3" />
+                            </TButton>
+                          )}
+
+                          {/* Insert Parent Button - only show if budget can have a parent inserted */}
+                          {/* {budget.level < 10 && (
+                            <TButton
+                              variant="subtle"
+                              color="purple"
+                              size="sm"
+                              circle
+                              onClick={() => handleInsertParent(budget)}
+                              className="transition-all duration-200"
+                              title={`Insert parent baru untuk ${budget.name}`}
+                            >
+                              <FaLayerGroup className="w-3 h-3" />
+                            </TButton>
+                          )} */}
+                          
+                          {/* Edit Button */}
                           <TButton
                             variant="subtle"
                             color="blue"
@@ -503,9 +659,12 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                             circle
                             onClick={() => handleEditBudget(budget)}
                             className="transition-all duration-200"
+                            title={`Edit ${budget.name}`}
                           >
                             <FaEdit className="w-4 h-4" />
                           </TButton>
+                          
+                          {/* Delete Button */}
                           <TButton
                             variant="subtle"
                             color="red"
@@ -513,6 +672,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
                             circle
                             onClick={() => handleDeleteBudget(budget.id, budget.name)}
                             className="transition-all duration-200"
+                            title={`Padam ${budget.name}`}
                           >
                             <FaTrash className="w-4 h-4" />
                           </TButton>
@@ -530,8 +690,9 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
       {/* Budget Form Dialog */}
       <BudgetFormDialog
         isOpen={showDialog}
-        onClose={() => setShowDialog(false)}
+        onClose={handleDialogClose}
         selectedBudget={selectedBudget}
+        initialFormData={initialFormData}
         departments={departments}
         budgets={budgets}
         isDark={isDark}

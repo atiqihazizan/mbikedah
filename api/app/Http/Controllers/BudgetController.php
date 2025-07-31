@@ -26,13 +26,11 @@ class BudgetController extends Controller
 			// Check if we want fresh data (for debugging)
 			$forceRefresh = request()->has('refresh') || request()->has('_t');
 
-			if ($forceRefresh) {
-				$this->clearAllBudgetCache();
-			}
+			if ($forceRefresh) $this->clearAllBudgetCache();
 
 			$budgets = Cache::remember(self::CACHE_KEY_BUDGETS, now()->addMinutes(self::CACHE_TTL), function () {
 				return Budget::with(['department', 'parent', 'children'])
-					// ->orderBy('type')
+					->orderBy('type')
 					->orderBy('code')
 					// ->orderBy('level')
 					// ->orderBy('sort_order')
@@ -68,16 +66,14 @@ class BudgetController extends Controller
 		try {
 			$forceRefresh = request()->has('refresh');
 
-			if ($forceRefresh) {
-				Cache::forget(self::CACHE_KEY_HIERARCHICAL);
-			}
+			if ($forceRefresh) $this->clearAllBudgetCache();
 
 			$data = Cache::remember(self::CACHE_KEY_HIERARCHICAL, now()->addMinutes(self::CACHE_TTL), function () {
 				$budgets = Budget::with(['parent', 'children', 'department'])
 					->orderBy('type')
 					// ->orderBy('level')
 					// ->orderBy('sort_order')
-					// ->orderBy('code')
+					->orderBy('code')
 					->get();
 
 				return [

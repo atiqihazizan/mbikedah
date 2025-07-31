@@ -6,6 +6,7 @@ const BudgetFormDialog = ({
   isOpen, 
   onClose, 
   selectedBudget, 
+  initialFormData, // New prop for pre-setting form data
   departments, 
   budgets, 
   isDark, 
@@ -76,6 +77,20 @@ const BudgetFormDialog = ({
     );
   };
 
+  // Get dialog title based on context
+  const getDialogTitle = () => {
+    if (selectedBudget) {
+      return 'Kemaskini Budget';
+    } else if (initialFormData?._insertParentFor) {
+      return `Insert Parent untuk ${initialFormData._childBudgetCode}`;
+    } else if (initialFormData?.parent_id) {
+      const parent = budgets.find(b => b.id === parseInt(initialFormData.parent_id));
+      return parent ? `Tambah Child Budget untuk ${parent.code}` : 'Tambah Budget Baru';
+    } else {
+      return 'Tambah Budget Baru';
+    }
+  };
+
   // ===== FORM INITIALIZATION =====
   useEffect(() => {
     if (isOpen) {
@@ -94,7 +109,7 @@ const BudgetFormDialog = ({
           sort_order: selectedBudget.sort_order || 1,
         };
       } else {
-        // Create mode
+        // Create mode - start with defaults
         data = {
           name: '',
           code: '',
@@ -105,6 +120,14 @@ const BudgetFormDialog = ({
           parent_id: '',
           sort_order: 1,
         };
+
+        // Override with initial form data if provided (for Add Child functionality)
+        if (initialFormData) {
+          data = {
+            ...data,
+            ...initialFormData
+          };
+        }
       }
       
       setFormData(data);
@@ -115,7 +138,7 @@ const BudgetFormDialog = ({
     } else {
       setIsInitialized(false);
     }
-  }, [isOpen, selectedBudget]);
+  }, [isOpen, selectedBudget, initialFormData]);
 
   // ===== UNSAVED CHANGES DETECTION =====
   useEffect(() => {
@@ -189,7 +212,7 @@ const BudgetFormDialog = ({
 
     // Auto-calculate sort_order based on level
     if (field === 'level') {
-      const newSortOrder = (parseInt(value) || 1);//* 100 + 1;
+      const newSortOrder = (parseInt(value) || 1);
       setFormData(prev => ({
         ...prev,
         level: parseInt(value) || 1,
@@ -265,11 +288,6 @@ const BudgetFormDialog = ({
       newErrors.parent_id = 'Budget level 0 tidak boleh mempunyai parent';
     }
 
-    // Level > 0 sepatutnya ada parent (optional warning, bukan error)
-    // if (level > 0 && !formData.parent_id) {
-    //   newErrors.parent_id = 'Budget level > 0 sepatutnya mempunyai parent';
-    // }
-
     // Department validation
     if (formData.department_id && !departments.find(d => d.id === parseInt(formData.department_id))) {
       newErrors.department_id = 'Jabatan yang dipilih tidak wujud';
@@ -316,6 +334,60 @@ const BudgetFormDialog = ({
     }
   };
 
+  // ===== PARENT CONTEXT INFO =====
+  const getParentInfo = () => {
+    if (formData.parent_id) {
+      const parent = budgets.find(b => b.id === parseInt(formData.parent_id));
+      if (parent) {
+        return (
+          <div className={`mt-2 p-3 rounded-lg border ${
+            isDark ? 'bg-blue-900 border-blue-700 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
+            <div className="flex items-center text-sm">
+              <FaLayerGroup className="w-4 h-4 mr-2" />
+              <span className="font-medium">Parent: </span>
+              <code className="ml-1 px-2 py-1 bg-blue-800 text-blue-100 rounded text-xs">
+                {parent.code}
+              </code>
+              <span className="ml-2">{parent.name}</span>
+              <span className={`ml-2 text-xs px-2 py-1 rounded ${
+                isDark ? 'bg-blue-800 text-blue-200' : 'bg-blue-200 text-blue-800'
+              }`}>
+                Level {parent.level}
+              </span>
+            </div>
+          </div>
+        );
+      }
+    }
+    return null;
+  };
+
+  // ===== INSERT PARENT CONTEXT INFO =====
+  const getInsertParentInfo = () => {
+    if (initialFormData?._insertParentFor) {
+      return (
+        <div className={`mt-2 p-3 rounded-lg border ${
+          isDark ? 'bg-purple-900 border-purple-700 text-purple-200' : 'bg-purple-50 border-purple-200 text-purple-800'
+        }`}>
+          <div className="flex items-center text-sm">
+            <FaLayerGroup className="w-4 h-4 mr-2" />
+            <span className="font-medium">Insert Parent untuk: </span>
+            <code className="ml-1 px-2 py-1 bg-purple-800 text-purple-100 rounded text-xs">
+              {initialFormData._childBudgetCode}
+            </code>
+            <span className="ml-2">{initialFormData._childBudgetName}</span>
+          </div>
+          <div className={`mt-2 text-xs ${isDark ? 'text-purple-300' : 'text-purple-600'}`}>
+            💡 Parent baru ini akan disisipkan di antara struktur hierarki sedia ada. 
+            Budget {initialFormData._childBudgetCode} dan semua descendant akan naik satu level.
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   // ===== RENDER =====
   if (!isOpen) return null;
 
@@ -335,7 +407,7 @@ const BudgetFormDialog = ({
             }`} />
             <div>
               <h2 className="text-xl font-bold">
-                {selectedBudget ? 'Kemaskini Budget' : 'Tambah Budget Baru'}
+                {getDialogTitle()}
               </h2>
               {hasUnsavedChanges && (
                 <p className={`text-sm ${isDark ? 'text-yellow-400' : 'text-yellow-600'}`}>
@@ -357,6 +429,10 @@ const BudgetFormDialog = ({
 
         {/* ===== FORM ===== */}
         <form id="budget-form" onSubmit={handleSubmit} className="p-6 space-y-6">
+          
+          {/* Context Info Display */}
+          {getInsertParentInfo()}
+          {getParentInfo()}
           
           {/* Basic Information Section */}
           <div className="space-y-4">
@@ -428,6 +504,7 @@ const BudgetFormDialog = ({
                       ? 'bg-gray-700 border-gray-600 text-white'
                       : 'bg-white border-gray-300 text-gray-900'
                   } ${errors.yearly ? 'border-red-500' : ''}`}
+                  disabled={!!initialFormData?.yearly} // Disable if set by parent or insert parent mode
                 />
                 {errors.yearly && (
                   <p className="mt-1 text-sm text-red-500">{errors.yearly}</p>
@@ -459,6 +536,7 @@ const BudgetFormDialog = ({
                       ? 'bg-gray-700 border-gray-600 text-white'
                       : 'bg-white border-gray-300 text-gray-900'
                   } ${errors.type ? 'border-red-500' : ''}`}
+                  disabled={!!(initialFormData?.type || initialFormData?._insertParentFor)} // Disable if inherited from parent or insert parent mode
                 >
                   <option value={0}>Operasi</option>
                   <option value={1}>Pendapatan</option>
@@ -485,6 +563,7 @@ const BudgetFormDialog = ({
                       ? 'bg-gray-700 border-gray-600 text-white'
                       : 'bg-white border-gray-300 text-gray-900'
                   } ${errors.level ? 'border-red-500' : ''}`}
+                  disabled={!!(initialFormData?.level || initialFormData?._insertParentFor)} // Disable if set by Add Child or Insert Parent
                 />
                 {errors.level && (
                   <p className="mt-1 text-sm text-red-500">{errors.level}</p>
@@ -513,8 +592,8 @@ const BudgetFormDialog = ({
               </div>
             </div>
 
-            {/* Parent Budget Field */}
-            {parseInt(formData.level || '0') > 0 && (
+            {/* Parent Budget Field - Only show if not adding child or level > 0, and not in insert parent mode */}
+            {(parseInt(formData.level || '0') > 0 && !initialFormData?.parent_id && !initialFormData?._insertParentFor) && (
               <div>
                 <label className={`block text-sm font-medium mb-2 ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
