@@ -4,7 +4,6 @@ import { useStateContext } from '../contexts/ContextProvider';
 
 // Import custom components
 import PasswordChangeDialog from '../components/dialogs/PasswordChangeDialog';
-import Topbar from "../components/header/TopBar";
 
 // Import custom hooks
 import { useTabNotifications } from '../hooks/useTabNotifications';
@@ -14,6 +13,7 @@ import { useActiveRole } from '../hooks/useActiveRole';
 import { useUserActions } from '../hooks/useUserActions';
 import { useUserDisplayInfo } from '../hooks/useUserDisplayInfo';
 import { useTheme } from "../hooks/useTheme";
+import Topbar from "../components/header/Topbar";
 
 /**
  * Default Layout Component - Simplified dengan custom hooks

@@ -1,4 +1,5 @@
 import RoleBadgesSection from "./RoleBadgesSection";
+import ToolbarBadgesSection from "./ToolbarBadgesSection";
 import UserDropdown from "./UserDropdown";
 import UserInfo from "./UserInfo";
 
@@ -46,19 +47,28 @@ const Topbar = ({
           />
         </div>
         
-        {/* User Dropdown dengan theme toggle */}
-        <UserDropdown
-          userRoles={userRoles}
-          currentUser={userDisplayInfo}
-          tabNotifications={tabNotifications}
-          onLogout={onLogout}
-          onChangePassword={onChangePassword}
-          onSettings={onSettings}
-          onProfile={onProfile}
-          theme={theme}
-          onToggleTheme={onToggleTheme}
-          isDark={isDark}
-        />
+        <div className="flex flex-col items-end self-end gap-3">
+          {/* User Dropdown dengan theme toggle */}
+          <UserDropdown
+            userRoles={userRoles}
+            currentUser={userDisplayInfo}
+            tabNotifications={tabNotifications}
+            onLogout={onLogout}
+            onChangePassword={onChangePassword}
+            onSettings={onSettings}
+            onProfile={onProfile}
+            theme={theme}
+            onToggleTheme={onToggleTheme}
+            isDark={isDark}
+          />
+          
+          {/* Role Badges */}
+          <ToolbarBadgesSection
+            userRoles={userRoles}
+            isLoading={isLoading}
+          />
+
+        </div>
       </div>
     </div>
   </header>

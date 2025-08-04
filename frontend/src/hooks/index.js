@@ -1,6 +1,6 @@
 // hooks/index.js
-// Auto-generated on: 7/5/2025, 5:40:08 AM
-// Total hooks: 14
+// Auto-generated on: 8/4/2025, 2:27:14 PM
+// Total hooks: 16
 
 /**
  * Centralized exports for all custom React hooks
@@ -45,6 +45,10 @@ export { useUserDisplayInfo } from './useUserDisplayInfo';
 // ==================== AUTH HOOKS ====================
 // Authentication, user management, and security-related hooks
 export { useUserActions } from './useUserActions';
+
+// ==================== GENERAL HOOKS ====================
+export { useBudgetSummary } from './useBudgetSummary';
+export { usePrintout } from './usePrintout';
 
 // ==================== USAGE EXAMPLES ====================
 // Single hook import:

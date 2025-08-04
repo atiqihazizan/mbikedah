@@ -16,6 +16,7 @@ import BillingCheck from "./views/billing/BillingCheck";
 
 import ProtectedRoute from "./components/ProtectedRouter";
 import SettingsLayout from "./layouts/SettingsLayout";
+import BudgetSummary from "./views/reports/BudgetSummary";
 
 const router = createBrowserRouter([
 	{
@@ -37,6 +38,26 @@ const router = createBrowserRouter([
 			// Shared routes (accessible by all roles)
 			{ path: "finance/:idBilling/view", element: <BillingView /> },
 			{ path: "finance/:idBilling/check", element: <BillingCheck /> },
+		],
+	},
+	{
+		path: "/reports",
+		element: <DefaultLayout />,
+		children: [
+			// Root path will be handled by RootLoading with auto-redirect
+			{ path: "", element: <RootLoading /> },
+			
+			// Pemohon specific routes
+			{ path: "budget_summary", element: <BudgetSummary /> },
+			
+			// HOD specific routes
+			{ path: "income_statement", element: <BillingTableHOD /> },
+			
+			// Finance specific routes
+			{ path: "revenue_breakdown", element: <BillingTableFinance /> },
+			
+			// Finance specific routes
+			{ path: "expense_breakdown", element: <BillingTableFinance /> },
 		],
 	},
 	// Settings Route - Protected for all authenticated users
