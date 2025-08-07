@@ -3,7 +3,7 @@ import { Printer, RefreshCw } from 'lucide-react';
 import { useStateContext } from '../../contexts/ContextProvider';
 import { useUserData } from '../../hooks';
 import { TButton } from '../../components/Core';
-import { useIncomeExpenditureStatement } from '../../hooks/useIncomeExpediturreStatment';
+import useIncomeExpediturreStatment from '../../hooks/useIncomeExpediturreStatment';
 
 function IncomeExpenditureStatement() {
   const { currentUser } = useStateContext();
@@ -24,7 +24,7 @@ function IncomeExpenditureStatement() {
     error,
     dataSource,
     refetch: refetchStatement
-  } = useIncomeExpenditureStatement();
+  } = useIncomeExpediturreStatment();
 
   const isLoading = userLoading || loading;
   const hasError = userError || error;

@@ -52,7 +52,7 @@ export { useUserActions } from './useUserActions';
 export { default as useBudgetSummary } from './useBudgetSummary';
 export { default as useRevenueBreakdown } from './useRevenueBreakdown';
 export { default as useExpenseBreakdown } from './useExpenseBreakdown';
-export { default as useIncomeExpenditureStatement } from './useIncomeExpediturreStatment';
+export { default as useIncomeExpediturreStatment } from './useIncomeExpediturreStatment';
 export { usePrintout } from './usePrintout';
 
 // ==================== USAGE EXAMPLES ====================
