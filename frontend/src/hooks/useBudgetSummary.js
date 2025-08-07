@@ -434,7 +434,10 @@ export const useBudgetSummary = (dashboardData, refetch) => {
     title: `Ringkasan Bajet ${getBudgetYear() || '2025'}`, // Add fallback
     orientation: 'landscape',
     paperSize: 'a4', 
-    margins: { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 }
+    margins: { top: 0.5, right: 0.6, bottom: 0.2, left: 0.6 },
+    customPrintStyles: `
+    table * { font-size: 10px !important; }
+    `
   });
 
   // Then use the printElement function in your callback

@@ -17,6 +17,7 @@ import BillingCheck from "./views/billing/BillingCheck";
 import ProtectedRoute from "./components/ProtectedRouter";
 import SettingsLayout from "./layouts/SettingsLayout";
 import BudgetSummary from "./views/reports/BudgetSummary";
+import IncomeExpenditureStatement from "./views/reports/IncomeExpenditureStatement";
 
 const router = createBrowserRouter([
 	{
@@ -51,7 +52,7 @@ const router = createBrowserRouter([
 			{ path: "budget_summary", element: <BudgetSummary /> },
 			
 			// HOD specific routes
-			{ path: "income_statement", element: <BillingTableHOD /> },
+			{ path: "income_statement", element: <IncomeExpenditureStatement /> },
 			
 			// Finance specific routes
 			{ path: "revenue_breakdown", element: <BillingTableFinance /> },

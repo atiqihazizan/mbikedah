@@ -21,6 +21,7 @@ export const usePrintout = (options = {}) => {
       bottom: 0.2,
       left: 0.5
     },
+    customPrintStyles: '',
     debug: false, // Enable debug mode
   };
 
@@ -38,6 +39,10 @@ export const usePrintout = (options = {}) => {
       @page {
         size: ${paperSize} ${orientation};
         margin: ${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in;
+      }
+
+      @media print {
+        ${printOptions.customPrintStyles}
       }
       
       /* Base styles */
