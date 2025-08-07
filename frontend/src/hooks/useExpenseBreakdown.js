@@ -1,188 +1,211 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import usePrintout from './usePrintout';
+import { useState, useEffect, useMemo } from 'react';
+import apiClient from '../utils/axios';
 import expenseData from '../assets/data/ExpenseBreakdown.json';
 
-export const useExpenseBreakdown = (dashboardData, refetch) => {
+const useExpenseBreakdown = () => {
   const [expenseDataState, setExpenseDataState] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-
-  // Simulate API call for expense breakdown data
-  const fetchExpenseData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setHasError(false);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setExpenseDataState(expenseData);
-    } catch (error) {
-      console.error('Error fetching expense data:', error);
-      setHasError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dataSource, setDataSource] = useState('api'); // 'api' or 'json'
 
   useEffect(() => {
-    fetchExpenseData();
-  }, [fetchExpenseData]);
+    const fetchExpenseData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  // Helper function to get total for a category
-  const getCategoryTotal = useCallback((category) => {
-    if (!category || !category.monthly) return {};
-    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-    const totals = { total: 0 };
-    months.forEach(month => {
-      totals[month] = category.monthly?.[month] || 0;
-      totals.total += totals[month];
-    });
-    return totals;
+        // Try API first
+        try {
+          const response = await apiClient.get('/budgets/reports/expense-breakdown');
+          if (response.success && response.data) {
+            setExpenseDataState(response.data);
+            setDataSource('api');
+            console.log('Expense breakdown data loaded from API');
+            return;
+          }
+        } catch (apiError) {
+          console.warn('API failed, falling back to JSON:', apiError.message);
+        }
+
+        // Fallback to JSON file
+        setExpenseDataState(expenseData);
+        setDataSource('json');
+        console.log('Expense breakdown data loaded from JSON fallback');
+
+      } catch (err) {
+        console.error('Error loading expense breakdown data:', err);
+        setError(err.message || 'Ralat memuatkan data pecahan perbelanjaan');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExpenseData();
   }, []);
 
-  // Calculate totals for all expense categories
+  // Helper function to get category total
+  const getCategoryTotal = useMemo(() => {
+    return (categoryData) => {
+      if (!categoryData) return { total: 0 };
+      
+      const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      const total = { total: 0 };
+      
+      months.forEach(month => {
+        total[month] = categoryData.monthly?.[month] || 0;
+        total.total += total[month];
+      });
+      
+      return total;
+    };
+  }, []);
+
+  // Calculate expense totals
   const expenseTotal = useMemo(() => {
     if (!expenseDataState) return null;
-    const keys = Object.keys(expenseDataState).filter(k => k !== 'config');
+    
+    const perkhidmatanAmTotal = getCategoryTotal(expenseDataState.perkhidmatanAm);
+    const perkhidmatanKhasTotal = getCategoryTotal(expenseDataState.perkhidmatanKhas);
+    const perkhidmatanLainTotal = getCategoryTotal(expenseDataState.perkhidmatanLain);
+    const perkhidmatanKewanganTotal = getCategoryTotal(expenseDataState.perkhidmatanKewangan);
+    
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     const grandTotal = { total: 0 };
-    const categoryTotals = {};
-    keys.forEach(key => {
-      const cat = expenseDataState[key];
-      if (cat && cat.monthly) {
-        categoryTotals[key] = getCategoryTotal(cat);
-      }
-    });
+    
     months.forEach(month => {
-      grandTotal[month] = keys.reduce((sum, key) => sum + (categoryTotals[key]?.[month] || 0), 0);
+      grandTotal[month] = (perkhidmatanAmTotal[month] || 0) + (perkhidmatanKhasTotal[month] || 0) + 
+                         (perkhidmatanLainTotal[month] || 0) + (perkhidmatanKewanganTotal[month] || 0);
       grandTotal.total += grandTotal[month];
     });
-    return { ...categoryTotals, grand: grandTotal };
+    
+    return {
+      perkhidmatanAm: perkhidmatanAmTotal,
+      perkhidmatanKhas: perkhidmatanKhasTotal,
+      perkhidmatanLain: perkhidmatanLainTotal,
+      perkhidmatanKewangan: perkhidmatanKewanganTotal,
+      grand: grandTotal
+    };
   }, [expenseDataState, getCategoryTotal]);
 
   // Calculate budget totals
   const budgetTotal = useMemo(() => {
     if (!expenseDataState) return null;
-    const keys = Object.keys(expenseDataState).filter(k => k !== 'config');
-    const categoryBudgets = {};
-    let grand = 0;
-    keys.forEach(key => {
-      const cat = expenseDataState[key];
-      if (cat && cat.budget2025) {
-        categoryBudgets[key] = cat.budget2025;
-        grand += cat.budget2025;
-      }
-    });
-    return { ...categoryBudgets, grand };
+    
+    const perkhidmatanAmBudget = expenseDataState.perkhidmatanAm?.budget2025 || 0;
+    const perkhidmatanKhasBudget = expenseDataState.perkhidmatanKhas?.budget2025 || 0;
+    const perkhidmatanLainBudget = expenseDataState.perkhidmatanLain?.budget2025 || 0;
+    const perkhidmatanKewanganBudget = expenseDataState.perkhidmatanKewangan?.budget2025 || 0;
+    
+    return {
+      perkhidmatanAm: perkhidmatanAmBudget,
+      perkhidmatanKhas: perkhidmatanKhasBudget,
+      perkhidmatanLain: perkhidmatanLainBudget,
+      perkhidmatanKewangan: perkhidmatanKewanganBudget,
+      grand: perkhidmatanAmBudget + perkhidmatanKhasBudget + perkhidmatanLainBudget + perkhidmatanKewanganBudget
+    };
   }, [expenseDataState]);
 
   // Calculate actual totals
   const actualTotal = useMemo(() => {
     if (!expenseDataState) return null;
-    const keys = Object.keys(expenseDataState).filter(k => k !== 'config');
-    const categoryActuals = {};
-    let grand = 0;
-    keys.forEach(key => {
-      const cat = expenseDataState[key];
-      if (cat && cat.actual2024) {
-        categoryActuals[key] = cat.actual2024;
-        grand += cat.actual2024;
-      }
-    });
-    return { ...categoryActuals, grand };
+    
+    const perkhidmatanAmActual = expenseDataState.perkhidmatanAm?.actual2024 || 0;
+    const perkhidmatanKhasActual = expenseDataState.perkhidmatanKhas?.actual2024 || 0;
+    const perkhidmatanLainActual = expenseDataState.perkhidmatanLain?.actual2024 || 0;
+    const perkhidmatanKewanganActual = expenseDataState.perkhidmatanKewangan?.actual2024 || 0;
+    
+    return {
+      perkhidmatanAm: perkhidmatanAmActual,
+      perkhidmatanKhas: perkhidmatanKhasActual,
+      perkhidmatanLain: perkhidmatanLainActual,
+      perkhidmatanKewangan: perkhidmatanKewanganActual,
+      grand: perkhidmatanAmActual + perkhidmatanKhasActual + perkhidmatanLainActual + perkhidmatanKewanganActual
+    };
   }, [expenseDataState]);
 
   // Helper functions
-  const formatCurrency = useCallback((amount) => {
+  const formatCurrency = (amount) => {
     if (amount === null || amount === undefined || amount === 0) return '-';
     return new Intl.NumberFormat('ms-MY', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(Math.abs(amount));
-  }, []);
+  };
 
-  const getBudgetYear = useCallback(() => {
-    return expenseDataState?.config?.year?.toString() || new Date().getFullYear().toString();
-  }, [expenseDataState]);
-
-  // Event handlers
-  const handleRefresh = useCallback(async () => {
-    await fetchExpenseData();
-    if (refetch) {
-      refetch();
-    }
-  }, [fetchExpenseData, refetch]);
-
-  // Print functionality
-  const { printElement } = usePrintout({
-    title: `BUTIRAN ANGGARAN PERBELANJAAN ${getBudgetYear() || '2025'}`,
-    orientation: 'landscape',
-    paperSize: 'a4',
-    margins: { top: 0.3, right: 0.3, bottom: 0.3, left: 0.3 },
-    customPrintStyles: 'table * { font-size: 8px !important; }'
-  });
-
-  const handlePrint = useCallback(() => {
-    printElement('.overflow-x-auto');
-  }, [printElement, getBudgetYear]);
-
-  // Get all months array
-  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-  const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-
-  // Helper function to render a category section
-  const renderCategorySection = useCallback((title, data, subCategories = [], bgColor = "bg-red-100") => {
+  const renderCategorySection = (title, data, subCategories = [], bgColor = 'bg-gray-200') => {
     if (!data) return null;
+    
     return {
       title,
-      data,
-      subCategories,
-      bgColor
+      bgColor,
+      data: {
+        code: data.code,
+        description: data.description,
+        actual2024: data.actual2024,
+        budget2024: data.budget2024,
+        budget2025: data.budget2025,
+        monthly: data.monthly || {}
+      },
+      subCategories: subCategories.map(sub => ({
+        code: sub.code,
+        description: sub.description,
+        actual2024: sub.actual2024,
+        budget2024: sub.budget2024,
+        budget2025: sub.budget2025,
+        monthly: sub.monthly || {},
+        details: sub.details || []
+      }))
     };
-  }, []);
+  };
 
-  // Get all category sections
+  // Build category sections
   const categorySections = useMemo(() => {
     if (!expenseDataState) return [];
-    const keys = Object.keys(expenseDataState).filter(k => k !== 'config');
-    const colorList = [
-      'bg-red-200', 'bg-orange-200', 'bg-yellow-200', 'bg-green-200',
-      'bg-blue-200', 'bg-purple-200', 'bg-pink-200', 'bg-gray-200', 'bg-teal-200', 'bg-indigo-200'
-    ];
-    return keys.map((key, idx) => {
-      const cat = expenseDataState[key];
-      return renderCategorySection(
-        cat.title || key,
-        cat,
-        cat.subCategories || [],
-        colorList[idx % colorList.length]
-      );
-    });
-  }, [expenseDataState, renderCategorySection]);
+    
+    return [
+      renderCategorySection(
+        "PERKHIDMATAN AM", 
+        expenseDataState.perkhidmatanAm, 
+        expenseDataState.perkhidmatanAm?.subCategories || [],
+        "bg-red-200"
+      ),
+      renderCategorySection(
+        "PERKHIDMATAN KHAS", 
+        expenseDataState.perkhidmatanKhas, 
+        expenseDataState.perkhidmatanKhas?.subCategories || [],
+        "bg-blue-200"
+      ),
+      renderCategorySection(
+        "PERKHIDMATAN LAIN", 
+        expenseDataState.perkhidmatanLain, 
+        expenseDataState.perkhidmatanLain?.subCategories || [],
+        "bg-yellow-200"
+      ),
+      renderCategorySection(
+        "PERKHIDMATAN KEWANGAN", 
+        expenseDataState.perkhidmatanKewangan, 
+        expenseDataState.perkhidmatanKewangan?.subCategories || [],
+        "bg-purple-200"
+      )
+    ].filter(Boolean);
+  }, [expenseDataState]);
 
   return {
-    // Data
     expenseData: expenseDataState,
     expenseTotal,
     budgetTotal,
     actualTotal,
     categorySections,
-    
-    // Helpers
     formatCurrency,
-    getBudgetYear,
-    getCategoryTotal,
-    months,
-    monthNames,
-    renderCategorySection,
-    
-    // Event handlers
-    handleRefresh,
-    handlePrint,
-    
-    // States
-    isLoading,
-    hasError,
-    
-    // Config
-    config: expenseDataState?.config
+    loading,
+    error,
+    dataSource,
+    refetch: () => {
+      setLoading(true);
+      setError(null);
+      setExpenseDataState(null);
+    }
   };
 };
+
+export default useExpenseBreakdown;

@@ -1,53 +1,66 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import usePrintout from './usePrintout';
+import { useState, useEffect, useMemo } from 'react';
+import apiClient from '../utils/axios';
 import revenueData from '../assets/data/revenueBreakdown.json';
 
-export const useRevenueBreakdown = (dashboardData, refetch) => {
+const useRevenueBreakdown = () => {
   const [revenueDataState, setRevenueDataState] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dataSource, setDataSource] = useState('api'); // 'api' or 'json'
 
-  // Simulate API call for revenue breakdown data
-  const fetchRevenueData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setHasError(false);
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Use data from JSON file
-      setRevenueDataState(revenueData);
-      
-    } catch (error) {
-      console.error('Error fetching revenue data:', error);
-      setHasError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Fetch data on mount
   useEffect(() => {
-    fetchRevenueData();
-  }, [fetchRevenueData]);
+    const fetchRevenueData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  // Helper function to get total for a category
-  const getCategoryTotal = useCallback((category) => {
-    if (!category || !category.monthly) return {};
-    
-    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-    const totals = { total: 0 };
-    
-    months.forEach(month => {
-      totals[month] = category.monthly?.[month] || 0;
-      totals.total += totals[month];
-    });
-    
-    return totals;
+        // Try API first
+        try {
+          const response = await apiClient.get('/budgets/reports/revenue-breakdown');
+          if (response.success && response.data) {
+            setRevenueDataState(response.data);
+            setDataSource('api');
+            console.log('Revenue breakdown data loaded from API');
+            return;
+          }
+        } catch (apiError) {
+          console.warn('API failed, falling back to JSON:', apiError.message);
+        }
+
+        // Fallback to JSON file
+        setRevenueDataState(revenueData);
+        setDataSource('json');
+        console.log('Revenue breakdown data loaded from JSON fallback');
+
+      } catch (err) {
+        console.error('Error loading revenue breakdown data:', err);
+        setError(err.message || 'Ralat memuatkan data pecahan hasil');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRevenueData();
   }, []);
 
-  // Calculate totals for all revenue categories
+  // Helper function to get category total
+  const getCategoryTotal = useMemo(() => {
+    return (categoryData) => {
+      if (!categoryData) return { total: 0 };
+      
+      const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      const total = { total: 0 };
+      
+      months.forEach(month => {
+        total[month] = categoryData.monthly?.[month] || 0;
+        total.total += total[month];
+      });
+      
+      return total;
+    };
+  }, []);
+
+  // Calculate revenue totals
   const revenueTotal = useMemo(() => {
     if (!revenueDataState) return null;
     
@@ -111,56 +124,41 @@ export const useRevenueBreakdown = (dashboardData, refetch) => {
   }, [revenueDataState]);
 
   // Helper functions
-  const formatCurrency = useCallback((amount) => {
+  const formatCurrency = (amount) => {
     if (amount === null || amount === undefined || amount === 0) return '-';
     return new Intl.NumberFormat('ms-MY', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(Math.abs(amount));
-  }, []);
+  };
 
-  const getBudgetYear = useCallback(() => {
-    return revenueDataState?.config?.year?.toString() || new Date().getFullYear().toString();
-  }, [revenueDataState]);
-
-  // Event handlers
-  const handleRefresh = useCallback(async () => {
-    await fetchRevenueData();
-    if (refetch) {
-      refetch();
-    }
-  }, [fetchRevenueData, refetch]);
-
-  // Print functionality
-  const { printElement } = usePrintout({
-    title: `BUTIRAN ANGGARAN PENERIMAAN HASIL ${getBudgetYear() || '2025'}`,
-    orientation: 'landscape',
-    paperSize: 'a4',
-    margins: { top: 0.3, right: 0.3, bottom: 0.3, left: 0.3 },
-    customPrintStyles: 'table * { font-size: 8px !important; }'
-  });
-
-  const handlePrint = useCallback(() => {
-    printElement('.overflow-x-auto');
-  }, [printElement, getBudgetYear]);
-
-  // Get all months array
-  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-  const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-
-  // Helper function to render a category section
-  const renderCategorySection = useCallback((title, data, subCategories = [], bgColor = "bg-green-100") => {
+  const renderCategorySection = (title, data, subCategories = [], bgColor = 'bg-gray-200') => {
     if (!data) return null;
     
     return {
       title,
-      data,
-      subCategories,
-      bgColor
+      bgColor,
+      data: {
+        code: data.code,
+        description: data.description,
+        actual2024: data.actual2024,
+        budget2024: data.budget2024,
+        budget2025: data.budget2025,
+        monthly: data.monthly || {}
+      },
+      subCategories: subCategories.map(sub => ({
+        code: sub.code,
+        description: sub.description,
+        actual2024: sub.actual2024,
+        budget2024: sub.budget2024,
+        budget2025: sub.budget2025,
+        monthly: sub.monthly || {},
+        details: sub.details || []
+      }))
     };
-  }, []);
+  };
 
-  // Get all category sections
+  // Build category sections
   const categorySections = useMemo(() => {
     if (!revenueDataState) return [];
     
@@ -190,33 +188,24 @@ export const useRevenueBreakdown = (dashboardData, refetch) => {
         "bg-purple-200"
       )
     ].filter(Boolean);
-  }, [revenueDataState, renderCategorySection]);
+  }, [revenueDataState]);
 
   return {
-    // Data
     revenueData: revenueDataState,
     revenueTotal,
     budgetTotal,
     actualTotal,
     categorySections,
-    
-    // Helpers
     formatCurrency,
-    getBudgetYear,
-    getCategoryTotal,
-    months,
-    monthNames,
-    renderCategorySection,
-    
-    // Event handlers
-    handleRefresh,
-    handlePrint,
-    
-    // States
-    isLoading,
-    hasError,
-    
-    // Config
-    config: revenueDataState?.config
+    loading,
+    error,
+    dataSource,
+    refetch: () => {
+      setLoading(true);
+      setError(null);
+      setRevenueDataState(null);
+    }
   };
 };
+
+export default useRevenueBreakdown;

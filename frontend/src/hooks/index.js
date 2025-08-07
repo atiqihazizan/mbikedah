@@ -49,9 +49,11 @@ export { useUserActions } from './useUserActions';
 
 // ==================== REPORT HOOKS ====================
 // Report-specific hooks for data management and calculations
-export { useBudgetSummary } from './useBudgetSummary';
+export { default as useBudgetSummary } from './useBudgetSummary';
+export { default as useRevenueBreakdown } from './useRevenueBreakdown';
+export { default as useExpenseBreakdown } from './useExpenseBreakdown';
+export { default as useIncomeExpenditureStatement } from './useIncomeExpediturreStatment';
 export { usePrintout } from './usePrintout';
-export { useIncomeExpenditureStatement } from './useIncomeExpediturreStatment';
 
 // ==================== USAGE EXAMPLES ====================
 // Single hook import:

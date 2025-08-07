@@ -607,6 +607,378 @@ class BudgetController extends Controller
 		}
 	}
 
+	/**
+	 * Get budget summary data (similar to budgetSummary.json)
+	 */
+	public function getBudgetSummaryData()
+	{
+		try {
+			$data = Cache::remember('budget_summary_data', now()->addMinutes(self::CACHE_TTL), function () {
+				// Get revenue data (type 0 = Operasi, type 1 = Debit)
+				$revenueData = Budget::whereIn('type', [0, 1])
+					->where('is_group', false)
+					->with(['department', 'parent'])
+					->get()
+					->groupBy('type')
+					->map(function ($budgets, $type) {
+						return [
+							'total' => $budgets->sum('bdgtotal'),
+							'actual' => $budgets->sum('acttotal'),
+							'balance' => $budgets->sum('balance'),
+							'items' => $budgets->map(function ($budget) {
+								return [
+									'id' => $budget->id,
+									'code' => $budget->code,
+									'name' => $budget->name,
+									'budget' => $budget->bdgtotal,
+									'actual' => $budget->acttotal,
+									'balance' => $budget->balance,
+									'department' => $budget->department?->name,
+									'utilization' => $budget->bdgtotal > 0 ? round(($budget->acttotal / $budget->bdgtotal) * 100, 2) : 0
+								];
+							})
+						];
+					});
+
+				// Get expenditure data (type 2 = Kredit)
+				$expenditureData = Budget::where('type', 2)
+					->where('is_group', false)
+					->with(['department', 'parent'])
+					->get()
+					->groupBy('level')
+					->map(function ($budgets, $level) {
+						return [
+							'total' => $budgets->sum('bdgtotal'),
+							'actual' => $budgets->sum('acttotal'),
+							'balance' => $budgets->sum('balance'),
+							'items' => $budgets->map(function ($budget) {
+								return [
+									'id' => $budget->id,
+									'code' => $budget->code,
+									'name' => $budget->name,
+									'budget' => $budget->bdgtotal,
+									'actual' => $budget->acttotal,
+									'balance' => $budget->balance,
+									'department' => $budget->department?->name,
+									'utilization' => $budget->bdgtotal > 0 ? round(($budget->acttotal / $budget->bdgtotal) * 100, 2) : 0
+								];
+							})
+						];
+					});
+
+				return [
+					'revenueData' => $revenueData,
+					'expenditureData' => $expenditureData,
+					'summary' => [
+						'totalRevenue' => $revenueData->sum('total'),
+						'totalExpenditure' => $expenditureData->sum('total'),
+						'netPosition' => $revenueData->sum('total') - $expenditureData->sum('total'),
+						'generated_at' => now()->toDateTimeString()
+					]
+				];
+			});
+
+			return response()->json([
+				'success' => true,
+				'data' => $data,
+				'source' => Cache::has('budget_summary_data') ? 'cache' : 'database'
+			]);
+		} catch (\Exception $e) {
+			Log::error('Error getting budget summary data: ' . $e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => 'Ralat mendapatkan data ringkasan budget',
+				'error' => $e->getMessage()
+			], 500);
+		}
+	}
+
+	/**
+	 * Get expense breakdown data (similar to ExpenseBreakdown.json)
+	 */
+	public function getExpenseBreakdownData()
+	{
+		try {
+			$data = Cache::remember('expense_breakdown_data', now()->addMinutes(self::CACHE_TTL), function () {
+				// Get hierarchical expense data (type 2 = Kredit)
+				$expenses = Budget::where('type', 2)
+					->with(['department', 'parent', 'children'])
+					->orderBy('level')
+					->orderBy('sort_order')
+					->orderBy('code')
+					->get();
+
+				// Build hierarchical structure
+				$categories = [];
+				$rootCategories = $expenses->where('level', 0);
+
+				foreach ($rootCategories as $root) {
+					$category = [
+						'title' => $root->name,
+						'bgColor' => 'bg-red-200',
+						'data' => [
+							'code' => $root->code,
+							'description' => $root->name,
+							'actual2024' => $root->acttotal,
+							'budget2024' => $root->bdgtotal,
+							'budget2025' => $root->bdgtotal,
+							'monthly' => [
+								'jan' => $root->act1, 'feb' => $root->act2, 'mar' => $root->act3,
+								'apr' => $root->act4, 'may' => $root->act5, 'jun' => $root->act6,
+								'jul' => $root->act7, 'aug' => $root->act8, 'sep' => $root->act9,
+								'oct' => $root->act10, 'nov' => $root->act11, 'dec' => $root->act12
+							]
+						],
+						'subCategories' => []
+					];
+
+					// Get subcategories
+					$subCategories = $expenses->where('parent_id', $root->id);
+					foreach ($subCategories as $sub) {
+						$subCategory = [
+							'code' => $sub->code,
+							'description' => $sub->name,
+							'actual2024' => $sub->acttotal,
+							'budget2024' => $sub->bdgtotal,
+							'budget2025' => $sub->bdgtotal,
+							'monthly' => [
+								'jan' => $sub->act1, 'feb' => $sub->act2, 'mar' => $sub->act3,
+								'apr' => $sub->act4, 'may' => $sub->act5, 'jun' => $sub->act6,
+								'jul' => $sub->act7, 'aug' => $sub->act8, 'sep' => $sub->act9,
+								'oct' => $sub->act10, 'nov' => $sub->act11, 'dec' => $sub->act12
+							],
+							'details' => []
+						];
+
+						// Get details (level 2+)
+						$details = $expenses->where('parent_id', $sub->id);
+						foreach ($details as $detail) {
+							$subCategory['details'][] = [
+								'code' => $detail->code,
+								'description' => $detail->name,
+								'actual2024' => $detail->acttotal,
+								'budget2024' => $detail->bdgtotal,
+								'budget2025' => $detail->bdgtotal,
+								'monthly' => [
+									'jan' => $detail->act1, 'feb' => $detail->act2, 'mar' => $detail->act3,
+									'apr' => $detail->act4, 'may' => $detail->act5, 'jun' => $detail->act6,
+									'jul' => $detail->act7, 'aug' => $detail->act8, 'sep' => $detail->act9,
+									'oct' => $detail->act10, 'nov' => $detail->act11, 'dec' => $detail->act12
+								]
+							];
+						}
+
+						$category['subCategories'][] = $subCategory;
+					}
+
+					$categories[] = $category;
+				}
+
+				return [
+					'categorySections' => $categories,
+					'config' => [
+						'organization' => 'MAJLIS BANDARAYA ALOR SETAR',
+						'year' => date('Y'),
+						'generated_at' => now()->toDateTimeString()
+					]
+				];
+			});
+
+			return response()->json([
+				'success' => true,
+				'data' => $data,
+				'source' => Cache::has('expense_breakdown_data') ? 'cache' : 'database'
+			]);
+		} catch (\Exception $e) {
+			Log::error('Error getting expense breakdown data: ' . $e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => 'Ralat mendapatkan data pecahan perbelanjaan',
+				'error' => $e->getMessage()
+			], 500);
+		}
+	}
+
+	/**
+	 * Get revenue breakdown data (similar to revenueBreakdown.json)
+	 */
+	public function getRevenueBreakdownData()
+	{
+		try {
+			$data = Cache::remember('revenue_breakdown_data', now()->addMinutes(self::CACHE_TTL), function () {
+				// Get hierarchical revenue data (type 0 = Operasi, type 1 = Debit)
+				$revenues = Budget::whereIn('type', [0, 1])
+					->with(['department', 'parent', 'children'])
+					->orderBy('level')
+					->orderBy('sort_order')
+					->orderBy('code')
+					->get();
+
+				// Build hierarchical structure
+				$categories = [];
+				$rootCategories = $revenues->where('level', 0);
+
+				foreach ($rootCategories as $root) {
+					$category = [
+						'title' => $root->name,
+						'bgColor' => $root->type == 0 ? 'bg-green-200' : 'bg-blue-200',
+						'data' => [
+							'code' => $root->code,
+							'description' => $root->name,
+							'actual2024' => $root->acttotal,
+							'budget2024' => $root->bdgtotal,
+							'budget2025' => $root->bdgtotal,
+							'monthly' => [
+								'jan' => $root->act1, 'feb' => $root->act2, 'mar' => $root->act3,
+								'apr' => $root->act4, 'may' => $root->act5, 'jun' => $root->act6,
+								'jul' => $root->act7, 'aug' => $root->act8, 'sep' => $root->act9,
+								'oct' => $root->act10, 'nov' => $root->act11, 'dec' => $root->act12
+							]
+						],
+						'subCategories' => []
+					];
+
+					// Get subcategories
+					$subCategories = $revenues->where('parent_id', $root->id);
+					foreach ($subCategories as $sub) {
+						$subCategory = [
+							'code' => $sub->code,
+							'description' => $sub->name,
+							'actual2024' => $sub->acttotal,
+							'budget2024' => $sub->bdgtotal,
+							'budget2025' => $sub->bdgtotal,
+							'monthly' => [
+								'jan' => $sub->act1, 'feb' => $sub->act2, 'mar' => $sub->act3,
+								'apr' => $sub->act4, 'may' => $sub->act5, 'jun' => $sub->act6,
+								'jul' => $sub->act7, 'aug' => $sub->act8, 'sep' => $sub->act9,
+								'oct' => $sub->act10, 'nov' => $sub->act11, 'dec' => $sub->act12
+							],
+							'details' => []
+						];
+
+						// Get details (level 2+)
+						$details = $revenues->where('parent_id', $sub->id);
+						foreach ($details as $detail) {
+							$subCategory['details'][] = [
+								'code' => $detail->code,
+								'description' => $detail->name,
+								'actual2024' => $detail->acttotal,
+								'budget2024' => $detail->bdgtotal,
+								'budget2025' => $detail->bdgtotal,
+								'monthly' => [
+									'jan' => $detail->act1, 'feb' => $detail->act2, 'mar' => $detail->act3,
+									'apr' => $detail->act4, 'may' => $detail->act5, 'jun' => $detail->act6,
+									'jul' => $detail->act7, 'aug' => $detail->act8, 'sep' => $detail->act9,
+									'oct' => $detail->act10, 'nov' => $detail->act11, 'dec' => $detail->act12
+								]
+							];
+						}
+
+						$category['subCategories'][] = $subCategory;
+					}
+
+					$categories[] = $category;
+				}
+
+				return [
+					'categorySections' => $categories,
+					'config' => [
+						'organization' => 'MAJLIS BANDARAYA ALOR SETAR',
+						'year' => date('Y'),
+						'generated_at' => now()->toDateTimeString()
+					]
+				];
+			});
+
+			return response()->json([
+				'success' => true,
+				'data' => $data,
+				'source' => Cache::has('revenue_breakdown_data') ? 'cache' : 'database'
+			]);
+		} catch (\Exception $e) {
+			Log::error('Error getting revenue breakdown data: ' . $e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => 'Ralat mendapatkan data pecahan hasil',
+				'error' => $e->getMessage()
+			], 500);
+		}
+	}
+
+	/**
+	 * Get income expenditure statement data (similar to incomeExpenditureStatement.json)
+	 */
+	public function getIncomeExpenditureStatementData()
+	{
+		try {
+			$data = Cache::remember('income_expenditure_statement_data', now()->addMinutes(self::CACHE_TTL), function () {
+				// Get revenue data (type 0, 1)
+				$revenues = Budget::whereIn('type', [0, 1])
+					->where('is_group', false)
+					->with(['department'])
+					->get();
+
+				// Get expenditure data (type 2)
+				$expenditures = Budget::where('type', 2)
+					->where('is_group', false)
+					->with(['department'])
+					->get();
+
+				$statementData = [
+					'income' => [
+						'total' => $revenues->sum('bdgtotal'),
+						'actual' => $revenues->sum('acttotal'),
+						'items' => $revenues->map(function ($item) {
+							return [
+								'code' => $item->code,
+								'description' => $item->name,
+								'budget' => $item->bdgtotal,
+								'actual' => $item->acttotal,
+								'difference' => $item->bdgtotal - $item->acttotal,
+								'department' => $item->department?->name
+							];
+						})
+					],
+					'expenditure' => [
+						'total' => $expenditures->sum('bdgtotal'),
+						'actual' => $expenditures->sum('acttotal'),
+						'items' => $expenditures->map(function ($item) {
+							return [
+								'code' => $item->code,
+								'description' => $item->name,
+								'budget' => $item->bdgtotal,
+								'actual' => $item->acttotal,
+								'difference' => $item->bdgtotal - $item->acttotal,
+								'department' => $item->department?->name
+							];
+						})
+					],
+					'summary' => [
+						'netIncome' => $revenues->sum('bdgtotal') - $expenditures->sum('bdgtotal'),
+						'netActual' => $revenues->sum('acttotal') - $expenditures->sum('acttotal'),
+						'year' => date('Y'),
+						'generated_at' => now()->toDateTimeString()
+					]
+				];
+
+				return $statementData;
+			});
+
+			return response()->json([
+				'success' => true,
+				'data' => $data,
+				'source' => Cache::has('income_expenditure_statement_data') ? 'cache' : 'database'
+			]);
+		} catch (\Exception $e) {
+			Log::error('Error getting income expenditure statement data: ' . $e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => 'Ralat mendapatkan data penyata pendapatan dan perbelanjaan',
+				'error' => $e->getMessage()
+			], 500);
+		}
+	}
+
 	// ==================== PRIVATE HELPER METHODS ====================
 
 	/**

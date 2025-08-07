@@ -10,39 +10,26 @@ function IncomeExpenditureStatement() {
   
   const { 
     dashboardData, 
-    isLoading: loading, 
-    error, 
+    isLoading: userLoading, 
+    error: userError, 
     refreshUserData: refetch 
   } = useUserData(currentUser);
   
   const {
-    // Data
     statementData,
-    revenueTotal,
-    expenditureTotal,
-    netPosition,
-    specialSavings,
-    runningBalance,
-    
-    // Helpers
-    formatCurrency,
-    getBudgetYear,
-    months,
-    monthNames,
-    
-    // Event handlers
-    handleRefresh,
-    handlePrint,
-    
-    // States
-    isLoading,
-    hasError,
-    
-    // Config
-    config
-  } = useIncomeExpenditureStatement(dashboardData, refetch);
+    incomeData,
+    expenditureData,
+    summaryData,
+    loading,
+    error,
+    dataSource,
+    refetch: refetchStatement
+  } = useIncomeExpenditureStatement();
 
-  if (loading || isLoading) {
+  const isLoading = userLoading || loading;
+  const hasError = userError || error;
+
+  if (isLoading) {
     return (
       <div className="p-6 bg-white min-h-screen">
         <div className="flex items-center justify-center h-64">
@@ -55,12 +42,12 @@ function IncomeExpenditureStatement() {
     );
   }
 
-  if (error || hasError) {
+  if (hasError) {
     return (
       <div className="p-6 bg-white min-h-screen">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <p className="font-medium text-red-600 mb-3">Ralat memuat data</p>
-          <TButton onClick={handleRefresh} color="primary" size="sm">
+          <TButton onClick={refetchStatement} color="primary" size="sm">
             <RefreshCw className="w-4 h-4 mr-2" />
             Cuba Lagi
           </TButton>
@@ -68,6 +55,19 @@ function IncomeExpenditureStatement() {
       </div>
     );
   }
+
+  // Helper function to format currency
+  const formatCurrency = (amount) => {
+    if (amount === null || amount === undefined || amount === 0) return '-';
+    return new Intl.NumberFormat('ms-MY', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(Math.abs(amount));
+  };
+
+  // Get months array
+  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
   // Helper function to render a category section
   const renderCategorySection = (title, data, totals, bgColor = "bg-gray-100") => {
@@ -117,15 +117,15 @@ function IncomeExpenditureStatement() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900">
-              RINGKASAN ANGGARAN PENERIMAAN DAN PEMBAYARAN BAGI TAHUN {getBudgetYear()}
+              RINGKASAN ANGGARAN PENERIMAAN DAN PEMBAYARAN BAGI TAHUN {summaryData?.budgetYear}
             </h1>
           </div>
           <div className="flex space-x-2">
-            <TButton onClick={handleRefresh} color="secondary" size="sm">
+            <TButton onClick={refetchStatement} color="secondary" size="sm">
               <RefreshCw className="w-4 h-4 mr-1" />
               Muat Semula
             </TButton>
-            <TButton onClick={handlePrint} color="primary" size="sm">
+            <TButton onClick={() => window.print()} color="primary" size="sm">
               <Printer className="w-4 h-4 mr-1" />
               Cetak
             </TButton>
@@ -136,7 +136,7 @@ function IncomeExpenditureStatement() {
       {/* Print Header - Only visible when printing */}
       <div className="hidden print:block text-center py-4">
         <h1 className="text-sm font-bold uppercase">
-          RINGKASAN ANGGARAN PENERIMAAN DAN PEMBAYARAN BAGI TAHUN {getBudgetYear()}
+          RINGKASAN ANGGARAN PENERIMAAN DAN PEMBAYARAN BAGI TAHUN {summaryData?.budgetYear}
         </h1>
       </div>
 
@@ -167,32 +167,32 @@ function IncomeExpenditureStatement() {
               {/* PENDAPATAN HASIL */}
               {renderCategorySection(
                 "PENDAPATAN HASIL", 
-                statementData?.operatingRevenue, 
-                revenueTotal?.operating,
+                incomeData?.operatingRevenue, 
+                incomeData?.operatingTotal,
                 "bg-green-200"
               )}
 
               {/* PENDAPATAN LAIN-LAIN (BUKAN HASIL) */}
               {renderCategorySection(
                 "PENDAPATAN LAIN-LAIN (BUKAN HASIL)", 
-                statementData?.otherRevenue, 
-                revenueTotal?.other,
+                incomeData?.otherRevenue, 
+                incomeData?.otherTotal,
                 "bg-green-200"
               )}
 
               {/* PENDAPATAN SUMBER DANA */}
               {renderCategorySection(
                 "PENDAPATAN SUMBER DANA", 
-                statementData?.fundSources, 
-                revenueTotal?.fund,
+                incomeData?.fundSources, 
+                incomeData?.fundTotal,
                 "bg-green-200"
               )}
 
               {/* PENDAPATAN LUAR JANGKA */}
               {renderCategorySection(
                 "PENDAPATAN LUAR JANGKA", 
-                statementData?.extraordinaryRevenue, 
-                revenueTotal?.extraordinary,
+                incomeData?.extraordinaryRevenue, 
+                incomeData?.extraordinaryTotal,
                 "bg-green-200"
               )}
 
@@ -203,7 +203,7 @@ function IncomeExpenditureStatement() {
                 </td>
                 {months.map(month => (
                   <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                    {formatCurrency(revenueTotal?.grand[month])}
+                    {formatCurrency(incomeData?.grandTotal[month])}
                   </td>
                 ))}
               </tr>
@@ -216,72 +216,72 @@ function IncomeExpenditureStatement() {
               {/* ASET BUKAN SEMASA */}
               {renderCategorySection(
                 "ASET BUKAN SEMASA", 
-                statementData?.nonCurrentAssets, 
-                expenditureTotal?.nonCurrent,
+                expenditureData?.nonCurrentAssets, 
+                expenditureData?.nonCurrentTotal,
                 "bg-red-200"
               )}
 
               {/* ASET SEMASA */}
               {renderCategorySection(
                 "ASET SEMASA", 
-                statementData?.currentAssets, 
-                expenditureTotal?.current,
+                expenditureData?.currentAssets, 
+                expenditureData?.currentTotal,
                 "bg-red-200"
               )}
 
               {/* BAYARAN HUTANG DAN FAEDAH */}
               {renderCategorySection(
                 "BAYARAN HUTANG DAN FAEDAH", 
-                statementData?.debtPayments, 
-                expenditureTotal?.debt,
+                expenditureData?.debtPayments, 
+                expenditureData?.debtTotal,
                 "bg-red-200"
               )}
 
               {/* BELANJA OPERASI */}
               {renderCategorySection(
                 "BELANJA OPERASI", 
-                statementData?.operatingExpenses, 
-                expenditureTotal?.operating,
+                expenditureData?.operatingExpenses, 
+                expenditureData?.operatingTotal,
                 "bg-red-200"
               )}
 
               {/* EMOLUMEN & FAEDAH KAKITANGAN */}
               {renderCategorySection(
                 "EMOLUMEN & FAEDAH KAKITANGAN", 
-                statementData?.staffCosts, 
-                expenditureTotal?.staff,
+                expenditureData?.staffCosts, 
+                expenditureData?.staffTotal,
                 "bg-red-200"
               )}
 
               {/* PERKHIDMATAN DAN PERBELANJAAN PEJABAT */}
               {renderCategorySection(
                 "PERKHIDMATAN DAN PERBELANJAAN PEJABAT", 
-                statementData?.officeExpenses, 
-                expenditureTotal?.office,
+                expenditureData?.officeExpenses, 
+                expenditureData?.officeTotal,
                 "bg-red-200"
               )}
 
               {/* SUMBANGAN DAN TAJAAN */}
               {renderCategorySection(
                 "SUMBANGAN DAN TAJAAN", 
-                statementData?.contributions, 
-                expenditureTotal?.contributions,
+                expenditureData?.contributions, 
+                expenditureData?.contributionsTotal,
                 "bg-red-200"
               )}
 
               {/* PERBELANJAAN KHAS */}
               {renderCategorySection(
                 "PERBELANJAAN KHAS", 
-                statementData?.specialExpenses, 
-                expenditureTotal?.special,
+                expenditureData?.specialExpenses, 
+                expenditureData?.specialTotal,
                 "bg-red-200"
               )}
 
               {/* PERBELANJAAN LUAR JANGKA */}
               {renderCategorySection(
                 "PERBELANJAAN LUAR JANGKA", 
-                statementData?.extraordinaryExpenses, 
-                expenditureTotal?.extraordinary,
+                expenditureData?.extraordinaryExpenses, 
+                expenditureData?.extraordinaryTotal,
                 "bg-red-200"
               )}
 
@@ -292,7 +292,7 @@ function IncomeExpenditureStatement() {
                 </td>
                 {months.map(month => (
                   <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                    {formatCurrency(expenditureTotal?.grand[month])}
+                    {formatCurrency(expenditureData?.grandTotal[month])}
                   </td>
                 ))}
               </tr>
@@ -308,7 +308,7 @@ function IncomeExpenditureStatement() {
                   LEBIHAN /(KURANGAN)
                 </td>
                 {months.map(month => {
-                  const amount = netPosition?.[month] || 0;
+                  const amount = summaryData?.netPosition?.[month] || 0;
                   return (
                     <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
                       {amount < 0 ? `(${formatCurrency(Math.abs(amount))})` : formatCurrency(amount)}
@@ -323,7 +323,7 @@ function IncomeExpenditureStatement() {
                   BAKI AWAL
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatCurrency(config?.openingBalance)}
+                  {formatCurrency(summaryData?.openingBalance)}
                 </td>
                 {months.slice(1).map(month => (
                   <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
@@ -339,7 +339,7 @@ function IncomeExpenditureStatement() {
                 </td>
                 {months.map(month => (
                   <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatCurrency(config?.fixedDepositAmounts?.[month])}
+                    {formatCurrency(summaryData?.fixedDepositAmounts?.[month])}
                   </td>
                 ))}
               </tr>
@@ -351,7 +351,7 @@ function IncomeExpenditureStatement() {
                 </td>
                 {months.map(month => (
                   <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatCurrency(specialSavings?.[month])}
+                    {formatCurrency(summaryData?.specialSavings?.[month])}
                   </td>
                 ))}
               </tr>
@@ -362,7 +362,7 @@ function IncomeExpenditureStatement() {
                   LEBIHAN /(KURANGAN) SELEPAS TABUNGAN & SIMPANAN TETAP
                 </td>
                 {months.map(month => {
-                  const amount = runningBalance?.[month] || 0;
+                  const amount = summaryData?.runningBalance?.[month] || 0;
                   return (
                     <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
                       {amount < 0 ? `(${formatCurrency(Math.abs(amount))})` : formatCurrency(amount)}

@@ -114,6 +114,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/department/{departmentId}', [BudgetController::class, 'getByDepartment']);
     Route::get('/year/{year}', [BudgetController::class, 'getByYear']);
 
+    // Report Data Routes (new)
+    Route::get('/reports/summary', [BudgetController::class, 'getBudgetSummaryData']);
+    Route::get('/reports/expense-breakdown', [BudgetController::class, 'getExpenseBreakdownData']);
+    Route::get('/reports/revenue-breakdown', [BudgetController::class, 'getRevenueBreakdownData']);
+    Route::get('/reports/income-expenditure-statement', [BudgetController::class, 'getIncomeExpenditureStatementData']);
+
     // Basic CRUD Routes
     Route::get('/', [BudgetController::class, 'index']);
     Route::post('/', [BudgetController::class, 'store']);
