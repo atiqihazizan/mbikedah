@@ -349,7 +349,6 @@ const BillingVerifyBudgetDialog = ({ billing }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bil</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Kod Bajet</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Baki Semasa</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
@@ -361,7 +360,6 @@ const BillingVerifyBudgetDialog = ({ billing }) => {
           <tbody className="bg-white divide-y divide-gray-200">
             {billing.details?.filter(d => d.accept === 1)?.map((item, index) => (
               <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{index + 1}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.budget_code}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{formatCurrency(item.budget_bal)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.description}</td>
@@ -373,7 +371,7 @@ const BillingVerifyBudgetDialog = ({ billing }) => {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan="6" className="text-right px-6 py-4 text-sm font-medium text-gray-900">Jumlah</td>
+              <td colSpan="5" className="text-right px-6 py-4 text-sm font-medium text-gray-900">Jumlah</td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">{formatCurrency(totalAmount)}</td>
             </tr>
           </tfoot>
@@ -394,7 +392,6 @@ const BillingVerifyBankDialog = ({ billing }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-4">Bil</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Baki Semasa</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Jumlah (RM)</th>
@@ -403,7 +400,6 @@ const BillingVerifyBankDialog = ({ billing }) => {
           <tbody className="bg-white divide-y divide-gray-200">
             {transactions.map((transaction, index) => (
               <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaction.bank_name}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{formatCurrency(transaction?.balance || 0)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{formatCurrency(transaction?.amount || 0)}</td>
@@ -412,7 +408,7 @@ const BillingVerifyBankDialog = ({ billing }) => {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan="3" className="text-right px-6 py-4 text-sm font-medium text-gray-900">Jumlah</td>
+              <td colSpan="2" className="text-right px-6 py-4 text-sm font-medium text-gray-900">Jumlah</td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">{formatCurrency(totalAccepted)}</td>
             </tr>
           </tfoot>

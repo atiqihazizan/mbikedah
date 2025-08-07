@@ -7,6 +7,10 @@ import {
   FolderOpen,
   Archive,
   ClipboardCheck,
+  TrendingUp,
+  TrendingDown,
+  PieChart,
+  FileText,
 } from "lucide-react";
 
 
@@ -65,46 +69,39 @@ export const navigation = [
   // Laporan
   { text: "Laporan Kewangan", to: "", type: 0 },
   { 
-    text: "Keseluruhan", 
-    to: "/report/all", 
-    icon: <BarChart3 size={20} />, 
+    text: "Ringkasan Bajet", 
+    to: "/reports/budget_summary", 
+    icon: <PieChart size={20} />, 
     type: 1,
-    menu: "report.all"
+    menu: "report.budget.summary"
   },
   {
-    text: "Induk Penerimaan",
-    to: "/report/income",
-    icon: <Banknote size={20} />,
-    type: 1,
-    menu: "report.income"
-  },
-  {
-    text: "Induk Perbelanjaan",
-    to: "/report/expense",
-    icon: <Banknote size={20} />,
-    type: 1,
-    menu: "report.expense"
-  },
-  {
-    text: "Perincian Penerimaan",
-    to: "/report/income-detail",
-    icon: <FilePlus size={20} />,
-    type: 1,
-    menu: "report.income.detail"
-  },
-  {
-    text: "Perincian Perbelanjaan",
-    to: "/report/expense-detail",
-    icon: <FilePlus size={20} />,
-    type: 1,
-    menu: "report.expense.detail"
-  },
-  {
-    text: "Carta Pendapatan Dan Perbelanjaan",
-    to: "/report/chart",
+    text: "Penyata Hasil dan Belanja",
+    to: "/reports/income_statement",
     icon: <BarChart3 size={20} />,
     type: 1,
-    menu: "report.chart"
+    menu: "report.income.statement"
+  },
+  {
+    text: "Pecahan Hasil",
+    to: "/reports/revenue_breakdown",
+    icon: <TrendingUp size={20} />,
+    type: 1,
+    menu: "report.revenue.breakdown"
+  },
+  {
+    text: "Pecahan Belanja",
+    to: "/reports/expense_breakdown",
+    icon: <TrendingDown size={20} />,
+    type: 1,
+    menu: "report.expense.breakdown"
+  },
+  {
+    text: "Laporan Terperinci",
+    to: "/report/detail",
+    icon: <FileText size={20} />,
+    type: 1,
+    menu: "report.detail"
   },
 
   // Tetapan

@@ -22,11 +22,18 @@ import {
   FaShieldAlt,
   FaChartLine,
   FaMoneyBillWave,
+  FaLock,
+  FaBell,
+  FaEye,
+  FaCog,
 } from "react-icons/fa";
 import BudgetSettings from "../views/settings/BudgetSettings";
 import ProfileSettings from "../views/settings/ProfileSettings";
 import BankBalanceSettings from "../views/settings/BankBalanceSettings";
 import SecuritySettings from "../views/settings/SecuritySettings";
+import PrivacySettings from "../views/settings/PrivacySettings";
+import NotificationSettings from "../views/settings/NotificationSettings";
+import AppearanceSettings from "../views/settings/AppearanceSettings";
 
 /**
  * Settings Layout Component with current user protection and context update
@@ -207,6 +214,9 @@ const SettingsSidebar = ({ activeSection, onSectionChange, isDark, userRoles = [
   const baseMenuItems = [
     { id: 'profile', label: 'Profil', icon: FaUser },
     { id: 'security', label: 'Keselamatan', icon: FaShieldAlt },
+    { id: 'privacy', label: 'Privasi', icon: FaLock },
+    { id: 'notifications', label: 'Notifikasi', icon: FaBell },
+    { id: 'appearance', label: 'Penampilan', icon: FaEye },
   ];
 
   // Finance-specific menu items
@@ -283,6 +293,12 @@ const SettingsContent = ({
         );
       case 'security':
         return (<SecuritySettings isDark={isDark} onChangePassword={onChangePassword}/>);
+      case 'privacy':
+        return (<PrivacySettings isDark={isDark} />);
+      case 'notifications':
+        return (<NotificationSettings isDark={isDark} />);
+      case 'appearance':
+        return (<AppearanceSettings theme={theme} isDark={isDark} onToggleTheme={onToggleTheme} />);
       case 'budget':
         return (<BudgetSettings isDark={isDark} currentUser={currentUser} onUnsavedChanges={onUnsavedChanges}/>);
       case 'bank-balance':

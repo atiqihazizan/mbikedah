@@ -3,10 +3,38 @@ import ReportBadgesContainer from "../reports/ReportBadgesContainer";
 const ToolbarBadgesSection = ({ userRoles, isLoading }) => {
   console.log(userRoles)
   const reports = [
-    {id: 'budget_summary', title: 'Ringkasan Bajet', type: 'budget_summary', status: 'Pending', priority: 'High'},
-    {id: 'income_statement', title: 'Penyata Hasil', type: 'income_statement', status: 'Completed', priority: 'Medium'},
-    {id: 'revenue_breakdown', title: 'Pecahan Hasil', type: 'revenue_breakdown', status: 'Pending', priority: 'Low'},
-    {id: 'expense_breakdown', title: 'Pecahan Belanja', type: 'expense_breakdown', status: 'Completed', priority: 'High'}
+    {
+      id: 'budget_summary', 
+      title: 'Ringkasan Bajet', 
+      type: 'budget_summary', 
+      status: 'Completed', 
+      priority: 'High',
+      route: '/reports/budget_summary'
+    },
+    {
+      id: 'income_statement', 
+      title: 'Penyata Hasil', 
+      type: 'income_statement', 
+      status: 'Completed', 
+      priority: 'High',
+      route: '/reports/income_statement'
+    },
+    {
+      id: 'revenue_breakdown', 
+      title: 'Pecahan Hasil', 
+      type: 'revenue_breakdown', 
+      status: 'Completed', 
+      priority: 'Medium',
+      route: '/reports/revenue_breakdown'
+    },
+    {
+      id: 'expense_breakdown', 
+      title: 'Pecahan Belanja', 
+      type: 'expense_breakdown', 
+      status: 'Completed', 
+      priority: 'High',
+      route: '/reports/expense_breakdown'
+    }
   ]
   if (isLoading && userRoles.length === 0) {
     return (

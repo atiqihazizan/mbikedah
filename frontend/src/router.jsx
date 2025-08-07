@@ -18,6 +18,8 @@ import ProtectedRoute from "./components/ProtectedRouter";
 import SettingsLayout from "./layouts/SettingsLayout";
 import BudgetSummary from "./views/reports/BudgetSummary";
 import IncomeExpenditureStatement from "./views/reports/IncomeExpenditureStatement";
+import RevenueBreakdown from "./views/reports/RevenueBreakdown";
+import ExpenseBreakdown from "./views/reports/ExpenseBreakdown";
 
 const router = createBrowserRouter([
 	{
@@ -55,10 +57,10 @@ const router = createBrowserRouter([
 			{ path: "income_statement", element: <IncomeExpenditureStatement /> },
 			
 			// Finance specific routes
-			{ path: "revenue_breakdown", element: <BillingTableFinance /> },
+			{ path: "revenue_breakdown", element: <RevenueBreakdown /> },
 			
 			// Finance specific routes
-			{ path: "expense_breakdown", element: <BillingTableFinance /> },
+			{ path: "expense_breakdown", element: <ExpenseBreakdown /> },
 		],
 	},
 	// Settings Route - Protected for all authenticated users

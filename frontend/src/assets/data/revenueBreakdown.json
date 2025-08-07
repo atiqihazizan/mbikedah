@@ -1,0 +1,544 @@
+{
+    "pendapatanHasil": {
+      "title": "PENDAPATAN HASIL",
+      "code": "5000/000",
+      "description": "PENDAPATAN HASIL",
+      "actual2024": 3445439.22,
+      "budget2024": 9228879.13,
+      "budget2025": 15581992.95,
+      "monthly": {
+        "jan": 276244.42,
+        "feb": 4650107.87,
+        "mar": 284475.92,
+        "apr": 1058338.87,
+        "may": 1258338.87,
+        "jun": 3270607.77,
+        "jul": 569422.12,
+        "aug": 1562207.87,
+        "sep": 198338.87,
+        "oct": 1872338.87,
+        "nov": 209422.37,
+        "dec": 372149.10
+      },
+      "subCategories": [
+        {
+          "code": "5001/000",
+          "description": "HASIL AKTIVITI PEMBALAKAN",
+          "actual2024": 95000.00,
+          "budget2024": 3825000.00,
+          "budget2025": 6575000.00,
+          "monthly": {
+            "jan": 0,
+            "feb": 850000.00,
+            "mar": 0,
+            "apr": 850000.00,
+            "may": 1050000.00,
+            "jun": 1275000.00,
+            "jul": 0,
+            "aug": 1275000.00,
+            "sep": 0,
+            "oct": 1275000.00,
+            "nov": 0,
+            "dec": 0
+          },
+          "details": [
+            {
+              "code": "5001/101",
+              "description": "JUALAN KUOTA/TAWARAN",
+              "actual2024": 95000.00,
+              "budget2024": 3825000.00,
+              "budget2025": 6575000.00
+            }
+          ]
+        },
+        {
+          "code": "5002/000",
+          "description": "HASIL AKTIVITI PERLADANGAN",
+          "actual2024": 1123681.44,
+          "budget2024": 780780.00,
+          "budget2025": 754780.00,
+          "monthly": {
+            "jan": 4398.33,
+            "feb": 238398.33,
+            "mar": 4398.33,
+            "apr": 4398.33,
+            "may": 4398.33,
+            "jun": 238398.33,
+            "jul": 4398.33,
+            "aug": 4398.33,
+            "sep": 4398.33,
+            "oct": 238398.33,
+            "nov": 4398.33,
+            "dec": 4398.33
+          },
+          "details": [
+            {
+              "code": "5002/101",
+              "description": "HASIL KEUNTUNGAN/ROYALTI",
+              "actual2024": 1123681.44,
+              "budget2024": 780780.00,
+              "budget2025": 754780.00
+            }
+          ]
+        },
+        {
+          "code": "5003/000",
+          "description": "HASIL AKTIVITI PERTANIAN",
+          "actual2024": 664526.53,
+          "budget2024": 981243.13,
+          "budget2025": 979805.83,
+          "monthly": {
+            "jan": 99526.09,
+            "feb": 60020.54,
+            "mar": 115074.34,
+            "apr": 60020.54,
+            "may": 60020.54,
+            "jun": 60020.54,
+            "jul": 60020.54,
+            "aug": 60020.54,
+            "sep": 60020.54,
+            "oct": 225020.54,
+            "nov": 60020.54,
+            "dec": 60020.54
+          },
+          "details": [
+            {
+              "code": "5003/103",
+              "description": "TERIMAAN BAYARAN CUKAI",
+              "actual2024": 38122.83,
+              "budget2024": 56959.94,
+              "budget2025": 55053.80
+            },
+            {
+              "code": "5003/104",
+              "description": "SEWAAN/PAJAKAN",
+              "actual2024": 476742.23,
+              "budget2024": 619783.19,
+              "budget2025": 717752.03
+            },
+            {
+              "code": "5003/105",
+              "description": "HASIL PERKONGSIAN KEUNTUNGAN",
+              "actual2024": 41031.50,
+              "budget2024": 154500.00,
+              "budget2025": 42000.00
+            },
+            {
+              "code": "5003/106",
+              "description": "HASIL TRIBUTE/ROYALTI",
+              "actual2024": 108629.97,
+              "budget2024": 150000.00,
+              "budget2025": 165000.00
+            }
+          ]
+        },
+        {
+          "code": "5004/000",
+          "description": "HASIL AKTIVITI PERLOMBONGAN",
+          "actual2024": 445681.00,
+          "budget2024": 1521556.00,
+          "budget2025": 4171772.40,
+          "monthly": {
+            "jan": 70000.00,
+            "feb": 3064069.00,
+            "mar": 70000.00,
+            "apr": 70000.00,
+            "may": 70000.00,
+            "jun": 318834.40,
+            "jul": 70000.00,
+            "aug": 158869.00,
+            "sep": 70000.00,
+            "oct": 70000.00,
+            "nov": 70000.00,
+            "dec": 70000.00
+          },
+          "details": [
+            {
+              "code": "5004/101",
+              "description": "FI KOMITMEN",
+              "actual2024": 294877.80,
+              "budget2024": 963180.30,
+              "budget2025": 3202888.20
+            },
+            {
+              "code": "5004/102",
+              "description": "DEPOSIT",
+              "actual2024": 0,
+              "budget2024": 169991.70,
+              "budget2025": 0
+            },
+            {
+              "code": "5004/103",
+              "description": "TERIMAAN BAYARAN CUKAI",
+              "actual2024": 29803.20,
+              "budget2024": 0,
+              "budget2025": 128884.20
+            },
+            {
+              "code": "5004/105",
+              "description": "HASIL TRIBUTE",
+              "actual2024": 120000.00,
+              "budget2024": 360000.00,
+              "budget2025": 840000.00
+            }
+          ]
+        },
+        {
+          "code": "5005/000",
+          "description": "HASIL AKTIVITI KUARI",
+          "actual2024": 317019.00,
+          "budget2024": 981500.00,
+          "budget2025": 948844.72,
+          "monthly": {
+            "jan": 86000.00,
+            "feb": 76000.00,
+            "mar": 76000.00,
+            "apr": 66000.00,
+            "may": 66000.00,
+            "jun": 69034.50,
+            "jul": 56000.00,
+            "aug": 56000.00,
+            "sep": 56000.00,
+            "oct": 56000.00,
+            "nov": 56000.00,
+            "dec": 229810.22
+          },
+          "details": [
+            {
+              "code": "5005/100",
+              "description": "HASIL KUARI PASIR",
+              "actual2024": 317019.00,
+              "budget2024": 981500.00,
+              "budget2025": 765034.50
+            },
+            {
+              "code": "5005/200",
+              "description": "HASIL KUARI BATU",
+              "actual2024": 0,
+              "budget2024": 0,
+              "budget2025": 183810.22
+            }
+          ]
+        },
+        {
+          "code": "5009/000",
+          "description": "HASIL AKTIVITI TELEKOMUNIKASI",
+          "actual2024": 743550.00,
+          "budget2024": 734400.00,
+          "budget2025": 748740.00,
+          "monthly": {
+            "jan": 2920.00,
+            "feb": 356620.00,
+            "mar": 2920.00,
+            "apr": 2920.00,
+            "may": 2920.00,
+            "jun": 2920.00,
+            "jul": 362920.00,
+            "aug": 2920.00,
+            "sep": 2920.00,
+            "oct": 2920.00,
+            "nov": 2920.00,
+            "dec": 2920.00
+          }
+        },
+        {
+          "code": "5016/000",
+          "description": "HASIL AKTIVITI PEMBANGUNAN HARTANAH",
+          "actual2024": 10000.00,
+          "budget2024": 346000.00,
+          "budget2025": 1361400.00,
+          "monthly": {
+            "jan": 5000.00,
+            "feb": 5000.00,
+            "mar": 5000.00,
+            "apr": 5000.00,
+            "may": 5000.00,
+            "jun": 1306400.00,
+            "jul": 5000.00,
+            "aug": 5000.00,
+            "sep": 5000.00,
+            "oct": 5000.00,
+            "nov": 5000.00,
+            "dec": 5000.00
+          }
+        }
+      ]
+    },
+    "pendapatanLainLain": {
+      "title": "PENDAPATAN LAIN-LAIN (BUKAN HASIL)",
+      "code": "5100/000",
+      "description": "PENDAPATAN LAIN-LAIN (BUKAN HASIL)",
+      "actual2024": 6148232.66,
+      "budget2024": 12582644.69,
+      "budget2025": 18634028.01,
+      "monthly": {
+        "jan": 2226495.08,
+        "feb": 715153.07,
+        "mar": 9098094.00,
+        "apr": 323212.00,
+        "may": 324527.07,
+        "jun": 1923212.00,
+        "jul": 313212.00,
+        "aug": 1003959.73,
+        "sep": 901212.00,
+        "oct": 201212.00,
+        "nov": 2527.07,
+        "dec": 1601212.00
+      },
+      "subCategories": [
+        {
+          "code": "5101/000",
+          "description": "FAEDAH DAN DIVIDEN",
+          "actual2024": 1046429.93,
+          "budget2024": 1022890.41,
+          "budget2025": 2217316.41,
+          "monthly": {
+            "jan": 3842.14,
+            "feb": 2527.07,
+            "mar": 196094.00,
+            "apr": 1212.00,
+            "may": 2527.07,
+            "jun": 1001212.00,
+            "jul": 1212.00,
+            "aug": 2527.07,
+            "sep": 1212.00,
+            "oct": 1212.00,
+            "nov": 2527.07,
+            "dec": 1001212.00
+          },
+          "details": [
+            {
+              "code": "5101/100",
+              "description": "DIVIDEN BANK",
+              "actual2024": 7776.47,
+              "budget2024": 3000.00,
+              "budget2025": 2544.00
+            },
+            {
+              "code": "5101/200",
+              "description": "DIVIDEN ATAS PELABURAN",
+              "actual2024": 38653.46,
+              "budget2024": 19890.41,
+              "budget2025": 19890.41
+            },
+            {
+              "code": "5101/300",
+              "description": "DIVIDEN ANAK SYARIKAT",
+              "actual2024": 1000000.00,
+              "budget2024": 1000000.00,
+              "budget2025": 2194882.00
+            }
+          ]
+        },
+        {
+          "code": "5104/000",
+          "description": "PENERIMAAN DARI JUALAN ASET",
+          "actual2024": 0,
+          "budget2024": 1619600.00,
+          "budget2025": 9480000.00,
+          "monthly": {
+            "jan": 1600000.00,
+            "feb": 30000.00,
+            "mar": 7850000.00,
+            "apr": 0,
+            "may": 0,
+            "jun": 0,
+            "jul": 0,
+            "aug": 0,
+            "sep": 0,
+            "oct": 0,
+            "nov": 0,
+            "dec": 0
+          }
+        },
+        {
+          "code": "5105/000",
+          "description": "PENERIMAAN DARI AGENSI & PENGHUTANG",
+          "actual2024": 3753417.94,
+          "budget2024": 8752443.08,
+          "budget2025": 6118652.94,
+          "monthly": {
+            "jan": 354652.94,
+            "feb": 222000.00,
+            "mar": 1052000.00,
+            "apr": 322000.00,
+            "may": 322000.00,
+            "jun": 922000.00,
+            "jul": 312000.00,
+            "aug": 912000.00,
+            "sep": 900000.00,
+            "oct": 200000.00,
+            "nov": 0,
+            "dec": 600000.00
+          }
+        },
+        {
+          "code": "5106/000",
+          "description": "PENERIMAAN SEKURITY DEPOSIT",
+          "actual2024": 354711.20,
+          "budget2024": 587711.20,
+          "budget2025": 818058.66,
+          "monthly": {
+            "jan": 268000.00,
+            "feb": 460626.00,
+            "mar": 0,
+            "apr": 0,
+            "may": 0,
+            "jun": 0,
+            "jul": 0,
+            "aug": 0,
+            "sep": 0,
+            "oct": 0,
+            "nov": 0,
+            "dec": 89432.66
+          }
+        }
+      ]
+    },
+    "pendapatanSumberDana": {
+      "title": "PENDAPATAN SUMBER DANA",
+      "code": "5200/000",
+      "description": "PENDAPATAN SUMBER DANA",
+      "actual2024": 2030111.15,
+      "budget2024": 2030111.15,
+      "budget2025": 530111.15,
+      "monthly": {
+        "jan": 230000.00,
+        "feb": 0,
+        "mar": 0,
+        "apr": 300111.15,
+        "may": 0,
+        "jun": 0,
+        "jul": 0,
+        "aug": 0,
+        "sep": 0,
+        "oct": 0,
+        "nov": 0,
+        "dec": 0
+      },
+      "subCategories": [
+        {
+          "code": "5202/000",
+          "description": "PENERIMAAN DANA KERPAN",
+          "actual2024": 530111.15,
+          "budget2024": 530111.15,
+          "budget2025": 530111.15,
+          "monthly": {
+            "jan": 230000.00,
+            "feb": 0,
+            "mar": 0,
+            "apr": 300111.15,
+            "may": 0,
+            "jun": 0,
+            "jul": 0,
+            "aug": 0,
+            "sep": 0,
+            "oct": 0,
+            "nov": 0,
+            "dec": 0
+          }
+        },
+        {
+          "code": "5204/000",
+          "description": "PENERIMAAN DANA PINJAMAN",
+          "actual2024": 1500000.00,
+          "budget2024": 1500000.00,
+          "budget2025": 0,
+          "monthly": {
+            "jan": 0,
+            "feb": 0,
+            "mar": 0,
+            "apr": 0,
+            "may": 0,
+            "jun": 0,
+            "jul": 0,
+            "aug": 0,
+            "sep": 0,
+            "oct": 0,
+            "nov": 0,
+            "dec": 0
+          }
+        }
+      ]
+    },
+    "pendapatanLuarJangka": {
+      "title": "PENDAPATAN LUAR JANGKA",
+      "code": "5300/000",
+      "description": "PENDAPATAN LUAR JANGKA",
+      "actual2024": 1950000.00,
+      "budget2024": 4277347.50,
+      "budget2025": 1440540.00,
+      "monthly": {
+        "jan": 0,
+        "feb": 0,
+        "mar": 0,
+        "apr": 0,
+        "may": 0,
+        "jun": 0,
+        "jul": 0,
+        "aug": 0,
+        "sep": 0,
+        "oct": 400000.00,
+        "nov": 305200.00,
+        "dec": 735340.00
+      },
+      "subCategories": [
+        {
+          "code": "5300/100",
+          "description": "PENERIMAAN BAYARAN PREMIUM (LH-BALAK)",
+          "actual2024": 900000.00,
+          "budget2024": 1500000.00,
+          "budget2025": 600000.00,
+          "monthly": {
+            "jan": 0,
+            "feb": 0,
+            "mar": 0,
+            "apr": 0,
+            "may": 0,
+            "jun": 0,
+            "jul": 0,
+            "aug": 0,
+            "sep": 0,
+            "oct": 0,
+            "nov": 0,
+            "dec": 600000.00
+          }
+        },
+        {
+          "code": "5300/400",
+          "description": "PENDAPATAN PROJEK PERLOMBONGAN REE",
+          "actual2024": 0,
+          "budget2024": 1727347.50,
+          "budget2025": 0
+        },
+        {
+          "code": "5300/500",
+          "description": "PENERIMAAN/PENDAPATAN LAIN-LAIN",
+          "actual2024": 1050000.00,
+          "budget2024": 1050000.00,
+          "budget2025": 840540.00,
+          "monthly": {
+            "jan": 0,
+            "feb": 0,
+            "mar": 0,
+            "apr": 0,
+            "may": 0,
+            "jun": 0,
+            "jul": 0,
+            "aug": 0,
+            "sep": 0,
+            "oct": 400000.00,
+            "nov": 305200.00,
+            "dec": 135340.00
+          }
+        }
+      ]
+    },
+    "config": {
+      "year": 2025,
+      "currency": "RM",
+      "title": "BUTIRAN ANGGARAN PENERIMAAN HASIL",
+      "lastUpdated": "2025-01-01T00:00:00Z",
+      "organization": "PERBADANAN KEMAJUAN NEGERI KEDAH"
+    }
+  }

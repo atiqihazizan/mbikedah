@@ -20,7 +20,7 @@ const REPORT_METADATA = {
     color: 'emerald',
     shortName: 'Bajet',
     description: 'Ringkasan bajet dan peruntukan kewangan',
-    route: '/reports/budget-summary',
+    route: '/reports/budget_summary',
     defaultPriority: 'high',
     category: 'financial'
   },
@@ -29,7 +29,7 @@ const REPORT_METADATA = {
     color: 'blue',
     shortName: 'P&L',
     description: 'Penyata hasil dan belanja',
-    route: '/reports/income-statement',
+    route: '/reports/income_statement',
     defaultPriority: 'high',
     category: 'financial'
   },
@@ -38,7 +38,7 @@ const REPORT_METADATA = {
     color: 'green',
     shortName: 'Hasil',
     description: 'Sub hasil dan pecahan pendapatan',
-    route: '/reports/revenue-breakdown',
+    route: '/reports/revenue_breakdown',
     defaultPriority: 'medium',
     category: 'financial'
   },
@@ -47,7 +47,7 @@ const REPORT_METADATA = {
     color: 'red',
     shortName: 'Belanja',
     description: 'Sub belanja dan pecahan perbelanjaan',
-    route: '/reports/expense-breakdown',
+    route: '/reports/expense_breakdown',
     defaultPriority: 'medium',
     category: 'financial'
   },

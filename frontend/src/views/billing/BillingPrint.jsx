@@ -211,7 +211,6 @@ const BillingPrint = React.forwardRef(({ billingId, onPrintComplete }, ref) => {
                 </tr>
                 
                 <tr>
-                  <th class="text-center th-detail whitespace-nowrap">BIL</th>
                   <th class="text-center th-detail whitespace-nowrap">KOD BAJET</th>
                   <th class="text-center th-detail whitespace-nowrap" colspan="4">BUTIR BEKALAN/PERKHIDMATAN</th>
                   <th class="text-center th-detail whitespace-nowrap" colspan="2">NO. RUJUKAN/INBOIS</th>
@@ -222,7 +221,6 @@ const BillingPrint = React.forwardRef(({ billingId, onPrintComplete }, ref) => {
                 
                 ${detailRows.map((detail, index) => `
                   <tr>
-                    <td class="text-center">${detail.budget_code ? index + 1 : '&nbsp;'}</td>
                     <td class="text-center">${detail.budget_code || '&nbsp;'}</td>
                     <td colspan="4">${detail.description || '&nbsp;'}</td>
                     <td colspan="2">${detail.reference || '&nbsp;'}</td>

@@ -111,7 +111,6 @@ const BillingView = () => {
                       <th className="py-2 px-3 border-b text-left">Budget</th>
                       <th className="py-2 px-3 border-b text-left">Keterangan Butiran</th>
                       <th className="py-2 px-3 border-b text-left">No. Rujukan</th>
-                      <th className="py-2 px-3 border-b">Bil/Unit</th>
                       <th className="py-2 px-3 border-b text-right">Kos Seunit</th>
                       <th className="py-2 px-3 border-b text-right">Jumlah</th>
                       <th className="py-2 px-3 border-b text-center">Kewangan Terima</th>
@@ -124,7 +123,6 @@ const BillingView = () => {
                           <td className="py-2 px-3 border-b">{item?.budget_code}</td>
                           <td className="py-2 px-3 border-b">{item?.description}</td>
                           <td className="py-2 px-3 border-b">{item?.reference}</td>
-                          <td className="py-2 px-3 border-b text-center">{item?.quantity}</td>
                           <td className="py-2 px-3 border-b text-right">{formatCurrency(item?.price)}</td>
                           <td className="py-2 px-3 border-b text-right">{formatCurrency(item?.total)}</td>
                           <td className="py-2 px-3 border-b text-center">
@@ -140,7 +138,7 @@ const BillingView = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7} className="py-3 text-center text-gray-400">
+                        <td colSpan={6} className="py-3 text-center text-gray-400">
                           Tiada item.
                         </td>
                       </tr>

@@ -80,7 +80,6 @@ const BillingVerifyBank = ({billing, onProcessComplete}) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-4">Bil</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank</th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Baki Semasa</th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Jumlah (RM)</th>
@@ -90,7 +89,6 @@ const BillingVerifyBank = ({billing, onProcessComplete}) => {
             {transactions.map((transaction, index) => {
               return (
                 <tr key={index}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-top">{transaction.bank_name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right align-top">{formatCurrency(transaction?.balance || 0)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right align-top">{formatCurrency(transaction?.amount || 0)}</td>
@@ -100,7 +98,7 @@ const BillingVerifyBank = ({billing, onProcessComplete}) => {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan="3" className="text-right px-6 py-4 text-sm font-medium text-gray-900">Jumlah</td>
+              <td colSpan="2" className="text-right px-6 py-4 text-sm font-medium text-gray-900">Jumlah</td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">{formatCurrency(totalAccepted)}</td>
             </tr>
           </tfoot>

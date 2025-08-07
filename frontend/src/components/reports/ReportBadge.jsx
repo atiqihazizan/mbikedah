@@ -38,6 +38,10 @@ const STATUS_COLORS = {
   archived: {
     active: 'bg-purple-500 text-white border-purple-500 shadow-md ring-2 ring-purple-200',
     inactive: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 hover:border-purple-300'
+  },
+  completed: {
+    active: 'bg-green-500 text-white border-green-500 shadow-md ring-2 ring-green-200',
+    inactive: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300'
   }
 };
 
@@ -93,7 +97,7 @@ const ReportBadge = ({
    * @returns {string} Combined CSS classes
    */
   const getBaseClasses = () => {
-    const isClickable = onClick || report.id;
+    const isClickable = onClick || report.route || report.id;
     
     return `
       inline-flex items-center justify-center font-medium rounded-full border-2 
@@ -118,6 +122,8 @@ const ReportBadge = ({
 
     if (onClick) {
       onClick(report);
+    } else if (report.route) {
+      navigate(report.route);
     } else if (report.id) {
       navigate(`/reports/${report.id}`);
     }
@@ -149,7 +155,7 @@ const ReportBadge = ({
       className={getBaseClasses()}
       onClick={handleClick}
       title={getTooltipText()}
-      isClickable={onClick || report.id}
+      isClickable={onClick || report.route || report.id}
     >
       <BadgeContent
         report={report}
@@ -293,7 +299,8 @@ const StatusIndicator = ({ status, size }) => {
     approved: { dot: 'bg-green-400', text: 'Approved' },
     rejected: { dot: 'bg-red-400', text: 'Rejected' },
     published: { dot: 'bg-blue-400', text: 'Published' },
-    archived: { dot: 'bg-purple-400', text: 'Archived' }
+    archived: { dot: 'bg-purple-400', text: 'Archived' },
+    completed: { dot: 'bg-green-400', text: 'Completed' }
   };
 
   const config = statusConfig[status] || statusConfig.draft;

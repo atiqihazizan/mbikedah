@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import usePrintout from './usePrintout';
+import budgetData from '../assets/data/budgetSummary.json';
 
 export const useBudgetSummary = (dashboardData, refetch) => {
-  const [budgetData, setBudgetData] = useState(null);
+  const [budgetDataState, setBudgetDataState] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
@@ -19,194 +20,8 @@ export const useBudgetSummary = (dashboardData, refetch) => {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Sample API response structure (only base data, calculations will be done dynamically)
-      const apiResponse = {
-        revenue: [
-          {
-            id: 1,
-            code: "5000/000",
-            description: "PENDAPATAN (HASIL MBI)",
-            category: "revenue",
-            actual2023: 5667217.60,
-            actual2024: 3445439.22,
-            budget2023: 18247472.24,
-            budget2024: 9228879.13,
-            budget2025: 15581992.95,
-          },
-          {
-            id: 2,
-            code: "5100/000", 
-            description: "PENDAPATAN LAIN-LAIN (BUKAN HASIL MBI)",
-            category: "revenue",
-            actual2023: 17089117.83,
-            actual2024: 6148232.66,
-            budget2023: 19095500.14,
-            budget2024: 12582644.69,
-            budget2025: 18634028.01,
-          },
-          {
-            id: 3,
-            code: "5200/000",
-            description: "PENDAPATAN SUMBER DANA", 
-            category: "revenue",
-            actual2023: 530111.15,
-            actual2024: 2030111.15,
-            budget2023: 530115.15,
-            budget2024: 2030111.15,
-            budget2025: 530111.15,
-          },
-          {
-            id: 4,
-            code: "5300/000",
-            description: "PENDAPATAN LUAR JANGKA",
-            category: "revenue", 
-            actual2023: 0,
-            actual2024: 1950000.00,
-            budget2023: 0,
-            budget2024: 4277347.50,
-            budget2025: 1440540.00,
-          }
-        ],
-        expenditure: [
-          {
-            id: 5,
-            code: "2000/000",
-            description: "ASET BUKAN SEMASA",
-            category: "expenditure",
-            actual2023: 1508163.00,
-            actual2024: 8430.00,
-            budget2023: 2525377.40,
-            budget2024: 682881.10,
-            budget2025: 1247391.30,
-          },
-          {
-            id: 6,
-            code: "3000/000",
-            description: "ASET SEMASA",
-            category: "expenditure",
-            actual2023: 5055990.17,
-            actual2024: 2451116.34,
-            budget2023: 2395821.08,
-            budget2024: 3325000.00,
-            budget2025: 4042372.28,
-          },
-          {
-            id: 7,
-            code: "4000/000",
-            description: "BAYARAN HUTANG DAN FAEDAH",
-            category: "expenditure",
-            actual2023: 4945565.35,
-            actual2024: 2468524.79,
-            budget2023: 11514164.72,
-            budget2024: 5224439.39,
-            budget2025: 10423443.09,
-          },
-          {
-            id: 8,
-            code: "9000/000",
-            description: "BELANJA OPERASI",
-            category: "expenditure",
-            actual2023: 1510853.20,
-            actual2024: 1121676.20,
-            budget2023: 3103346.10,
-            budget2024: 2742213.00,
-            budget2025: 4997518.00,
-          },
-          {
-            id: 9,
-            code: "9100/000",
-            description: "EMOLUMEN & FAEDAH KAKITANGAN",
-            category: "expenditure",
-            actual2023: 5399426.21,
-            actual2024: 4809352.80,
-            budget2023: 6963512.55,
-            budget2024: 7878772.00,
-            budget2025: 7280924.00,
-          },
-          {
-            id: 10,
-            code: "9200/000",
-            description: "PERKHIDMATAN DAN PERBELANJAAN PEJABAT",
-            category: "expenditure",
-            actual2023: 507134.46,
-            actual2024: 393070.77,
-            budget2023: 2986279.04,
-            budget2024: 1414798.00,
-            budget2025: 1270618.00,
-          },
-          {
-            id: 11,
-            code: "9300/000",
-            description: "SUMBANGAN DAN TAJAAN",
-            category: "expenditure",
-            actual2023: 602037.50,
-            actual2024: 553446.20,
-            budget2023: 402000.00,
-            budget2024: 586000.00,
-            budget2025: 1016000.00,
-          },
-          {
-            id: 12,
-            code: "9400/000",
-            description: "PERBELANJAAN KHAS",
-            category: "expenditure",
-            actual2023: 3002978.90,
-            actual2024: 1947496.43,
-            budget2023: 7282111.15,
-            budget2024: 2415055.58,
-            budget2025: 2639639.15,
-          },
-          {
-            id: 13,
-            code: "9500/000",
-            description: "PERBELANJAAN LUAR JANGKA",
-            category: "expenditure",
-            actual2023: 0,
-            actual2024: 900000.00,
-            budget2023: 0,
-            budget2024: 2681838.04,
-            budget2025: 1238156.60,
-          },
-          {
-            id: 14,
-            code: "9600/000",
-            description: "PERBELANJAAN AM",
-            category: "expenditure",
-            actual2023: 0,
-            actual2024: 0,
-            budget2023: 0,
-            budget2024: 0,
-            budget2025: 0,
-          }
-        ],
-        // Opening balances - these could come from previous year calculations or database
-        openingBalances: {
-          actual2023: 1720760.17,
-          actual2024: 2101260.38, // This should be calculated from previous year's final balance
-          budget2023: 602617.95,
-          budget2024: 2475057.96,
-          budget2025: 1021929.88
-        },
-        // Configuration for special calculations
-        config: {
-          specialSavingsRate: SPECIAL_SAVINGS_RATE,
-          fixedDepositAmounts: {
-            actual2023: 400000.00,
-            actual2024: 1000000.00,
-            budget2023: 1000000.00,
-            budget2024: 1000000.00,
-            budget2025: FIXED_DEPOSIT_AMOUNT
-          }
-        },
-        meta: {
-          year: 2025,
-          currency: "RM",
-          lastUpdated: "2024-12-01T00:00:00Z",
-          fiscalYear: "2025"
-        }
-      };
-
-      setBudgetData(apiResponse);
+      // Use data from JSON file
+      setBudgetDataState(budgetData);
       
     } catch (error) {
       console.error('Error fetching budget data:', error);
@@ -223,12 +38,12 @@ export const useBudgetSummary = (dashboardData, refetch) => {
 
   // Memoized revenue and expenditure data
   const revenueData = useMemo(() => {
-    return budgetData?.revenue || [];
-  }, [budgetData]);
+    return budgetDataState?.revenueData || [];
+  }, [budgetDataState]);
 
   const expenditureData = useMemo(() => {
-    return budgetData?.expenditure || [];
-  }, [budgetData]);
+    return budgetDataState?.expenditureData || [];
+  }, [budgetDataState]);
 
   // Calculate totals
   const revenueTotal = useMemo(() => {
@@ -270,9 +85,9 @@ export const useBudgetSummary = (dashboardData, refetch) => {
 
   // Calculate special savings (3% of total revenue)
   const specialSavings = useMemo(() => {
-    if (!revenueTotal || !budgetData?.config) return null;
+    if (!revenueTotal || !budgetDataState?.config) return null;
 
-    const rate = budgetData.config.specialSavingsRate;
+    const rate = budgetDataState.config.specialSavingsRate || SPECIAL_SAVINGS_RATE;
     
     return {
       actual2023: revenueTotal.actual2023 * rate,
@@ -281,17 +96,17 @@ export const useBudgetSummary = (dashboardData, refetch) => {
       budget2024: revenueTotal.budget2024 * rate,
       budget2025: revenueTotal.budget2025 * rate
     };
-  }, [revenueTotal, budgetData]);
+  }, [revenueTotal, budgetDataState]);
 
   // Get opening balances
   const openingBalances = useMemo(() => {
-    return budgetData?.openingBalances || null;
-  }, [budgetData]);
+    return budgetDataState?.openingBalances || null;
+  }, [budgetDataState]);
 
   // Get fixed deposit amounts
   const fixedDepositAmounts = useMemo(() => {
-    return budgetData?.config?.fixedDepositAmounts || null;
-  }, [budgetData]);
+    return budgetDataState?.config?.fixedDepositAmounts || null;
+  }, [budgetDataState]);
 
   // Calculate surplus/deficit after opening balance
   const surplusAfterOpening = useMemo(() => {
@@ -418,8 +233,8 @@ export const useBudgetSummary = (dashboardData, refetch) => {
 
   // Get budget year
   const getBudgetYear = useCallback(() => {
-    return budgetData?.meta?.year?.toString() || new Date().getFullYear().toString();
-  }, [budgetData]);
+    return budgetDataState?.config?.year?.toString() || new Date().getFullYear().toString();
+  }, [budgetDataState]);
 
   // Event handlers
   const handleRefresh = useCallback(async () => {
@@ -508,6 +323,6 @@ export const useBudgetSummary = (dashboardData, refetch) => {
     },
     
     // Raw data (for debugging)
-    rawBudgetData: budgetData
+    rawBudgetData: budgetDataState
   };
 };

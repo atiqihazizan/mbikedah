@@ -1,6 +1,6 @@
 // hooks/index.js
 // Auto-generated on: 8/4/2025, 2:27:14 PM
-// Total hooks: 16
+// Total hooks: 18
 
 /**
  * Centralized exports for all custom React hooks
@@ -12,6 +12,7 @@
  * - business: Business logic and domain-specific hooks
  * - utility: General utility and helper hooks
  * - auth: Authentication and user action hooks
+ * - reports: Report-specific hooks
  */
 
 // ==================== DATA HOOKS ====================
@@ -46,9 +47,11 @@ export { useUserDisplayInfo } from './useUserDisplayInfo';
 // Authentication, user management, and security-related hooks
 export { useUserActions } from './useUserActions';
 
-// ==================== GENERAL HOOKS ====================
+// ==================== REPORT HOOKS ====================
+// Report-specific hooks for data management and calculations
 export { useBudgetSummary } from './useBudgetSummary';
 export { usePrintout } from './usePrintout';
+export { useIncomeExpenditureStatement } from './useIncomeExpediturreStatment';
 
 // ==================== USAGE EXAMPLES ====================
 // Single hook import:
@@ -61,3 +64,4 @@ export { usePrintout } from './usePrintout';
 // import { useUserData, useRealTimeUpdates } from '../hooks';        // data hooks
 // import { useTheme, useTabNotifications } from '../hooks';           // ui hooks  
 // import { useBillingTableApplicant, useActiveRole } from '../hooks'; // business hooks
+// import { useBudgetSummary, useIncomeExpenditureStatement } from '../hooks'; // report hooks

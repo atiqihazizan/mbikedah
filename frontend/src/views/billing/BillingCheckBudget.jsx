@@ -21,7 +21,6 @@ const BillingCheckBudget = ({ billing, setBilling, budgets,processing }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bil</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-44">Kod Bajet</th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Baki Semasa</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
@@ -34,7 +33,6 @@ const BillingCheckBudget = ({ billing, setBilling, budgets,processing }) => {
           <tbody className="bg-white divide-y divide-gray-200">
             {billing.details?.map((item, index) => (
               <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-4">{index + 1}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <TSelect list={budgets} keyval="id,code" data={item} field="budget_id" onChange={(e) => handleBudgetChange(e, item)} placeholder="Pilih kod bajet" isDisabled={processing}/>
                 </td>

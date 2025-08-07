@@ -116,7 +116,6 @@ function BudgetSummary() {
               {/* Table Header */}
               <thead>
                 <tr className="bg-gray-600 text-white">
-                  <th rowSpan="2" className="border border-gray-400 p-2 text-center font-bold">BIL</th>
                   <th rowSpan="2" className="border border-gray-400 p-2 text-center font-bold">KOD AKAUN</th>
                   <th rowSpan="2" className="border border-gray-400 p-2 text-center font-bold">PERIHAL</th>
                   <th colSpan="2" className="border border-gray-400 p-2 text-center font-bold">SEBENAR</th>
@@ -135,9 +134,6 @@ function BudgetSummary() {
                 {/* Revenue Section */}
                 {revenueData?.map((item, index) => (
                   <tr key={`revenue-${index}`} className="hover:bg-gray-50 print:hover:bg-transparent">
-                    <td className="border border-gray-400 p-2 text-center">
-                      {String.fromCharCode(65 + index)}
-                    </td>
                     <td className="border border-gray-400 p-2 text-center">
                       {item.code}
                     </td>
@@ -164,7 +160,7 @@ function BudgetSummary() {
                 
                 {/* Revenue Total */}
                 <tr className="bg-gray-200 font-bold print:bg-gray-200">
-                  <td colSpan="3" className="border border-gray-400 p-2 text-center">
+                  <td colSpan="2" className="border border-gray-400 p-2 text-center">
                     JUMLAH PENDAPATAN DARI SEMUA PUNCA
                   </td>
                   <td className="border border-gray-400 p-2 text-right">
@@ -186,7 +182,6 @@ function BudgetSummary() {
 
                 {/* Expenditure Section Header */}
                 <tr className="bg-gray-600 text-white">
-                  <th className="border border-gray-400 p-2 text-center font-bold">BIL</th>
                   <th className="border border-gray-400 p-2 text-center font-bold">KOD AKAUN</th>
                   <th className="border border-gray-400 p-2 text-center font-bold">PERIHAL</th>
                   <th className="border border-gray-400 p-2 text-center font-bold">2023 RM</th>
@@ -199,9 +194,6 @@ function BudgetSummary() {
                 {/* Expenditure Data */}
                 {expenditureData?.map((item, index) => (
                   <tr key={`expenditure-${index}`} className="hover:bg-gray-50 print:hover:bg-transparent">
-                    <td className="border border-gray-400 p-2 text-center">
-                      {String.fromCharCode(69 + index)}
-                    </td>
                     <td className="border border-gray-400 p-2 text-center">
                       {item.code}
                     </td>
