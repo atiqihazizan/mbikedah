@@ -1,69 +1,45 @@
 import React from 'react';
-import { Printer, FileText, RefreshCw } from 'lucide-react';
+import { Printer, RefreshCw } from 'lucide-react';
 import { useStateContext } from '../../contexts/ContextProvider';
-import { useUserData, useBudgetSummary } from '../../hooks';
+import { useUserData } from '../../hooks';
 import { TButton } from '../../components/Core';
+import useBudgetSummary from '../../hooks/useBudgetSummary';
+import { formatUtils } from '../../utils/formatUtils';
 
-function BudgetSummary() {
+const BudgetSummary = () => {
   const { currentUser } = useStateContext();
   
-  // TanStack Query hook untuk get dashboard data
   const { 
     dashboardData, 
-    isLoading: loading, 
-    error, 
+    isLoading: userLoading, 
+    error: userError, 
     refreshUserData: refetch 
   } = useUserData(currentUser);
   
-  // Custom hook untuk manage Budget Summary logic with dynamic calculations
-  const {
-    // Data values
-    revenueData,
-    expenditureData,
-    revenueTotal,
-    expenditureTotal,
-    additionalBudgetLines,
-    
-    // Event handlers
-    handleRefresh,
-    handlePrint,
-    
-    // Helper functions
-    formatCurrency,
-    getBudgetYear,
-    getCalculationSummary,
-    
-    // Loading states
-    isLoading,
-    hasError,
-    
-    // Configuration
-    config
-  } = useBudgetSummary(dashboardData, refetch);
+  const { data, loading, error, refreshData } = useBudgetSummary();
 
-  if (loading || isLoading) {
+  const isLoading = userLoading || loading;
+  const hasError = userError || error;
+
+  if (isLoading) {
     return (
-      <div className="p-6 bg-gray-50">
+      <div className="p-6 bg-white ">
         <div className="flex items-center justify-center h-64">
           <div className="flex items-center space-x-3">
             <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
-            <span className="text-gray-600">Memuat data bajet...</span>
+            <span className="text-gray-600">Memuat data...</span>
           </div>
         </div>
       </div>
     );
   }
 
-  if (error || hasError) {
+  if (hasError) {
     return (
-      <div className="p-6 bg-gray-50">
+      <div className="p-6 bg-white ">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <div className="text-red-600 mb-2">
-            <FileText className="w-8 h-8 mx-auto mb-2" />
-            <p className="font-medium">Ralat memuat data bajet</p>
-            <p className="text-sm mt-1">Sila cuba lagi atau hubungi pentadbir sistem</p>
-          </div>
-          <TButton onClick={handleRefresh} color="primary" size="sm" className="mt-3">
+          <p className="font-medium text-red-600 mb-3">Ralat memuat data</p>
+          <TButton onClick={refreshData} color="primary" size="sm">
             <RefreshCw className="w-4 h-4 mr-2" />
             Cuba Lagi
           </TButton>
@@ -72,219 +48,304 @@ function BudgetSummary() {
     );
   }
 
-  const calculationSummary = getCalculationSummary();
+  if (!data) {
+    return (
+      <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+        Tiada data tersedia
+      </div>
+    );
+  }
+
+  const { revenueData, expenditureData, summary } = data;
+  const summaryData = summary;
 
   return (
-    <div className="min-h-screen bg-gray-50 print:bg-white">
-      {/* Header - hidden in print */}
-      <div className="p-6 print:hidden">
-        <div className="flex items-center justify-between mb-6">
+    <div className=" bg-white print:bg-white">
+      
+      {/* Header with Print Button - Hidden in print */}
+      <div className="p-4 border-b print:hidden">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-              <span className="text-2xl mr-3">📊</span>
-              Ringkasan Bajet {getBudgetYear()}
+            <h1 className="text-xl font-bold text-gray-900">
+              RINGKASAN ANGGARAN BAGI TAHUN 2025
             </h1>
-            <p className="text-gray-600 mt-1">
-              Ringkasan pendapatan dan perbelanjaan dengan pengiraan automatik
-            </p>
           </div>
-          <div className="flex space-x-3">
-            <TButton onClick={handleRefresh} color="secondary" size="sm" title="Muat Semula Data">
-              <RefreshCw className="w-4 h-4 mr-2" />
+          <div className="flex space-x-2">
+            <TButton onClick={refreshData} color="secondary" size="sm">
+              <RefreshCw className="w-4 h-4 mr-1" />
               Muat Semula
             </TButton>
-            <TButton onClick={handlePrint} color="primary" size="sm" title="Cetak Ringkasan">
-              <Printer className="w-4 h-4 mr-2" />
+            <TButton onClick={() => window.print()} color="primary" size="sm">
+              <Printer className="w-4 h-4 mr-1" />
               Cetak
             </TButton>
           </div>
         </div>
-
       </div>
 
-      {/* Print Content - Table Only */}
-      <div className="print:p-4 print:text-black">
-        {/* Simple Print Header - Only for print */}
-        {/* <div className="text-center mb-4 print:block hidden">
-          <h1 className="text-lg font-bold">RINGKASAN BAJET {getBudgetYear()}</h1>
-        </div> */}
+      {/* Print Header - Only visible when printing */}
+      <div className="hidden print:block text-center py-4">
+        <h1 className="text-sm font-bold uppercase">
+          RINGKASAN ANGGARAN BAGI TAHUN 2025
+        </h1>
+      </div>
 
-        {/* Main Budget Table - Print Only */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden print:shadow-none print:rounded-none mx-6 print:mx-0 print:bg-transparent">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-400 print:text-sm">
-              {/* Table Header */}
-              <thead>
-                <tr className="bg-gray-600 text-white">
-                  <th rowSpan="2" className="border border-gray-400 p-2 text-center font-bold">KOD AKAUN</th>
-                  <th rowSpan="2" className="border border-gray-400 p-2 text-center font-bold">PERIHAL</th>
-                  <th colSpan="2" className="border border-gray-400 p-2 text-center font-bold">SEBENAR</th>
-                  <th colSpan="3" className="border border-gray-400 p-2 text-center font-bold">BAJET</th>
+      {/* Main Table */}
+      <div className="p-4 print:p-2">
+        <div className="overflow-x-auto statement-table">
+          <table className="w-full border-collapse border border-gray-400 text-xs">
+            
+            {/* Table Header */}
+            <thead>
+              <tr className="bg-gray-600 text-white">
+                <th className="border border-gray-400 px-2 py-1 text-center font-bold w-24">
+                  KOD BAJET
+                </th>
+                <th className="border border-gray-400 px-2 py-1 text-center font-bold">
+                  PERIHAL
+                </th>
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  SEBENAR<br />2023 RM
+                </th>
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  SEBENAR<br />2024 RM
+                </th>
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  BAJET<br />2023 RM
+                </th>
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  BAJET<br />2024 RM
+                </th>
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  BAJET<br />2025 RM
+                </th>
+              </tr>
+            </thead>
+            
+            <tbody>
+              {/* Revenue Section */}
+              {Array.isArray(revenueData) && revenueData?.map((item, index) => (
+                <tr key={`revenue-${index}`} className="hover:bg-gray-50 print:hover:bg-transparent">
+                  <td className="border border-gray-400 px-2 py-1 text-xs text-center">
+                    {item.code}
+                  </td>
+                  <td className="border border-gray-400 px-2 py-1 text-xs font-medium">
+                    {item.name}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    {formatUtils.formatCurrency(item.actual2023 || 0)}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    {formatUtils.formatCurrency(item.actual2024 || 0)}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    {formatUtils.formatCurrency(item.budget2023 || 0)}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    {formatUtils.formatCurrency(item.budget2024 || 0)}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    {formatUtils.formatCurrency(item.budget2025 || 0)}
+                  </td>
                 </tr>
-                <tr className="bg-gray-600 text-white">
-                  <th className="border border-gray-400 p-2 text-center font-bold">2023 RM</th>
-                  <th className="border border-gray-400 p-2 text-center font-bold">2024 RM</th>
-                  <th className="border border-gray-400 p-2 text-center font-bold">2023 RM</th>
-                  <th className="border border-gray-400 p-2 text-center font-bold">2024 RM</th>
-                  <th className="border border-gray-400 p-2 text-center font-bold">2025 RM</th>
-                </tr>
-              </thead>
+              )) || []}
               
-              <tbody>
-                {/* Revenue Section */}
-                {revenueData?.map((item, index) => (
-                  <tr key={`revenue-${index}`} className="hover:bg-gray-50 print:hover:bg-transparent">
-                    <td className="border border-gray-400 p-2 text-center">
-                      {item.code}
-                    </td>
-                    <td className="border border-gray-400 p-2 font-medium">
-                      {item.description}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {formatCurrency(item.actual2023)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {formatCurrency(item.actual2024)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {formatCurrency(item.budget2023)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {formatCurrency(item.budget2024)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {formatCurrency(item.budget2025)}
-                    </td>
-                  </tr>
-                ))}
-                
-                {/* Revenue Total */}
-                <tr className="bg-gray-200 font-bold print:bg-gray-200">
-                  <td colSpan="2" className="border border-gray-400 p-2 text-center">
-                    JUMLAH PENDAPATAN DARI SEMUA PUNCA
+              {/* Revenue Total */}
+              <tr className="bg-green-400 font-bold print:bg-green-400">
+                <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
+                  JUMLAH PENDAPATAN DARI SEMUA PUNCA
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.revenueTotal?.actual2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.revenueTotal?.actual2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.revenueTotal?.budget2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.revenueTotal?.budget2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.revenueTotal?.budget2025 || 0)}
+                </td>
+              </tr>
+
+              {/* Empty spacer row */}
+              <tr>
+                <td colSpan={7} className="py-2"></td>
+              </tr>
+
+              {/* Expenditure Data */}
+              {Array.isArray(expenditureData) && expenditureData?.map((item, index) => (
+                <tr key={`expenditure-${index}`} className="hover:bg-gray-50 print:hover:bg-transparent">
+                  <td className="border border-gray-400 px-2 py-1 text-xs text-center">
+                    {item.code}
                   </td>
-                  <td className="border border-gray-400 p-2 text-right">
-                    {formatCurrency(revenueTotal?.actual2023)}
+                  <td className="border border-gray-400 px-2 py-1 text-xs font-medium">
+                    {item.name}
                   </td>
-                  <td className="border border-gray-400 p-2 text-right">
-                    {formatCurrency(revenueTotal?.actual2024)}
+                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    {formatUtils.formatCurrency(item.actual2023 || 0)}
                   </td>
-                  <td className="border border-gray-400 p-2 text-right">
-                    {formatCurrency(revenueTotal?.budget2023)}
+                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    {formatUtils.formatCurrency(item.actual2024 || 0)}
                   </td>
-                  <td className="border border-gray-400 p-2 text-right">
-                    {formatCurrency(revenueTotal?.budget2024)}
+                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    {formatUtils.formatCurrency(item.budget2023 || 0)}
                   </td>
-                  <td className="border border-gray-400 p-2 text-right">
-                    {formatCurrency(revenueTotal?.budget2025)}
+                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    {formatUtils.formatCurrency(item.budget2024 || 0)}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    {formatUtils.formatCurrency(item.budget2025 || 0)}
                   </td>
                 </tr>
+              )) || []}
 
-                {/* Expenditure Section Header */}
-                <tr className="bg-gray-600 text-white">
-                  <th className="border border-gray-400 p-2 text-center font-bold">KOD AKAUN</th>
-                  <th className="border border-gray-400 p-2 text-center font-bold">PERIHAL</th>
-                  <th className="border border-gray-400 p-2 text-center font-bold">2023 RM</th>
-                  <th className="border border-gray-400 p-2 text-center font-bold">2024 RM</th>
-                  <th className="border border-gray-400 p-2 text-center font-bold">2023 RM</th>
-                  <th className="border border-gray-400 p-2 text-center font-bold">2024 RM</th>
-                  <th className="border border-gray-400 p-2 text-center font-bold">2025 RM</th>
-                </tr>
+              {/* Expenditure Total */}
+              <tr className="bg-red-400 font-bold print:bg-red-400">
+                <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
+                  JUMLAH PERBELANJAAN DARI SEMUA PUNCA
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.expenditureTotal?.actual2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.expenditureTotal?.actual2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.expenditureTotal?.budget2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.expenditureTotal?.budget2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.expenditureTotal?.budget2025 || 0)}
+                </td>
+              </tr>
 
-                {/* Expenditure Data */}
-                {expenditureData?.map((item, index) => (
-                  <tr key={`expenditure-${index}`} className="hover:bg-gray-50 print:hover:bg-transparent">
-                    <td className="border border-gray-400 p-2 text-center">
-                      {item.code}
-                    </td>
-                    <td className="border border-gray-400 p-2 font-medium">
-                      {item.description}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {formatCurrency(item.actual2023)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {formatCurrency(item.actual2024)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {formatCurrency(item.budget2023)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {formatCurrency(item.budget2024)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {formatCurrency(item.budget2025)}
-                    </td>
-                  </tr>
-                ))}
+              {/* Empty spacer row */}
+              <tr>
+                <td colSpan={7} className="py-2"></td>
+              </tr>
 
-                {/* Expenditure Total */}
-                <tr className="bg-gray-200 font-bold print:bg-gray-200">
-                  <td colSpan="3" className="border border-gray-400 p-2 text-center">
-                    JUMLAH KESELURUHAN PERBELANJAAN
-                  </td>
-                  <td className="border border-gray-400 p-2 text-right">
-                    {formatCurrency(expenditureTotal?.actual2023)}
-                  </td>
-                  <td className="border border-gray-400 p-2 text-right">
-                    {formatCurrency(expenditureTotal?.actual2024)}
-                  </td>
-                  <td className="border border-gray-400 p-2 text-right">
-                    {formatCurrency(expenditureTotal?.budget2023)}
-                  </td>
-                  <td className="border border-gray-400 p-2 text-right">
-                    {formatCurrency(expenditureTotal?.budget2024)}
-                  </td>
-                  <td className="border border-gray-400 p-2 text-right">
-                    {formatCurrency(expenditureTotal?.budget2025)}
-                  </td>
-                </tr>
+              {/* LEBIHAN /(KURANGAN) */}
+              <tr className="bg-blue-200 font-bold print:bg-blue-200">
+                <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
+                  LEBIHAN /(KURANGAN)
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.netPosition?.actual2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.netPosition?.actual2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.netPosition?.budget2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.netPosition?.budget2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.netPosition?.budget2025 || 0)}
+                </td>
+              </tr>
 
-                {/* Dynamic Additional Budget Lines with calculated values */}
-                {additionalBudgetLines?.map((line, index) => (
-                  <tr key={`additional-${index}`} className={line.className || "bg-gray-100 print:bg-gray-100"}>
-                    <td colSpan="3" className="border border-gray-400 p-2 text-center font-medium">
-                      {line.description}
-                      {line.type === 'deduction' && (
-                        <span className="text-xs ml-2 text-gray-600 print:hidden">
-                          (Tolakan)
-                        </span>
-                      )}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {line.actual2023 < 0 ? `(${formatCurrency(Math.abs(line.actual2023))})` : formatCurrency(line.actual2023)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {line.actual2024 < 0 ? `(${formatCurrency(Math.abs(line.actual2024))})` : formatCurrency(line.actual2024)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {line.budget2023 < 0 ? `(${formatCurrency(Math.abs(line.budget2023))})` : formatCurrency(line.budget2023)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {line.budget2024 < 0 ? `(${formatCurrency(Math.abs(line.budget2024))})` : formatCurrency(line.budget2024)}
-                    </td>
-                    <td className="border border-gray-400 p-2 text-right">
-                      {line.budget2025 < 0 ? `(${formatCurrency(Math.abs(line.budget2025))})` : formatCurrency(line.budget2025)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              {/* BAKI AWAL */}
+              <tr className="bg-white print:bg-white font-medium">
+                <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
+                  BAKI AWAL
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.openingBalance?.actual2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.openingBalance?.actual2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.openingBalance?.budget2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.openingBalance?.budget2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.openingBalance?.budget2025 || 0)}
+                </td>
+              </tr>
 
-        {/* Print Footer - Hidden in Print */}
-        <div className="mt-8 text-center text-sm text-gray-500 print:hidden">
-          <p>Dicetak pada: {new Date().toLocaleDateString('ms-MY', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}</p>
+              {/* LEBIHAN /(KURANGAN) SELEPAS TABUNGAN */}
+              <tr className="bg-blue-200 font-bold print:bg-blue-200">
+                <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
+                  LEBIHAN /(KURANGAN) SELEPAS TABUNGAN
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.runningBalance?.actual2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.runningBalance?.actual2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.runningBalance?.budget2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.runningBalance?.budget2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(summaryData?.runningBalance?.budget2025 || 0)}
+                </td>
+              </tr>
+
+              {/* (-)TABUNGAN KHAS (3%) */}
+              <tr className="bg-yellow-100 print:bg-yellow-100 font-medium">
+                <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
+                  (-)TABUNGAN KHAS (3%)
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.specialSavings?.actual2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.specialSavings?.actual2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.specialSavings?.budget2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.specialSavings?.budget2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.specialSavings?.budget2025 || 0)}
+                </td>
+              </tr>
+
+              {/* DEPOSIT SIMPANAN TETAP */}
+              <tr className="bg-purple-100 print:bg-purple-100 font-medium">
+                <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
+                  DEPOSIT SIMPANAN TETAP
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.fixedDepositAmounts?.actual2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.fixedDepositAmounts?.actual2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.fixedDepositAmounts?.budget2023 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.fixedDepositAmounts?.budget2024 || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                  {formatUtils.formatCurrency(summaryData?.fixedDepositAmounts?.budget2025 || 0)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
-
     </div>
   );
-}
+};
 
 export default BudgetSummary;

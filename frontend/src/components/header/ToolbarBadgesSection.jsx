@@ -1,7 +1,7 @@
 import ReportBadgesContainer from "../reports/ReportBadgesContainer";
 
 const ToolbarBadgesSection = ({ userRoles, isLoading }) => {
-  console.log(userRoles)
+  
   const reports = [
     {
       id: 'budget_summary', 

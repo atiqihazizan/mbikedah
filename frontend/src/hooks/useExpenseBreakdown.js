@@ -1,12 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import apiClient from '../utils/axios';
-import expenseData from '../assets/data/ExpenseBreakdown.json';
 
 const useExpenseBreakdown = () => {
   const [expenseDataState, setExpenseDataState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [dataSource, setDataSource] = useState('api'); // 'api' or 'json'
 
   useEffect(() => {
     const fetchExpenseData = async () => {
@@ -14,23 +12,12 @@ const useExpenseBreakdown = () => {
         setLoading(true);
         setError(null);
 
-        // Try API first
-        try {
-          const response = await apiClient.get('/budgets/reports/expense-breakdown');
-          if (response.success && response.data) {
-            setExpenseDataState(response.data);
-            setDataSource('api');
-            console.log('Expense breakdown data loaded from API');
-            return;
-          }
-        } catch (apiError) {
-          console.warn('API failed, falling back to JSON:', apiError.message);
+        const response = await apiClient.get('/budgets/reports/expense-breakdown');
+        if (response.success && response.data) {
+          setExpenseDataState(response.data);
+        } else {
+          throw new Error('Failed to load expense breakdown data');
         }
-
-        // Fallback to JSON file
-        setExpenseDataState(expenseData);
-        setDataSource('json');
-        console.log('Expense breakdown data loaded from JSON fallback');
 
       } catch (err) {
         console.error('Error loading expense breakdown data:', err);
@@ -199,7 +186,6 @@ const useExpenseBreakdown = () => {
     formatCurrency,
     loading,
     error,
-    dataSource,
     refetch: () => {
       setLoading(true);
       setError(null);

@@ -3,47 +3,35 @@ import { Printer, RefreshCw } from 'lucide-react';
 import { useStateContext } from '../../contexts/ContextProvider';
 import { useUserData } from '../../hooks';
 import { TButton } from '../../components/Core';
-import { useExpenseBreakdown } from '../../hooks/useExpenseBreakdown';
+import useExpenseBreakdown from '../../hooks/useExpenseBreakdown';
 
 function ExpenseBreakdown() {
   const { currentUser } = useStateContext();
   
   const { 
     dashboardData, 
-    isLoading: loading, 
-    error, 
+    isLoading: userLoading, 
+    error: userError, 
     refreshUserData: refetch 
   } = useUserData(currentUser);
 
   const {
-    // Data
     expenseData,
     expenseTotal,
     budgetTotal,
     actualTotal,
     categorySections,
-    
-    // Helpers
     formatCurrency,
-    getBudgetYear,
-    getCategoryTotal,
-    months,
-    monthNames,
-    renderCategorySection,
-    
-    // Event handlers
-    handleRefresh,
-    handlePrint,
-    
-    // States
-    isLoading,
-    hasError,
-    
-    // Config
-    config
-  } = useExpenseBreakdown(dashboardData, refetch);
+    loading,
+    error,
+    dataSource,
+    refetch: refetchExpense
+  } = useExpenseBreakdown();
 
-  if (loading || isLoading) {
+  const isLoading = userLoading || loading;
+  const hasError = userError || error;
+
+  if (isLoading) {
     return (
       <div className="p-6 bg-white min-h-screen">
         <div className="flex items-center justify-center h-64">
@@ -56,12 +44,12 @@ function ExpenseBreakdown() {
     );
   }
 
-  if (error || hasError) {
+  if (hasError) {
     return (
       <div className="p-6 bg-white min-h-screen">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <p className="font-medium text-red-600 mb-3">Ralat memuat data</p>
-          <TButton onClick={handleRefresh} color="primary" size="sm">
+          <TButton onClick={refetchExpense} color="primary" size="sm">
             <RefreshCw className="w-4 h-4 mr-2" />
             Cuba Lagi
           </TButton>
@@ -70,6 +58,10 @@ function ExpenseBreakdown() {
     );
   }
 
+  // Get months array
+  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
   return (
     <div className="min-h-screen bg-white print:bg-white">
       {/* Header with Print Button - Hidden in print */}
@@ -77,18 +69,18 @@ function ExpenseBreakdown() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900">
-              BUTIRAN ANGGARAN PERBELANJAAN BAGI TAHUN {getBudgetYear()}
+              BUTIRAN ANGGARAN PERBELANJAAN BAGI TAHUN {new Date().getFullYear()}
             </h1>
-            {config?.organization && (
-              <p className="text-sm text-gray-600 mt-1">{config.organization}</p>
+            {expenseData?.config?.organization && (
+              <p className="text-sm text-gray-600 mt-1">{expenseData.config.organization}</p>
             )}
           </div>
           <div className="flex space-x-2">
-            <TButton onClick={handleRefresh} color="secondary" size="sm">
+            <TButton onClick={refetchExpense} color="secondary" size="sm">
               <RefreshCw className="w-4 h-4 mr-1" />
               Muat Semula
             </TButton>
-            <TButton onClick={handlePrint} color="primary" size="sm">
+            <TButton onClick={() => window.print()} color="primary" size="sm">
               <Printer className="w-4 h-4 mr-1" />
               Cetak
             </TButton>
@@ -99,10 +91,10 @@ function ExpenseBreakdown() {
       {/* Print Header - Only visible when printing */}
       <div className="hidden print:block text-center py-4">
         <h1 className="text-sm font-bold uppercase">
-          BUTIRAN ANGGARAN PERBELANJAAN BAGI TAHUN {getBudgetYear()}
+          BUTIRAN ANGGARAN PERBELANJAAN BAGI TAHUN {new Date().getFullYear()}
         </h1>
-        {config?.organization && (
-          <p className="text-xs mt-1">{config.organization}</p>
+        {expenseData?.config?.organization && (
+          <p className="text-xs mt-1">{expenseData.config.organization}</p>
         )}
       </div>
 

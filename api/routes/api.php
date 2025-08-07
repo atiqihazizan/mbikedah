@@ -73,6 +73,15 @@ Route::prefix('test')->group(function () {
 
 /*
  * |--------------------------------------------------------------------------
+ * | Public Budget Routes (for testing)
+ * |--------------------------------------------------------------------------
+ */
+Route::prefix('public')->group(function () {
+  Route::get('/budgets/reports/summary', [BudgetController::class, 'getBudgetSummaryData']);
+});
+
+/*
+ * |--------------------------------------------------------------------------
  * | Protected Routes
  * |--------------------------------------------------------------------------
  */

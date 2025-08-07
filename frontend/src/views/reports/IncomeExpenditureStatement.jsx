@@ -71,42 +71,41 @@ function IncomeExpenditureStatement() {
 
   // Helper function to render a category section
   const renderCategorySection = (title, data, totals, bgColor = "bg-gray-100") => {
-    if (!data || !data.length) return null;
+    if (!data || !data.length) return [];
     
-    return (
-      <>
-        {/* Category Items */}
-        {data.map((item, index) => (
-          <tr key={`${title}-${index}`} className="hover:bg-gray-50 print:hover:bg-transparent">
-            <td className="border border-gray-400 px-2 py-1 text-xs">
-              {item.code}
+    return [
+      // Category Items
+      ...data.map((item, index) => (
+        <tr key={`${title}-${index}`} className={`hover:bg-gray-50 print:hover:bg-transparent ${item.isChild ? 'bg-gray-50' : ''}`}>
+          <td className="border border-gray-400 px-2 py-1 text-xs text-center">
+            {item.isChild && item.code}
+          </td>
+          <td className={`border border-gray-400 px-2 py-1 text-xs ${item.isChild ? 'pl-6' : 'font-bold'}`}>
+            {item.isChild && <span className="text-gray-400 mr-2">&nbsp;</span>}
+            {item.description}
+          </td>
+          {monthNames.map(month => (
+            <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
+              {item.isChild && formatCurrency(item.monthly?.[month] || 0)}
             </td>
-            <td className="border border-gray-400 px-2 py-1 text-xs">
-              {item.description}
+          ))}
+        </tr>
+      )),
+      
+      // Category Total
+      ...(totals ? [(
+        <tr key={`${title}-total`} className={`${bgColor} font-semibold print:${bgColor}`}>
+          <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs">
+            JUMLAH {title}
+          </td>
+          {monthNames.map(month => (
+            <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+              {formatCurrency(totals[month] || 0)}
             </td>
-            {months.map(month => (
-              <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
-                {formatCurrency(item.monthly?.[month])}
-              </td>
-            ))}
-          </tr>
-        ))}
-        
-        {/* Category Total */}
-        {totals && (
-          <tr className={`${bgColor} font-semibold print:${bgColor}`}>
-            <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs">
-              JUMLAH {title}
-            </td>
-            {months.map(month => (
-              <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
-                {formatCurrency(totals[month])}
-              </td>
-            ))}
-          </tr>
-        )}
-      </>
-    );
+          ))}
+        </tr>
+      )] : [])
+    ];
   };
 
   return (
@@ -148,7 +147,7 @@ function IncomeExpenditureStatement() {
             {/* Table Header */}
             <thead>
               <tr className="bg-gray-600 text-white">
-                <th className="border border-gray-400 px-2 py-1 text-center font-bold">
+                <th className="border border-gray-400 px-2 py-1 text-center font-bold w-24">
                   KOD BAJET
                 </th>
                 <th className="border border-gray-400 px-2 py-1 text-center font-bold">
@@ -163,7 +162,6 @@ function IncomeExpenditureStatement() {
             </thead>
             
             <tbody>
-              
               {/* PENDAPATAN HASIL */}
               {renderCategorySection(
                 "PENDAPATAN HASIL", 
@@ -201,16 +199,16 @@ function IncomeExpenditureStatement() {
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
                   JUMLAH PENDAPATAN DARI SEMUA PUNCA
                 </td>
-                {months.map(month => (
+                {monthNames.map(month => (
                   <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                    {formatCurrency(incomeData?.grandTotal[month])}
+                    {formatCurrency(incomeData?.grandTotal?.[month] || 0)}
                   </td>
                 ))}
               </tr>
 
               {/* Empty spacer row */}
               <tr>
-                <td colSpan={15} className="py-2"></td>
+                <td colSpan={14} className="py-2"></td>
               </tr>
 
               {/* ASET BUKAN SEMASA */}
@@ -285,92 +283,88 @@ function IncomeExpenditureStatement() {
                 "bg-red-200"
               )}
 
-              {/* JUMLAH KESELURUHAN PERBELANJAAN */}
+              {/* JUMLAH PERBELANJAAN DARI SEMUA PUNCA */}
               <tr className="bg-red-400 font-bold print:bg-red-400">
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
-                  JUMLAH KESELURUHAN PERBELANJAAN
+                  JUMLAH PERBELANJAAN DARI SEMUA PUNCA
                 </td>
-                {months.map(month => (
+                {monthNames.map(month => (
                   <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                    {formatCurrency(expenditureData?.grandTotal[month])}
+                    {formatCurrency(expenditureData?.grandTotal?.[month] || 0)}
                   </td>
                 ))}
               </tr>
 
               {/* Empty spacer row */}
               <tr>
-                <td colSpan={15} className="py-2"></td>
+                <td colSpan={14} className="py-2"></td>
               </tr>
 
               {/* LEBIHAN /(KURANGAN) */}
-              <tr className="bg-blue-300 font-bold print:bg-blue-300">
+              <tr className="bg-blue-200 font-bold print:bg-blue-200">
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
                   LEBIHAN /(KURANGAN)
                 </td>
-                {months.map(month => {
-                  const amount = summaryData?.netPosition?.[month] || 0;
-                  return (
-                    <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                      {amount < 0 ? `(${formatCurrency(Math.abs(amount))})` : formatCurrency(amount)}
-                    </td>
-                  );
-                })}
+                {monthNames.map(month => (
+                  <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                    {formatCurrency(summaryData?.netPosition?.monthly?.[month] || 0)}
+                  </td>
+                ))}
               </tr>
 
               {/* BAKI AWAL */}
-              <tr className="bg-gray-200 print:bg-gray-200">
+              <tr className="bg-white print:bg-white font-medium">
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
                   BAKI AWAL
                 </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatCurrency(summaryData?.openingBalance)}
-                </td>
-                {months.slice(1).map(month => (
+                {monthNames.map(month => (
                   <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    -
+                    {summaryData?.openingBalance?.[month] !== undefined && summaryData?.openingBalance?.[month] !== null
+                      ? formatCurrency(summaryData?.openingBalance?.[month])
+                      : '-'}
                   </td>
                 ))}
               </tr>
 
               {/* SIMPANAN TETAP */}
-              <tr className="bg-purple-200 print:bg-purple-200">
+              <tr className="bg-purple-100 print:bg-purple-100 font-medium">
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
                   SIMPANAN TETAP
                 </td>
-                {months.map(month => (
+                {monthNames.map(month => (
                   <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatCurrency(summaryData?.fixedDepositAmounts?.[month])}
+                    {summaryData?.fixedDepositAmounts?.monthly?.[month] !== undefined && summaryData?.fixedDepositAmounts?.monthly?.[month] !== null
+                      ? formatCurrency(summaryData?.fixedDepositAmounts?.monthly?.[month])
+                      : '-'}
                   </td>
                 ))}
               </tr>
 
               {/* TABUNGAN KHAS */}
-              <tr className="bg-yellow-200 print:bg-yellow-200">
+              <tr className="bg-yellow-100 print:bg-yellow-100 font-medium">
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
                   TABUNGAN KHAS
                 </td>
-                {months.map(month => (
+                {monthNames.map(month => (
                   <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatCurrency(summaryData?.specialSavings?.[month])}
+                    {summaryData?.specialSavings?.monthly?.[month] !== undefined && summaryData?.specialSavings?.monthly?.[month] !== null
+                      ? formatCurrency(summaryData?.specialSavings?.monthly?.[month])
+                      : '-'}
                   </td>
                 ))}
               </tr>
 
               {/* LEBIHAN /(KURANGAN) SELEPAS TABUNGAN & SIMPANAN TETAP */}
-              <tr className="bg-indigo-400 font-bold print:bg-indigo-400">
+              <tr className="bg-blue-200 font-bold print:bg-blue-200">
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
                   LEBIHAN /(KURANGAN) SELEPAS TABUNGAN & SIMPANAN TETAP
                 </td>
-                {months.map(month => {
-                  const amount = summaryData?.runningBalance?.[month] || 0;
-                  return (
-                    <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                      {amount < 0 ? `(${formatCurrency(Math.abs(amount))})` : formatCurrency(amount)}
-                    </td>
-                  );
-                })}
+                {monthNames.map(month => (
+                  <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                    {formatCurrency(summaryData?.runningBalance?.monthly?.[month] || 0)}
+                  </td>
+                ))}
               </tr>
-
             </tbody>
           </table>
         </div>
