@@ -4,6 +4,7 @@ import { useStateContext } from '../contexts/ContextProvider';
 
 // Import custom components
 import PasswordChangeDialog from '../components/dialogs/PasswordChangeDialog';
+import MainNavigation from '../components/MainNavigation';
 
 // Import custom hooks
 import { useTabNotifications } from '../hooks/useTabNotifications';
@@ -55,8 +56,13 @@ export default function DefaultLayout() {
       
       {/* Main Content Area with top padding to account for fixed header */}
       <div className="flex-1 flex flex-col overflow-hidden pt-32">
+        {/* Main Navigation */}
+        <div className="px-4 sm:px-6 lg:px-8">
+          <MainNavigation />
+        </div>
+        
         {/* Page Content */}
-        <main className="flex-1 overflow-auto" style={{ height: 'calc(100vh - 8rem)' }}>
+        <main className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8" style={{ height: 'calc(100vh - 8rem)' }}>
           <Outlet context={{ 
             dashboardData, 
             userRoles, 

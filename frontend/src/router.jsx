@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import DefaultLayout from "./layouts/DefaultLayout";
+import ReportsLayout from "./layouts/ReportsLayout";
 import RootLoading from "./components/RootLoading";
 import GuestLayout from "./layouts/GuestLayout";
 import Login from "./views/Login";
@@ -45,10 +46,14 @@ const router = createBrowserRouter([
 	},
 	{
 		path: "/reports",
-		element: <DefaultLayout />,
+		element: (
+			<ProtectedRoute>
+				<ReportsLayout />
+			</ProtectedRoute>
+		),
 		children: [
 			// Root path will be handled by RootLoading with auto-redirect
-			{ path: "", element: <RootLoading /> },
+			{ path: "", element: <Navigate to="/reports/budget_summary" replace /> },
 			
 			// Pemohon specific routes
 			{ path: "budget_summary", element: <BudgetSummary /> },
@@ -63,29 +68,45 @@ const router = createBrowserRouter([
 			{ path: "expense_breakdown", element: <ExpenseBreakdown /> },
 		],
 	},
-	// Settings Route - Protected for all authenticated users
+	// Settings Routes - Protected for all authenticated users
 	{
 		path: "/settings",
 		element: (
 			<ProtectedRoute>
 				<SettingsLayout />
 			</ProtectedRoute>
-		)
+		),
+		children: [
+			{ path: "", element: <Navigate to="/settings/profile" replace /> },
+			{ path: "profile", element: <SettingsLayout /> },
+			{ path: "security", element: <SettingsLayout /> },
+			{ path: "privacy", element: <SettingsLayout /> },
+			{ path: "notifications", element: <SettingsLayout /> },
+			{ path: "appearance", element: <SettingsLayout /> },
+			{ path: "budget", element: <SettingsLayout /> },
+			{ path: "budget-rollover", element: <SettingsLayout /> },
+			{ path: "bank-balance", element: <SettingsLayout /> },
+		]
 	},
 	//
 	{
-		path: "/",
+		path: "/login",
 		element: <GuestLayout />,
 		children: [
-			{ path: "login", element: <Login /> },
-			{ path: "signup", element: <Signup /> },
+			{ path: "", element: <Login /> },
 		],
 	},
-	// Catch-all route untuk halaman yang tidak ditemukan
+	{
+		path: "/signup",
+		element: <GuestLayout />,
+		children: [
+			{ path: "", element: <Signup /> },
+		],
+	},
 	{
 		path: "*",
-		element: <NotFound />
-	}
+		element: <NotFound />,
+	},
 ]);
 
 export default router;

@@ -11,6 +11,7 @@ import {
   TrendingDown,
   PieChart,
   FileText,
+  Settings,
 } from "lucide-react";
 
 
@@ -106,6 +107,13 @@ export const navigation = [
 
   // Tetapan
   { text: "Tetapan", to: "", type: 0 },
+  { 
+    text: "Tetapan Sistem", 
+    to: "/settings", 
+    icon: <Settings size={20} />, 
+    type: 1,
+    menu: "settings.view"
+  },
   { 
     text: "Bank", 
     to: "/settings/bank", 

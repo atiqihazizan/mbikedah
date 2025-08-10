@@ -1,6 +1,6 @@
-// components/SettingsLayout.jsx (Updated with currentUser context update)
+// components/SettingsLayout.jsx (Updated dengan currentUser context update)
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useStateContext } from '../contexts/ContextProvider';
 import apiClient from '../utils/axios';
 
@@ -15,18 +15,7 @@ import { useUserActions } from '../hooks/useUserActions';
 import PasswordChangeDialog from '../components/dialogs/PasswordChangeDialog';
 
 // Import icons
-import { 
-  FaUser, 
-  FaArrowLeft,
-  FaExclamationTriangle,
-  FaShieldAlt,
-  FaChartLine,
-  FaMoneyBillWave,
-  FaLock,
-  FaBell,
-  FaEye,
-  FaCog,
-} from "react-icons/fa";
+import { FaUser, FaShieldAlt, FaLock, FaBell, FaEye, FaChartLine, FaMoneyBillWave, FaArrowLeft } from 'react-icons/fa';
 import BudgetSettings from "../views/settings/BudgetSettings";
 import BudgetRollover from "../views/settings/BudgetRollover";
 import ProfileSettings from "../views/settings/ProfileSettings";
@@ -37,106 +26,90 @@ import NotificationSettings from "../views/settings/NotificationSettings";
 import AppearanceSettings from "../views/settings/AppearanceSettings";
 
 /**
- * Settings Layout Component with current user protection and context update
+ * Settings Layout Component
+ * Provides a consistent settings interface with sidebar navigation
  */
 export default function SettingsLayout() {
-  const { currentUser, logout, setCurrentUser } = useStateContext(); // Add setCurrentUser
+  const { currentUser, logout } = useStateContext();
   const navigate = useNavigate();
+  const location = useLocation();
   
-  // Custom hooks
-  const { theme, toggleTheme, isDark } = useTheme();
-  const { dashboardData, userRoles, isLoading, error, refreshUserData } = useUserData(currentUser);
-  const { handleLogout } = useUserActions(logout);
+  // Custom hooks usage
+  const { userRoles, isLoading, error, refreshUserData } = useUserData(currentUser);
+  const { handleLogout, handleSettings, handleProfile } = useUserActions(logout);
   const { isPasswordDialogOpen, setIsPasswordDialogOpen, handleChangePassword, handlePasswordSubmit } = usePasswordChange(handleLogout);
   const userDisplayInfo = useUserDisplayInfo(currentUser);
-  
-  // Local state
-  const [activeSection, setActiveSection] = useState('profile');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const { theme, toggleTheme, isDark } = useTheme();
 
-  // Prevent access if no current user
-  useEffect(() => {
-    if (!currentUser) {
-      navigate('/login', { replace: true });
-      return;
-    }
-  }, [currentUser, navigate]);
+  // Determine current section from URL
+  const currentSection = location.pathname.split('/').pop() || 'profile';
 
-  // Prevent navigation if there are unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
-
-  // Enhanced refresh function that updates context
-  const refreshUserDataWithContext = async () => {
-    try {
-      // Call original refreshUserData if available
-      if (refreshUserData) await refreshUserData();
-      
-      // Also refresh the currentUser in context
-      const authResponse = await apiClient.get('/auth/me');
-      if (authResponse.success && authResponse.user) {
-        setCurrentUser(authResponse.user);
-      }
-    } catch (error) {
-      console.error('Error refreshing user data:', error);
-      // If auth/me fails, might need to logout user
-      if (error.response?.status === 401) {
-        handleLogout();
-      }
-    }
+  // Handle back navigation
+  const handleBack = () => {
+    navigate('/'); // Navigate back to dashboard
   };
 
-  // Don't render if no current user
+  // Don't render anything if no current user
   if (!currentUser) return null;
 
-  // Loading state
-  if (isLoading && !userDisplayInfo.name) return <SettingsLoadingState isDark={isDark} />;
+  // Show loading state while user data is being fetched
+  if (isLoading) {
+    return (
+      <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <SettingsHeader 
+          userDisplayInfo={userDisplayInfo} 
+          isDark={isDark} 
+          onBack={handleBack} 
+          hasUnsavedChanges={false}
+        />
+        <div className="px-4 sm:px-6 lg:px-8 pt-8">
+          <div className="w-full">
+            <SettingsLoadingState isDark={isDark} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Header */}
       <SettingsHeader 
-        userDisplayInfo={userDisplayInfo}
-        isDark={isDark}
-        onBack={() => navigate(-1)}
-        hasUnsavedChanges={hasUnsavedChanges}
+        userDisplayInfo={userDisplayInfo} 
+        isDark={isDark} 
+        onBack={handleBack} 
+        hasUnsavedChanges={false}
       />
+      <div className="px-4 sm:px-6 lg:px-8 pt-8">
+        <div className="w-full">
 
-      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-5 lg:grid-cols-5 gap-8">
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <SettingsSidebar 
-              activeSection={activeSection}
-              onSectionChange={setActiveSection}
-              isDark={isDark}
-              userRoles={userRoles}
-            />
-          </div>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            {/* Sidebar Navigation */}
+            <div className="lg:col-span-1">
+              <SettingsSidebar 
+                currentSection={currentSection} 
+                isDark={isDark} 
+                userRoles={userRoles} 
+              />
+            </div>
 
-          {/* Main Content */}
-          <div className="lg:col-span-4">
-            <SettingsContent
-              activeSection={activeSection}
-              userDisplayInfo={userDisplayInfo}
-              userRoles={userRoles}
-              currentUser={currentUser}
-              theme={theme}
-              isDark={isDark}
-              onToggleTheme={toggleTheme}
-              onChangePassword={handleChangePassword}
-              onUnsavedChanges={setHasUnsavedChanges}
-              refreshUserData={refreshUserDataWithContext} // Pass enhanced function
-            />
+            {/* Settings Content */}
+            <div className="lg:col-span-4 h-[calc(100vh-9rem)] overflow-y-auto">
+              <SettingsContent 
+                currentSection={currentSection}
+                userDisplayInfo={userDisplayInfo}
+                userRoles={userRoles}
+                currentUser={currentUser}
+                isDark={isDark}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                onChangePassword={handleChangePassword}
+                onUnsavedChanges={() => {}} // Add empty function for now
+                refreshUserData={refreshUserData}
+                isLoading={isLoading}
+                error={error}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -204,7 +177,9 @@ const SettingsHeader = ({ userDisplayInfo, isDark, onBack, hasUnsavedChanges }) 
 /**
  * Settings Sidebar Navigation
  */
-const SettingsSidebar = ({ activeSection, onSectionChange, isDark, userRoles = [] }) => {
+const SettingsSidebar = ({ currentSection, isDark, userRoles = [] }) => {
+  const navigate = useNavigate();
+  
   // Check if user has finance role
   const hasFinanceRole = userRoles.some(role => 
     typeof role === 'string' 
@@ -213,24 +188,28 @@ const SettingsSidebar = ({ activeSection, onSectionChange, isDark, userRoles = [
   );
 
   const baseMenuItems = [
-    { id: 'profile', label: 'Profil', icon: FaUser },
-    { id: 'security', label: 'Keselamatan', icon: FaShieldAlt },
-    { id: 'privacy', label: 'Privasi', icon: FaLock },
-    { id: 'notifications', label: 'Notifikasi', icon: FaBell },
-    { id: 'appearance', label: 'Penampilan', icon: FaEye },
+    { id: 'profile', label: 'Profil', icon: FaUser, path: '/settings/profile' },
+    { id: 'security', label: 'Keselamatan', icon: FaShieldAlt, path: '/settings/security' },
+    // { id: 'privacy', label: 'Privasi', icon: FaLock, path: '/settings/privacy' },
+    // { id: 'notifications', label: 'Notifikasi', icon: FaBell, path: '/settings/notifications' },
+    // { id: 'appearance', label: 'Penampilan', icon: FaEye, path: '/settings/appearance' },
   ];
 
   // Finance-specific menu items
   const financeMenuItems = [
-    { id: 'budget', label: 'Maklumat Budget', icon: FaChartLine, requiresFinance: true },
-    { id: 'budget-rollover', label: 'Rollover Bajet', icon: FaChartLine, requiresFinance: true },
-    { id: 'bank-balance', label: 'Baki Bank', icon: FaMoneyBillWave, requiresFinance: true },
+    { id: 'budget', label: 'Maklumat Budget', icon: FaChartLine, path: '/settings/budget', requiresFinance: true },
+    { id: 'budget-rollover', label: 'Rollover Bajet', icon: FaChartLine, path: '/settings/budget-rollover', requiresFinance: true },
+    { id: 'bank-balance', label: 'Baki Bank', icon: FaMoneyBillWave, path: '/settings/bank-balance', requiresFinance: true },
   ];
 
   // Combine menu items based on role
   const menuItems = hasFinanceRole 
     ? [...baseMenuItems, ...financeMenuItems]
     : baseMenuItems;
+
+  const handleSectionChange = (path) => {
+    navigate(path);
+  };
 
   return (
     <nav className={`${
@@ -239,12 +218,12 @@ const SettingsSidebar = ({ activeSection, onSectionChange, isDark, userRoles = [
       <div className="space-y-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeSection === item.id;
+          const isActive = currentSection === item.id;
           
           return (
             <button
               key={item.id}
-              onClick={() => onSectionChange(item.id)}
+              onClick={() => handleSectionChange(item.path)}
               className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                 isActive
                   ? isDark
@@ -269,7 +248,7 @@ const SettingsSidebar = ({ activeSection, onSectionChange, isDark, userRoles = [
  * Settings Content Area
  */
 const SettingsContent = ({ 
-  activeSection, 
+  currentSection, 
   userDisplayInfo, 
   userRoles, 
   currentUser,
@@ -281,7 +260,7 @@ const SettingsContent = ({
   refreshUserData
 }) => {
   const renderContent = () => {
-    switch (activeSection) {
+    switch (currentSection) {
       case 'profile':
         return (
           <ProfileSettings 
@@ -308,7 +287,16 @@ const SettingsContent = ({
       case 'bank-balance':
         return (<BankBalanceSettings isDark={isDark} currentUser={currentUser} onUnsavedChanges={onUnsavedChanges}/>);
       default:
-        return <ProfileSettings userDisplayInfo={userDisplayInfo} isDark={isDark} />;
+        return (
+          <ProfileSettings 
+            userDisplayInfo={userDisplayInfo} 
+            userRoles={userRoles}
+            currentUser={currentUser}
+            isDark={isDark} 
+            onUnsavedChanges={onUnsavedChanges}
+            refreshUserData={refreshUserData}
+          />
+        );
     }
   };
 
