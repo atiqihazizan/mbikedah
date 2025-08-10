@@ -150,8 +150,13 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
       setLocalLoading(true);
       
       try {
-        const {data:budgetResponse} = await apiClient.get("/budgets");
-        if (budgetResponse) setBudgets(budgetResponse);
+        const {data:budgetResponse} = await apiClient.get("/budgets?pagination_no=100"); // Get more budgets for selection
+        if (budgetResponse.success) {
+          setBudgets(budgetResponse.data.data || []);
+        } else {
+          // Fallback for old API format
+          setBudgets(budgetResponse.data || budgetResponse || []);
+        }
         await fetchRecipients();
       } catch (error) {
         console.error('Ralat mendapatkan data:', error);

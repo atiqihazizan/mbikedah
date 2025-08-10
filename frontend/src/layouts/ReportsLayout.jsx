@@ -1,7 +1,5 @@
 import { Outlet } from "react-router-dom";
 import { useStateContext } from '../contexts/ContextProvider';
-import MainNavigation from '../components/MainNavigation';
-
 /**
  * Reports Layout Component
  * Includes main navigation for consistency
@@ -14,11 +12,6 @@ export default function ReportsLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-32">
-      {/* Main Navigation */}
-      <div className="px-4 sm:px-6 lg:px-8">
-        <MainNavigation />
-      </div>
-      
       {/* Page Content */}
       <main className="px-4 sm:px-6 lg:px-8">
         <Outlet />

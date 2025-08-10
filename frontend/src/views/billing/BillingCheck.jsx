@@ -29,11 +29,19 @@ export default function BillingCheck() {
     try {
       const [billingRes, budgetsRes, banksRes] = await Promise.all([
         apiClient.post(`/status-validation/validate`,{billing_id: idBilling, status: 3, action:'process'}),
-        apiClient.get("/budgets"),
+        apiClient.get("/budgets?pagination_no=100"), // Get more budgets for selection
         apiClient.get("/banks")
       ]);
       setBilling(billingRes.data);
-      setBudgets(budgetsRes.data);
+      
+      // Handle new pagination response format
+      if (budgetsRes.data.success) {
+        setBudgets(budgetsRes.data.data.data || []);
+      } else {
+        // Fallback for old API format
+        setBudgets(budgetsRes.data.data || budgetsRes.data || []);
+      }
+      
       setBanks(banksRes);
     } catch (error) {
       if (error.response) {

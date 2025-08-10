@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\BudgetRequest;
+use App\Http\Resources\BudgetResource;
+use App\Http\Resources\BudgetCollection;
 use App\Models\Budget;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -20,39 +22,43 @@ class BudgetController extends Controller
 	/**
 	 * Get all budgets with improved caching
 	 */
-	public function index()
+	public function index(Request $request)
 	{
 		try {
-			// Check if we want fresh data (for debugging)
-			$forceRefresh = request()->has('refresh') || request()->has('_t');
-
-			if ($forceRefresh) $this->clearAllBudgetCache();
-
-			$budgets = Cache::remember(self::CACHE_KEY_BUDGETS, now()->addMinutes(self::CACHE_TTL), function () {
-				return Budget::with(['department', 'parent', 'children'])
-					->orderBy('type')
-					->orderBy('code')
-					// ->orderBy('level')
-					// ->orderBy('sort_order')
-					->get();
-			});
+			// Get pagination and search parameters
+			$perPage = $request->get('pagination_no', 10);
+			$searchCode = $request->get('code', '');
+			
+			// Build query with search filter
+			$query = Budget::with(['department', 'budgetHistory'])
+				->orderBy('type', 'asc')
+				->orderBy('code', 'asc')
+				->orderBy('level', 'asc')
+				->orderBy('sort_order', 'asc');
+			
+			// Apply search filter if code parameter is provided
+			if (!empty($searchCode)) {
+				$query->where('code', 'LIKE', '%' . $searchCode . '%');
+			}
 
 			return response()->json([
-				'data' => $budgets,
-				'source' => Cache::has(self::CACHE_KEY_BUDGETS) && !$forceRefresh ? 'cache' : 'database',
-				'cache_info' => [
-					'key' => self::CACHE_KEY_BUDGETS,
-					'ttl_minutes' => self::CACHE_TTL,
-					'timestamp' => now()->toDateTimeString(),
-					'count' => $budgets->count()
-				]
+				'success' => true,
+				'data' => $query->get()
 			]);
+
+			
+			// Get paginated results
+			// $budgets = $query->paginate($perPage);
+			
+			// // Return using BudgetCollection for automatic pagination handling
+			// return new BudgetCollection($budgets, $searchCode);
+			
 		} catch (\Exception $e) {
-			Log::error('Error getting budget list: ' . $e->getMessage(), [
-				'trace' => $e->getTraceAsString()
-			]);
+			Log::error('Error retrieving budgets: ' . $e->getMessage());
+			
 			return response()->json([
-				'message' => 'Ralat mendapatkan senarai budget',
+				'success' => false,
+				'message' => 'Failed to retrieve budgets',
 				'error' => $e->getMessage()
 			], 500);
 		}
@@ -159,12 +165,15 @@ class BudgetController extends Controller
 				->findOrFail($id);
 
 			return response()->json([
-				'data' => $budget,
+				'success' => true,
+				'message' => 'Budget retrieved successfully',
+				'data' => new BudgetResource($budget),
 				'breadcrumb' => $this->getBreadcrumb($budget)
 			]);
 		} catch (\Exception $e) {
 			Log::error('Error getting budget: ' . $e->getMessage(), ['budget_id' => $id]);
 			return response()->json([
+				'success' => false,
 				'message' => 'Budget tidak dijumpai',
 				'error' => $e->getMessage()
 			], 404);
@@ -671,8 +680,6 @@ class BudgetController extends Controller
 				$archivedCount = DB::table('budgets')->where('yearly', $fromYear)->count();
 				DB::statement("INSERT INTO `{$archiveTable}` SELECT * FROM `budgets` WHERE `yearly` = ?", [$fromYear]);
 			}
-
-
 
 			// 3) Update existing budgets year to target year
 			$updatedCount = DB::table('budgets')->where('yearly', $fromYear)->update(['yearly' => $toYear]);

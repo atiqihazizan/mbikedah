@@ -72,6 +72,11 @@ class Budget extends Model
         return $this->hasMany(TransactionBudget::class);
     }
 
+    public function budgetHistory()
+    {
+        return $this->hasMany(BudgetHistory::class, 'parent_id');
+    }
+
     // Scopes
     public function scopeGroups($query)
     {

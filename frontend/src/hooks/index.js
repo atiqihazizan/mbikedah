@@ -36,6 +36,7 @@ export { useTheme } from './useTheme';
 // ==================== BUSINESS HOOKS ====================
 // Hooks for business logic, roles, permissions, and domain operations
 export { useActiveRole } from './useActiveRole';
+export { useBudgetSettings } from './useBudgetSettings';
 
 // ==================== UTILITY HOOKS ====================
 // General utility hooks for common functionality
