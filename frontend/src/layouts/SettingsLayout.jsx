@@ -28,6 +28,7 @@ import {
   FaCog,
 } from "react-icons/fa";
 import BudgetSettings from "../views/settings/BudgetSettings";
+import BudgetRollover from "../views/settings/BudgetRollover";
 import ProfileSettings from "../views/settings/ProfileSettings";
 import BankBalanceSettings from "../views/settings/BankBalanceSettings";
 import SecuritySettings from "../views/settings/SecuritySettings";
@@ -111,7 +112,7 @@ export default function SettingsLayout() {
       />
 
       <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-4 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-5 lg:grid-cols-5 gap-8">
           {/* Sidebar Navigation */}
           <div className="lg:col-span-1">
             <SettingsSidebar 
@@ -123,7 +124,7 @@ export default function SettingsLayout() {
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-4">
             <SettingsContent
               activeSection={activeSection}
               userDisplayInfo={userDisplayInfo}
@@ -222,6 +223,7 @@ const SettingsSidebar = ({ activeSection, onSectionChange, isDark, userRoles = [
   // Finance-specific menu items
   const financeMenuItems = [
     { id: 'budget', label: 'Maklumat Budget', icon: FaChartLine, requiresFinance: true },
+    { id: 'budget-rollover', label: 'Rollover Bajet', icon: FaChartLine, requiresFinance: true },
     { id: 'bank-balance', label: 'Baki Bank', icon: FaMoneyBillWave, requiresFinance: true },
   ];
 
@@ -301,6 +303,8 @@ const SettingsContent = ({
         return (<AppearanceSettings theme={theme} isDark={isDark} onToggleTheme={onToggleTheme} />);
       case 'budget':
         return (<BudgetSettings isDark={isDark} currentUser={currentUser} onUnsavedChanges={onUnsavedChanges}/>);
+      case 'budget-rollover':
+        return (<BudgetRollover isDark={isDark} onUnsavedChanges={onUnsavedChanges} />);
       case 'bank-balance':
         return (<BankBalanceSettings isDark={isDark} currentUser={currentUser} onUnsavedChanges={onUnsavedChanges}/>);
       default:

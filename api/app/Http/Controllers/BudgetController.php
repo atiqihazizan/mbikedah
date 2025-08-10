@@ -583,6 +583,146 @@ class BudgetController extends Controller
 	}
 
 	/**
+	 * List distinct budget years available
+	 */
+	public function getYears()
+	{
+		try {
+			$years = Budget::select('yearly')
+				->distinct()
+				->orderBy('yearly', 'desc')
+				->pluck('yearly');
+
+			return response()->json([
+				'data' => $years,
+				'count' => $years->count()
+			]);
+		} catch (\Exception $e) {
+			Log::error('Error getting budget years: ' . $e->getMessage());
+			return response()->json([
+				'message' => 'Ralat mendapatkan senarai tahun budget',
+				'error' => $e->getMessage()
+			], 500);
+		}
+	}
+
+	/**
+	 * Check if archive table exists for a specific year
+	 */
+	public function checkArchive($year)
+	{
+		try {
+			$archiveTable = "budgets_{$year}";
+			$exists = \Schema::hasTable($archiveTable);
+			
+			if ($exists) {
+				$count = DB::table($archiveTable)->count();
+				return response()->json([
+					'exists' => true,
+					'count' => $count,
+					'table_name' => $archiveTable
+				]);
+			}
+			
+			return response()->json([
+				'exists' => false,
+				'count' => 0,
+				'table_name' => $archiveTable
+			]);
+		} catch (\Exception $e) {
+			Log::error('Error checking archive table: ' . $e->getMessage());
+			return response()->json([
+				'message' => 'Ralat memeriksa table archive',
+				'error' => $e->getMessage()
+			], 500);
+		}
+	}
+
+	/**
+	 * Archive current year's budgets into a year-suffixed table
+	 * and optionally create budgets for a new year (rollover)
+	 */
+	public function rolloverYear(Request $request)
+	{
+		$request->validate([
+			'from_year' => 'required|integer|min:2000|max:2100',
+			'copy_amounts' => 'sometimes|boolean',
+			'force' => 'sometimes|boolean',
+		]);
+
+		$fromYear = (int) $request->input('from_year');
+		$toYear = $fromYear + 1; // Automatically set to next year
+		$copyAmounts = (bool) $request->boolean('copy_amounts', true);
+		$force = (bool) $request->boolean('force', false);
+
+		$archiveTable = 'budgets_' . $fromYear;
+
+		try {
+			DB::beginTransaction();
+
+			// 1) Create archive table if not exists (MySQL specific CREATE LIKE)
+			if (!\Illuminate\Support\Facades\Schema::hasTable($archiveTable)) {
+				DB::statement("CREATE TABLE `{$archiveTable}` LIKE `budgets`");
+			}
+
+			// 2) Archive current year's data (skip if already archived and not force)
+			$archivedCount = 0;
+			if ($force || (DB::table($archiveTable)->count() === 0)) {
+				$archivedCount = DB::table('budgets')->where('yearly', $fromYear)->count();
+				DB::statement("INSERT INTO `{$archiveTable}` SELECT * FROM `budgets` WHERE `yearly` = ?", [$fromYear]);
+			}
+
+
+
+			// 3) Update existing budgets year to target year
+			$updatedCount = DB::table('budgets')->where('yearly', $fromYear)->update(['yearly' => $toYear]);
+			
+			// Reset actual spending for new year
+			DB::table('budgets')->where('yearly', $toYear)->update([
+				'act1' => 0, 'act2' => 0, 'act3' => 0, 'act4' => 0,
+				'act5' => 0, 'act6' => 0, 'act7' => 0, 'act8' => 0,
+				'act9' => 0, 'act10' => 0, 'act11' => 0, 'act12' => 0,
+				'acttotal' => 0
+			]);
+			
+			// Recalculate balance if copy_amounts is false
+			if (!$copyAmounts) {
+				DB::table('budgets')->where('yearly', $toYear)->update([
+					'bdg1' => 0, 'bdg2' => 0, 'bdg3' => 0, 'bdg4' => 0,
+					'bdg5' => 0, 'bdg6' => 0, 'bdg7' => 0, 'bdg8' => 0,
+					'bdg9' => 0, 'bdg10' => 0, 'bdg11' => 0, 'bdg12' => 0,
+					'bdgtotal' => 0,
+					'balance' => 0
+				]);
+			}
+
+			DB::commit();
+
+			$this->clearAllBudgetCache();
+
+			return response()->json([
+				'message' => 'Rollover budget berjaya',
+				'archived_table' => $archiveTable,
+				'archived_count' => $archivedCount,
+				'updated_year' => $toYear,
+				'updated_count' => $updatedCount,
+				'copy_amounts' => $copyAmounts
+			]);
+		} catch (\Exception $e) {
+			DB::rollBack();
+			Log::error('Error during budget rollover: ' . $e->getMessage(), [
+				'from_year' => $fromYear,
+				'to_year' => $toYear,
+				'trace' => $e->getTraceAsString()
+			]);
+			return response()->json([
+				'message' => 'Ralat proses rollover budget',
+				'error' => $e->getMessage()
+			], 500);
+		}
+	}
+
+	/**
 	 * Clear cache manually (for debugging)
 	 */
 	public function clearCache()
