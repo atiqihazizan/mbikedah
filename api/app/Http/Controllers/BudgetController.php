@@ -45,13 +45,6 @@ class BudgetController extends Controller
 				'success' => true,
 				'data' => $query->get()
 			]);
-
-			
-			// Get paginated results
-			// $budgets = $query->paginate($perPage);
-			
-			// // Return using BudgetCollection for automatic pagination handling
-			// return new BudgetCollection($budgets, $searchCode);
 			
 		} catch (\Exception $e) {
 			Log::error('Error retrieving budgets: ' . $e->getMessage());
@@ -59,44 +52,6 @@ class BudgetController extends Controller
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to retrieve budgets',
-				'error' => $e->getMessage()
-			], 500);
-		}
-	}
-
-	/**
-	 * Get hierarchical budget structure
-	 */
-	public function getHierarchical()
-	{
-		try {
-			$forceRefresh = request()->has('refresh');
-
-			if ($forceRefresh) $this->clearAllBudgetCache();
-
-			$data = Cache::remember(self::CACHE_KEY_HIERARCHICAL, now()->addMinutes(self::CACHE_TTL), function () {
-				$budgets = Budget::with(['parent', 'children', 'department'])
-					->orderBy('type')
-					// ->orderBy('level')
-					// ->orderBy('sort_order')
-					->orderBy('code')
-					->get();
-
-				return [
-					'tree' => $this->buildTree($budgets),
-					'flat' => $budgets
-				];
-			});
-
-			return response()->json([
-				'data' => $data['tree'],
-				'flat' => $data['flat'],
-				'source' => Cache::has(self::CACHE_KEY_HIERARCHICAL) && !$forceRefresh ? 'cache' : 'database'
-			]);
-		} catch (\Exception $e) {
-			Log::error('Error getting hierarchical budget: ' . $e->getMessage());
-			return response()->json([
-				'message' => 'Ralat mendapatkan hierarki budget',
 				'error' => $e->getMessage()
 			], 500);
 		}
@@ -260,6 +215,7 @@ class BudgetController extends Controller
 				'bdg10' => 'sometimes|numeric|min:0',
 				'bdg11' => 'sometimes|numeric|min:0',
 				'bdg12' => 'sometimes|numeric|min:0',
+				'bdgtotal' => 'sometimes|numeric|min:0', // Accept bdgtotal from frontend
 			]);
 
 			$budget = Budget::findOrFail($id);
@@ -273,9 +229,45 @@ class BudgetController extends Controller
 				}
 			}
 
-			// Calculate and update bdgtotal
-			$budget->bdgtotal = $budget->calculateBudgetTotal();
-			$budget->balance = $budget->calculateBalance();
+			// Use bdgtotal from frontend instead of recalculating
+			if ($request->has('bdgtotal')) {
+				$budget->bdgtotal = $request->bdgtotal;
+			} else {
+				// Fallback: calculate if not provided
+				$budget->bdgtotal = $budget->calculateBudgetTotal();
+			}
+
+			// Update budget_months based on which months have budget allocation
+			$budgetMonths = [];
+			foreach ($budgetFields as $field) {
+				$monthNumber = (int) substr($field, 3); // Extract month number from bdg1, bdg2, etc.
+				if ($budget->$field > 0) {
+					$budgetMonths[] = $monthNumber;
+				}
+			}
+			$budget->budget_months = $budgetMonths;
+			
+			// Calculate budget_month_count (number of months with budget allocation)
+			$budget->budget_month_count = count($budgetMonths);
+			
+			// Determine budget_type based on allocation pattern
+			if ($budget->budget_month_count === 0) {
+				$budget->budget_type = 'yearly'; // No monthly allocation (default to monthly)
+			} elseif ($budget->budget_month_count === 12) {
+				$budget->budget_type = 'monthly	'; // All 12 months
+			} elseif ($budget->budget_month_count === 1) {
+				$budget->budget_type = 'yearly'; // Single month
+			} else {
+				// For 2-11 months, determine if it's quarterly or monthly
+				if (in_array($budget->budget_month_count, [3, 6, 9])) {
+					$budget->budget_type = 'quarterly'; // Quarterly distribution
+				} else {
+					$budget->budget_type = 'monthly'; // Other partial distributions
+				}
+			}
+			
+			// Update balance based on new bdgtotal
+			$budget->balance = $budget->bdgtotal - $budget->acttotal;
 			$budget->save();
 
 			DB::commit();
@@ -283,20 +275,16 @@ class BudgetController extends Controller
 			// Clear cache
 			$this->clearAllBudgetCache();
 
-			Log::info('Budget allocation updated', [
-				'budget_id' => $budget->id,
-				'old_total' => $oldTotal,
-				'new_total' => $budget->bdgtotal
-			]);
-
 			return response()->json([
 				'message' => 'Budget allocation berjaya dikemaskini',
 				'data' => $budget->load(['department', 'parent', 'children']),
 				'summary' => [
 					'bdgtotal' => $budget->bdgtotal,
 					'acttotal' => $budget->acttotal,
-					'balance' => $budget->balance,
-					'change' => $budget->bdgtotal - $oldTotal
+					'balance' => $budget->bdgtotal - $oldTotal,
+					'budget_months' => $budgetMonths,
+					'budget_month_count' => $budget->budget_month_count,
+					'budget_type' => $budget->budget_type
 				]
 			]);
 		} catch (\Exception $e) {
@@ -494,77 +482,6 @@ class BudgetController extends Controller
 	}
 
 	/**
-	 * Get budget summary for dashboard
-	 */
-	public function getSummary()
-	{
-		try {
-			$summary = Cache::remember(self::CACHE_KEY_SUMMARY, now()->addMinutes(self::CACHE_TTL), function () {
-				return [
-					'total_budgets' => Budget::count(),
-					'total_allocated' => Budget::sum('bdgtotal'),
-					'total_spent' => Budget::sum('acttotal'),
-					'total_balance' => Budget::sum('balance'),
-					'by_type' => Budget::selectRaw('type, COUNT(*) as count, SUM(bdgtotal) as allocated, SUM(acttotal) as spent')
-						->groupBy('type')
-						->get(),
-					'by_level' => Budget::selectRaw('level, COUNT(*) as count, SUM(bdgtotal) as allocated')
-						->groupBy('level')
-						->orderBy('level')
-						->get(),
-					'over_budget' => Budget::whereRaw('acttotal > bdgtotal')->count(),
-					'timestamp' => now()->toDateTimeString()
-				];
-			});
-
-			// Calculate utilization percentage
-			$summary['utilization_percentage'] = $summary['total_allocated'] > 0
-				? round(($summary['total_spent'] / $summary['total_allocated']) * 100, 2)
-				: 0;
-
-			return response()->json([
-				'data' => $summary,
-				'source' => Cache::has(self::CACHE_KEY_SUMMARY) ? 'cache' : 'database'
-			]);
-		} catch (\Exception $e) {
-			Log::error('Error getting budget summary: ' . $e->getMessage());
-			return response()->json([
-				'message' => 'Ralat mendapatkan ringkasan budget',
-				'error' => $e->getMessage()
-			], 500);
-		}
-	}
-
-	/**
-	 * Get budgets by department
-	 */
-	public function getByDepartment($departmentId)
-	{
-		try {
-			$budgets = Budget::where('department_id', $departmentId)
-				->with(['department', 'parent', 'children'])
-				->orderBy('level')
-				->orderBy('sort_order')
-				->orderBy('code')
-				->get();
-
-			return response()->json([
-				'data' => $budgets,
-				'department_id' => $departmentId,
-				'count' => $budgets->count()
-			]);
-		} catch (\Exception $e) {
-			Log::error('Error getting budget by department: ' . $e->getMessage(), [
-				'department_id' => $departmentId
-			]);
-			return response()->json([
-				'message' => 'Ralat mendapatkan budget jabatan',
-				'error' => $e->getMessage()
-			], 500);
-		}
-	}
-
-	/**
 	 * Get budgets by year
 	 */
 	public function getByYear($year)
@@ -610,38 +527,6 @@ class BudgetController extends Controller
 			Log::error('Error getting budget years: ' . $e->getMessage());
 			return response()->json([
 				'message' => 'Ralat mendapatkan senarai tahun budget',
-				'error' => $e->getMessage()
-			], 500);
-		}
-	}
-
-	/**
-	 * Check if archive table exists for a specific year
-	 */
-	public function checkArchive($year)
-	{
-		try {
-			$archiveTable = "budgets_{$year}";
-			$exists = \Schema::hasTable($archiveTable);
-			
-			if ($exists) {
-				$count = DB::table($archiveTable)->count();
-				return response()->json([
-					'exists' => true,
-					'count' => $count,
-					'table_name' => $archiveTable
-				]);
-			}
-			
-			return response()->json([
-				'exists' => false,
-				'count' => 0,
-				'table_name' => $archiveTable
-			]);
-		} catch (\Exception $e) {
-			Log::error('Error checking archive table: ' . $e->getMessage());
-			return response()->json([
-				'message' => 'Ralat memeriksa table archive',
 				'error' => $e->getMessage()
 			], 500);
 		}
@@ -730,301 +615,43 @@ class BudgetController extends Controller
 	}
 
 	/**
-	 * Clear cache manually (for debugging)
-	 */
-	public function clearCache()
-	{
-		try {
-			$this->clearAllBudgetCache();
-
-			return response()->json([
-				'message' => 'Cache berjaya di-clear',
-				'cleared_keys' => [
-					self::CACHE_KEY_BUDGETS,
-					self::CACHE_KEY_HIERARCHICAL,
-					self::CACHE_KEY_SUMMARY
-				],
-				'timestamp' => now()->toDateTimeString()
-			]);
-		} catch (\Exception $e) {
-			return response()->json([
-				'message' => 'Ralat clear cache',
-				'error' => $e->getMessage()
-			], 500);
-		}
-	}
-
-	/**
 	 * Get budget summary data (similar to budgetSummary.json)
 	 */
 	public function getBudgetSummaryData()
 	{
 		try {
-			// Temporarily disable cache for testing
-			// $data = Cache::remember('budget_summary_data', 3600, function () {
-			$data = function () {
-				// First, let's see what types exist in the database
-				$allBudgets = Budget::select('type', 'level')->get();
-				Log::info('All budget types in database:', [
-					'types' => $allBudgets->pluck('type')->unique()->toArray(),
-					'levels' => $allBudgets->pluck('level')->unique()->toArray(),
-					'total_count' => $allBudgets->count()
-				]);
 
-				// For now, always use fallback data since database values are zero
-				Log::info('Using fallback data for budget summary');
-				
-				$revenueData = collect([
-					[
-						'id' => 1,
-						'code' => '5000/000',
-						'name' => 'PENDAPATAN (HASIL MBI)',
-						'actual2023' => 5667217.60,
-						'actual2024' => 3445439.22,
-						'budget2023' => 18247472.24,
-						'budget2024' => 9228879.13,
-						'budget2025' => 15581992.95,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 2,
-						'code' => '5100/000',
-						'name' => 'PENDAPATAN LAIN-LAIN (BUKAN HASIL MBI)',
-						'actual2023' => 17089117.83,
-						'actual2024' => 6148232.66,
-						'budget2023' => 19095500.14,
-						'budget2024' => 12582644.69,
-						'budget2025' => 18634028.01,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 3,
-						'code' => '5200/000',
-						'name' => 'PENDAPATAN SUMBER DANA',
-						'actual2023' => 530111.15,
-						'actual2024' => 2030111.15,
-						'budget2023' => 530115.15,
-						'budget2024' => 2030111.15,
-						'budget2025' => 530111.15,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 4,
-						'code' => '5300/000',
-						'name' => 'PENDAPATAN LUAR JANGKA',
-						'actual2023' => 0,
-						'actual2024' => 1950000.00,
-						'budget2023' => 0,
-						'budget2024' => 4277347.50,
-						'budget2025' => 1440540.00,
-						'department' => 'Kewangan'
-					]
-				]);
+			$budgetSummary = Budget::where('level', 0)
+				->orderBy('type', 'asc')
+				->get();
 
-				$expenditureData = collect([
-					[
-						'id' => 5,
-						'code' => '2000/000',
-						'name' => 'ASET BUKAN SEMASA',
-						'actual2023' => 1508163.00,
-						'actual2024' => 8430.00,
-						'budget2023' => 2525377.40,
-						'budget2024' => 682881.10,
-						'budget2025' => 1247391.30,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 6,
-						'code' => '3000/000',
-						'name' => 'ASET SEMASA',
-						'actual2023' => 5055990.17,
-						'actual2024' => 2451116.34,
-						'budget2023' => 2395821.08,
-						'budget2024' => 3325000.00,
-						'budget2025' => 4042372.28,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 7,
-						'code' => '4000/000',
-						'name' => 'BAYARAN HUTANG DAN FAEDAH',
-						'actual2023' => 4945565.35,
-						'actual2024' => 2468524.79,
-						'budget2023' => 11514164.72,
-						'budget2024' => 5224439.39,
-						'budget2025' => 10423443.09,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 8,
-						'code' => '9000/000',
-						'name' => 'BELANJA OPERASI',
-						'actual2023' => 1510853.20,
-						'actual2024' => 1121676.20,
-						'budget2023' => 3103346.10,
-						'budget2024' => 2742213.00,
-						'budget2025' => 4997518.00,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 9,
-						'code' => '9100/000',
-						'name' => 'EMOLUMEN & FAEDAH KAKITANGAN',
-						'actual2023' => 5399426.21,
-						'actual2024' => 4809352.80,
-						'budget2023' => 6963512.55,
-						'budget2024' => 7878772.00,
-						'budget2025' => 7280924.00,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 10,
-						'code' => '9200/000',
-						'name' => 'PERKHIDMATAN DAN PERBELANJAAN PEJABAT',
-						'actual2023' => 507134.46,
-						'actual2024' => 393070.77,
-						'budget2023' => 2986279.04,
-						'budget2024' => 1414798.00,
-						'budget2025' => 1270618.00,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 11,
-						'code' => '9300/000',
-						'name' => 'SUMBANGAN DAN TAJAAN',
-						'actual2023' => 602037.50,
-						'actual2024' => 553446.20,
-						'budget2023' => 402000.00,
-						'budget2024' => 586000.00,
-						'budget2025' => 1016000.00,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 12,
-						'code' => '9400/000',
-						'name' => 'PERBELANJAAN KHAS',
-						'actual2023' => 3002978.90,
-						'actual2024' => 1947496.43,
-						'budget2023' => 7282111.15,
-						'budget2024' => 2415055.58,
-						'budget2025' => 2639639.15,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 13,
-						'code' => '9500/000',
-						'name' => 'PERBELANJAAN LUAR JANGKA',
-						'actual2023' => 0,
-						'actual2024' => 900000.00,
-						'budget2023' => 0,
-						'budget2024' => 2681838.04,
-						'budget2025' => 1238156.60,
-						'department' => 'Kewangan'
-					],
-					[
-						'id' => 14,
-						'code' => '9600/000',
-						'name' => 'PERBELANJAAN AM',
-						'actual2023' => 0,
-						'actual2024' => 0,
-						'budget2023' => 0,
-						'budget2024' => 0,
-						'budget2025' => 0,
-						'department' => 'Kewangan'
-					]
-				]);
+			$data = [
+				'revenueData' => $budgetSummary->where('type', 1)->map(fn($item) => $this->formatBudgetItem($item))->values(),
+				'expenditureData' => $budgetSummary->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values()
+			];
 
-				// Calculate totals
-				$revenueTotal = [
-					'actual2023' => $revenueData->sum('actual2023'),
-					'actual2024' => $revenueData->sum('actual2024'),
-					'budget2023' => $revenueData->sum('budget2023'),
-					'budget2024' => $revenueData->sum('budget2024'),
-					'budget2025' => $revenueData->sum('budget2025'),
-				];
+			// dapatkan data dari table budgets_2024 tetapi perlu semak jika table ini wujud
+			$year = Date('Y') - 2;
+			if (DB::table('budgets_' . $year)->exists()) {
+				$budgetSummary2024 = DB::table('budgets_' . $year)
+				->where('level', 0)
+				->orderBy('type', 'asc')
+				->get();
 
-				$expenditureTotal = [
-					'actual2023' => $expenditureData->sum('actual2023'),
-					'actual2024' => $expenditureData->sum('actual2024'),
-					'budget2023' => $expenditureData->sum('budget2023'),
-					'budget2024' => $expenditureData->sum('budget2024'),
-					'budget2025' => $expenditureData->sum('budget2025'),
-				];
+				$data['revenueData'] = $budgetSummary2024->where('type', 1)->map(fn($item) => $this->formatBudgetItem($item))->values();
+				$data['expenditureData'] = $budgetSummary2024->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values();
+			}
 
-				// Calculate net position
-				$netPosition = [
-					'actual2023' => $revenueTotal['actual2023'] - $expenditureTotal['actual2023'],
-					'actual2024' => $revenueTotal['actual2024'] - $expenditureTotal['actual2024'],
-					'budget2023' => $revenueTotal['budget2023'] - $expenditureTotal['budget2023'],
-					'budget2024' => $revenueTotal['budget2024'] - $expenditureTotal['budget2024'],
-					'budget2025' => $revenueTotal['budget2025'] - $expenditureTotal['budget2025'],
-				];
+			$year = Date('Y') - 1;
+			if (DB::table('budgets_' . $year)->exists()) {
+				$budgetSummary2025 = DB::table('budgets_' . $year)
+				->where('level', 0)
+				->orderBy('type', 'asc')
+				->get();
 
-				// Calculate summary values
-				$openingBalance = [
-					'actual2023' => 1720760.17,
-					'actual2024' => 2101260.38,
-					'budget2023' => 602617.95,
-					'budget2024' => 2475057.96,
-					'budget2025' => 1021929.88,
-				];
-
-				$runningBalance = [
-					'actual2023' => $netPosition['actual2023'] + $openingBalance['actual2023'],
-					'actual2024' => $netPosition['actual2024'] + $openingBalance['actual2024'],
-					'budget2023' => $netPosition['budget2023'] + $openingBalance['budget2023'],
-					'budget2024' => $netPosition['budget2024'] + $openingBalance['budget2024'],
-					'budget2025' => $netPosition['budget2025'] + $openingBalance['budget2025'],
-				];
-
-				$specialSavings = [
-					'actual2023' => 769477.22,
-					'actual2024' => 1002332.13,
-					'budget2023' => 1000000.00,
-					'budget2024' => 1162178.01,
-					'budget2025' => 1063096.14,
-				];
-
-				$fixedDepositAmounts = [
-					'actual2023' => 400000.00,
-					'actual2024' => 1000000.00,
-					'budget2023' => 1000000.00,
-					'budget2024' => 1000000.00,
-					'budget2025' => 1000000.00,
-				];
-
-				$finalBalance = [
-					'actual2023' => $runningBalance['actual2023'] - $specialSavings['actual2023'] + $fixedDepositAmounts['actual2023'],
-					'actual2024' => $runningBalance['actual2024'] - $specialSavings['actual2024'] + $fixedDepositAmounts['actual2024'],
-					'budget2023' => $runningBalance['budget2023'] - $specialSavings['budget2023'] + $fixedDepositAmounts['budget2023'],
-					'budget2024' => $runningBalance['budget2024'] - $specialSavings['budget2024'] + $fixedDepositAmounts['budget2024'],
-					'budget2025' => $runningBalance['budget2025'] - $specialSavings['budget2025'] + $fixedDepositAmounts['budget2025'],
-				];
-
-				$result = [
-					'revenueData' => $revenueData,
-					'expenditureData' => $expenditureData,
-					'summary' => [
-						'revenueTotal' => $revenueTotal,
-						'expenditureTotal' => $expenditureTotal,
-						'netPosition' => $netPosition,
-						'openingBalance' => $openingBalance,
-						'runningBalance' => $runningBalance,
-						'specialSavings' => $specialSavings,
-						'fixedDepositAmounts' => $fixedDepositAmounts,
-						'finalBalance' => $finalBalance,
-						'generated_at' => now()->toDateTimeString()
-					]
-				];
-
-				Log::info('Budget Summary Data Result', [
-					'result' => $result
-				]);
-
-				return $result;
-			};
-
-			$data = $data();
+				$data['revenueData'] = $budgetSummary2024->where('type', 1)->map(fn($item) => $this->formatBudgetItem($item))->values();
+				$data['expenditureData'] = $budgetSummary2024->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values();
+			}
 
 			return response()->json([
 				'success' => true,
@@ -1041,7 +668,6 @@ class BudgetController extends Controller
 			], 500);
 		}
 	}
-
 	/**
 	 * Get expense breakdown data (similar to ExpenseBreakdown.json)
 	 */
@@ -1613,4 +1239,22 @@ class BudgetController extends Controller
 		}
 		return $total;
 	}
+
+	/**
+	 * Format budget item for response
+	 */
+	private function formatBudgetItem($item)
+	{
+			return [
+				'id' => $item->id,
+				'code' => $item->code,
+				'name' => $item->name,
+				'type' => $item->type,
+				'level' => $item->level,
+				'bdgtotal' => $item->bdgtotal,
+				'acttotal' => $item->acttotal,
+				'balance' => $item->balance,
+			];
+	}
+
 }

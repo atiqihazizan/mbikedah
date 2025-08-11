@@ -11,7 +11,8 @@ const useBudgetSummary = () => {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get('/public/budgets/reports/summary');
+      const response = await axios.get('/budgets/reports/summary');
+      console.log(response);
       
       if (response && response.success) {
         setData(response.data);

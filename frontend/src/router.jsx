@@ -1,7 +1,6 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import DefaultLayout from "./layouts/DefaultLayout";
-import ReportsLayout from "./layouts/ReportsLayout";
 import RootLoading from "./components/RootLoading";
 import GuestLayout from "./layouts/GuestLayout";
 import Login from "./views/Login";
@@ -42,30 +41,27 @@ const router = createBrowserRouter([
 			// Shared routes (accessible by all roles)
 			{ path: "finance/:idBilling/view", element: <BillingView /> },
 			{ path: "finance/:idBilling/check", element: <BillingCheck /> },
-		],
-	},
-	{
-		path: "/reports",
-		element: (
-			<ProtectedRoute>
-				<ReportsLayout />
-			</ProtectedRoute>
-		),
-		children: [
-			// Root path will be handled by RootLoading with auto-redirect
-			{ path: "", element: <Navigate to="/reports/budget_summary" replace /> },
-			
-			// Pemohon specific routes
-			{ path: "budget_summary", element: <BudgetSummary /> },
-			
-			// HOD specific routes
-			{ path: "income_statement", element: <IncomeExpenditureStatement /> },
-			
-			// Finance specific routes
-			{ path: "revenue_breakdown", element: <RevenueBreakdown /> },
-			
-			// Finance specific routes
-			{ path: "expense_breakdown", element: <ExpenseBreakdown /> },
+
+			// Reports Routes - Protected for all authenticated users
+			{
+				path: "/reports",
+				children: [
+					// Root path will be handled by RootLoading with auto-redirect
+					{ path: "", element: <Navigate to="/reports/budget_summary" replace /> },
+					
+					// Pemohon specific routes
+					{ path: "budget_summary", element: <BudgetSummary /> },
+					
+					// HOD specific routes
+					{ path: "income_statement", element: <IncomeExpenditureStatement /> },
+					
+					// Finance specific routes
+					{ path: "revenue_breakdown", element: <RevenueBreakdown /> },
+					
+					// Finance specific routes
+					{ path: "expense_breakdown", element: <ExpenseBreakdown /> },
+				],
+			},
 		],
 	},
 	// Settings Routes - Protected for all authenticated users

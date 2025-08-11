@@ -478,10 +478,21 @@ export const formatUtils = {
     return isNaN(num) ? defaultValue : num;
   },
 
-  // Format decimal places safely
+  // Format decimal places safely with comma separators
   formatDecimal: (value, decimals = 2) => {
     const num = formatUtils.safeNumber(value);
-    return num.toFixed(decimals);
+    const fixed = num.toFixed(decimals);
+    
+    // Split into integer and decimal parts
+    const parts = fixed.split('.');
+    const integerPart = parts[0];
+    const decimalPart = parts[1] || '';
+    
+    // Add comma separators to integer part
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // Return formatted number with decimal if needed
+    return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger;
   },
 
   // Check if value is empty or null

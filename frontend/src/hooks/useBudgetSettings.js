@@ -14,6 +14,7 @@ export const useBudgetSettings = () => {
   const [initialFormData, setInitialFormData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
+  const [showAllocationDialog, setShowAllocationDialog] = useState(false);
   
   // Load budgets with pagination and search
   const loadBudgets = useCallback(async () => {
@@ -79,6 +80,27 @@ export const useBudgetSettings = () => {
       throw error;
     }
   }, [budgets, initialFormData, loadBudgets]);
+
+  // Save budget allocation (monthly budget distribution)
+  const handleSaveBudgetAllocation = useCallback(async (budgetData, selectedBudget) => {
+    try {
+      if (!selectedBudget) {
+        throw new Error('Tiada budget dipilih');
+      }
+
+      const response = await apiClient.put(`/budgets/${selectedBudget.id}/budget-allocation`, budgetData);
+      console.log(response);
+      // The API returns the response data directly
+      toast.success('Agihan bajet bulanan berjaya dikemaskini');
+      await loadBudgets(); // Reload budgets to get updated data
+      
+    } catch (error) {
+      console.error('Error updating budget allocation:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Ralat mengemaskini agihan bajet';
+      toast.error(errorMessage);
+      throw error;
+    }
+  }, [loadBudgets]);
 
   // Update budget hierarchy after inserting parent
   const updateBudgetHierarchy = useCallback(async (childBudgetId, newParentId) => {
@@ -171,6 +193,18 @@ export const useBudgetSettings = () => {
     setInitialFormData(null);
   }, []);
 
+  const handleAllocationDialogClose = useCallback(() => {
+    setShowAllocationDialog(false);
+    setSelectedBudget(null);
+    setInitialFormData(null);
+  }, []);
+
+  const handleAllocationBudget = useCallback((budget) => {
+    setSelectedBudget(budget);
+    setInitialFormData(null);
+    setShowAllocationDialog(true);
+  }, []);
+
   // Utility functions
   const getOrphanedBudgets = useCallback(() => {
     return budgets.filter(budget => 
@@ -255,16 +289,19 @@ export const useBudgetSettings = () => {
     initialFormData,
     isLoading,
     showDialog,
+    showAllocationDialog,
     hierarchicalBudgets,
     // Actions
     handleSaveBudget,
+    handleSaveBudgetAllocation,
     handleDeleteBudget,
     handleQuickSetParent,
     handleEditBudget,
     handleNewBudget,
     handleAddChild,
+    handleAllocationBudget,
     handleDialogClose,
-    
+    handleAllocationDialogClose,
     // Utility functions
     getOrphanedBudgets,
     getPotentialParents,

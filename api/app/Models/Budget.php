@@ -21,6 +21,11 @@ class Budget extends Model
         'is_group',
         'group_type',
         'sort_order',
+        'budget_months',
+        'budget_type',
+        'budget_month_count',
+        'is_applicant',
+        'child_count',
         'bdg1', 'bdg2', 'bdg3', 'bdg4', 'bdg5', 'bdg6',
         'bdg7', 'bdg8', 'bdg9', 'bdg10', 'bdg11', 'bdg12',
         'bdgtotal',
@@ -38,6 +43,11 @@ class Budget extends Model
         'is_group' => 'boolean',
         'parent_id' => 'integer',
         'department_id' => 'integer',
+        'budget_months' => 'array',
+        'budget_type' => 'string',
+        'budget_month_count' => 'integer',
+        'is_applicant' => 'boolean',
+        'child_count' => 'integer',
         'bdg1' => 'decimal:2', 'bdg2' => 'decimal:2', 'bdg3' => 'decimal:2',
         'bdg4' => 'decimal:2', 'bdg5' => 'decimal:2', 'bdg6' => 'decimal:2',
         'bdg7' => 'decimal:2', 'bdg8' => 'decimal:2', 'bdg9' => 'decimal:2',
@@ -65,6 +75,32 @@ class Budget extends Model
     public function children()
     {
         return $this->hasMany(Budget::class, 'parent_id')->orderBy('sort_order');
+    }
+
+    public function childrenWithCount()
+    {
+        return $this->hasMany(Budget::class, 'parent_id')
+            ->orderBy('sort_order')
+            ->withCount('children');
+    }
+
+    public function updateChildCount()
+    {
+        $this->child_count = $this->children()->count();
+        $this->save();
+        return $this;
+    }
+
+    public function incrementChildCount()
+    {
+        $this->increment('child_count');
+        return $this;
+    }
+
+    public function decrementChildCount()
+    {
+        $this->decrement('child_count');
+        return $this;
     }
 
     public function transactions()
@@ -101,6 +137,36 @@ class Budget extends Model
     public function scopeByType($query, $type)
     {
         return $query->where('type', $type);
+    }
+
+    public function scopeByBudgetType($query, $budgetType)
+    {
+        return $query->where('budget_type', $budgetType);
+    }
+
+    public function scopeApplicantBudgets($query)
+    {
+        return $query->where('is_applicant', true);
+    }
+
+    public function scopeNonApplicantBudgets($query)
+    {
+        return $query->where('is_applicant', false);
+    }
+
+    public function scopeByMonthCount($query, $monthCount)
+    {
+        return $query->where('budget_month_count', $monthCount);
+    }
+
+    public function scopeWithChildren($query)
+    {
+        return $query->where('child_count', '>', 0);
+    }
+
+    public function scopeWithoutChildren($query)
+    {
+        return $query->where('child_count', 0);
     }
 
     // Budget Calculations
@@ -190,6 +256,30 @@ class Budget extends Model
         return 'RM ' . number_format($this->balance, 2);
     }
 
+    public function getFormattedBudgetTypeAttribute()
+    {
+        return $this->getBudgetTypeLabel();
+    }
+
+    public function getFormattedBudgetMonthsAttribute()
+    {
+        if (!$this->budget_months) return 'Semua Bulan';
+        $months = collect($this->budget_months)->map(function($month) {
+            $monthNames = [
+                1 => 'Januari', 2 => 'Februari', 3 => 'Mac', 4 => 'April',
+                5 => 'Mei', 6 => 'Jun', 7 => 'Julai', 8 => 'Ogos',
+                9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Disember'
+            ];
+            return $monthNames[$month] ?? $month;
+        });
+        return $months->implode(', ');
+    }
+
+    public function getFormattedChildCountAttribute()
+    {
+        return $this->child_count . ' sub-bajet';
+    }
+
     public function getUtilizationPercentage()
     {
         if ($this->bdgtotal <= 0) return 0;
@@ -199,6 +289,61 @@ class Budget extends Model
     public function isOverBudget()
     {
         return $this->acttotal > $this->bdgtotal;
+    }
+
+    // New field helper methods
+    public function getBudgetTypeLabel()
+    {
+        switch ($this->budget_type) {
+            case 'monthly': return 'Bulanan';
+            case 'quarterly': return 'Suku Tahunan';
+            case 'yearly': return 'Tahunan';
+            default: return 'Bulanan';
+        }
+    }
+
+    public function isApplicantBudget()
+    {
+        return $this->is_applicant;
+    }
+
+    public function getBudgetMonthsArray()
+    {
+        return $this->budget_months ?? range(1, 12);
+    }
+
+    public function hasBudgetForMonth($month)
+    {
+        if (!$this->budget_months) return true; // Default to all months
+        return in_array($month, $this->budget_months);
+    }
+
+    public function getBudgetDistribution()
+    {
+        if ($this->budget_type === 'yearly') {
+            return ['total' => $this->bdgtotal];
+        } elseif ($this->budget_type === 'quarterly') {
+            $quarterly = [];
+            for ($q = 1; $q <= 4; $q++) {
+                $start = ($q - 1) * 3 + 1;
+                $end = $q * 3;
+                $total = 0;
+                for ($m = $start; $m <= $end; $m++) {
+                    $field = 'bdg' . $m;
+                    $total += (float) $this->$field;
+                }
+                $quarterly["Q{$q}"] = $total;
+            }
+            return $quarterly;
+        } else {
+            // Monthly
+            $monthly = [];
+            for ($i = 1; $i <= 12; $i++) {
+                $field = 'bdg' . $i;
+                $monthly["month_{$i}"] = (float) $this->$field;
+            }
+            return $monthly;
+        }
     }
     /**
      * Get all ancestors (parents, grandparents, etc.)
@@ -246,5 +391,68 @@ class Budget extends Model
     public function getFullPath()
     {
         return $this->getBreadcrumb()->pluck('code')->implode(' → ');
+    }
+
+    // Validation and business logic methods
+    public function validateBudgetMonths()
+    {
+        if (!$this->budget_months) return true;
+        
+        $validMonths = range(1, 12);
+        $invalidMonths = array_diff($this->budget_months, $validMonths);
+        
+        return empty($invalidMonths);
+    }
+
+    public function getInvalidMonths()
+    {
+        if (!$this->budget_months) return [];
+        
+        $validMonths = range(1, 12);
+        return array_diff($this->budget_months, $validMonths);
+    }
+
+    public function canHaveChildren()
+    {
+        return $this->is_group && $this->level < 5; // Assuming max 5 levels
+    }
+
+    public function canBeMovedTo($newParent)
+    {
+        if (!$newParent) return true;
+        
+        // Cannot move to itself or its descendants
+        if ($newParent->id === $this->id || $newParent->descendants()->pluck('id')->contains($this->id)) {
+            return false;
+        }
+        
+        // Check level constraints
+        return $newParent->level < $this->level;
+    }
+
+    public function getBudgetStatus()
+    {
+        if ($this->acttotal > $this->bdgtotal) {
+            return 'over_budget';
+        } elseif ($this->acttotal >= ($this->bdgtotal * 0.9)) {
+            return 'near_limit';
+        } elseif ($this->acttotal >= ($this->bdgtotal * 0.7)) {
+            return 'moderate_usage';
+        } else {
+            return 'low_usage';
+        }
+    }
+
+    public function getBudgetStatusLabel()
+    {
+        $status = $this->getBudgetStatus();
+        $labels = [
+            'over_budget' => 'Melebihi Bajet',
+            'near_limit' => 'Hampir Had',
+            'moderate_usage' => 'Penggunaan Sederhana',
+            'low_usage' => 'Penggunaan Rendah'
+        ];
+        
+        return $labels[$status] ?? 'Tidak Diketahui';
     }
 }

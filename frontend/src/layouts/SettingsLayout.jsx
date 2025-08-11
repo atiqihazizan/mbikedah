@@ -94,7 +94,7 @@ export default function SettingsLayout() {
             </div>
 
             {/* Settings Content */}
-            <div className="lg:col-span-4 h-[calc(100vh-9rem)] overflow-y-auto">
+            <div className="lg:col-span-4 h-[calc(100vh-8.5rem)] overflow-y-auto">
               <SettingsContent 
                 currentSection={currentSection}
                 userDisplayInfo={userDisplayInfo}

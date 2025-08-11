@@ -73,15 +73,6 @@ Route::prefix('test')->group(function () {
 
 /*
  * |--------------------------------------------------------------------------
- * | Public Budget Routes (for testing)
- * |--------------------------------------------------------------------------
- */
-Route::prefix('public')->group(function () {
-  Route::get('/budgets/reports/summary', [BudgetController::class, 'getBudgetSummaryData']);
-});
-
-/*
- * |--------------------------------------------------------------------------
  * | Protected Routes
  * |--------------------------------------------------------------------------
  */
@@ -117,10 +108,6 @@ Route::middleware('auth:sanctum')->group(function () {
    */
   Route::prefix('budgets')->group(function () {
     // Special routes (must come before {id} routes)
-    Route::get('/summary/dashboard', [BudgetController::class, 'getSummary']);
-    Route::get('/structure/hierarchical', [BudgetController::class, 'getHierarchical']);
-    Route::post('/cache/clear', [BudgetController::class, 'clearCache']);
-    Route::get('/department/{departmentId}', [BudgetController::class, 'getByDepartment']);
     Route::get('/year/{year}', [BudgetController::class, 'getByYear']);
 
     // Report Data Routes (new)
@@ -131,7 +118,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Year and rollover management
     Route::get('/years', [BudgetController::class, 'getYears']);
-    Route::get('/check-archive/{year}', [BudgetController::class, 'checkArchive']);
+    // Route::get('/check-archive/{year}', [BudgetController::class, 'checkArchive']);
     Route::post('/rollover', [BudgetController::class, 'rolloverYear']);
 
     // Basic CRUD Routes

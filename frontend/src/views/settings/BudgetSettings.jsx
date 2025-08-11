@@ -1,5 +1,6 @@
-import { FaChartLine, FaPlus, FaEdit, FaTrash, FaLayerGroup, FaSitemap, FaBaby, FaSearch } from "react-icons/fa";
+import { FaChartLine, FaPlus, FaEdit, FaTrash, FaMoneyBillWave, FaSitemap, FaFolderPlus, FaSearch } from "react-icons/fa";
 import BudgetFormDialog from "../../components/dialogs/BudgetFormDialog";
+import BudgetAllocationDialog from "../../components/dialogs/BudgetAllocationDialog";
 import TButton from "../../components/Core/TButton";
 import DataTable from "../../components/DataTable";
 import { formatUtils } from "../../utils/formatUtils";
@@ -16,16 +17,21 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
     initialFormData,
     isLoading,
     showDialog,
+    showAllocationDialog,
     budgets,
     hierarchicalBudgets,
     
     // Actions
     handleSaveBudget,
+    handleSaveBudgetAllocation,
     handleDeleteBudget,
     handleEditBudget,
     handleNewBudget,
+    handleAllocationBudget,
     handleAddChild,
     handleDialogClose,
+    handleAllocationDialogClose,
+    
     // Utility functions
     getBudgetTypeLabel,
     getDepartmentName,
@@ -115,30 +121,49 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
       label: 'Tindakan',
       textAlign: 'center',
       render: (value, item) => (
-        <div className="flex justify-center space-x-1">
-          {/* Add Child Button */}
-          {canHaveChildren(item) && (
-            <TButton variant="subtle" color="green" size="sm" circle onClick={() => handleAddChild(item)} className="transition-all duration-200" title={`Tambah child budget untuk ${item.name}`}>
-              <FaBaby className="w-3 h-3" />
-            </TButton>
-          )}
+        <div className="grid grid-cols-4 gap-1 justify-items-center">
+          {/* Add Child Button - Position 1 */}
+          <div className="w-8 h-8 flex items-center justify-center">
+            {canHaveChildren(item) ? (
+              <TButton variant="subtle" color="green" size="sm" circle onClick={() => handleAddChild(item)} className="transition-all duration-200" title={`Tambah child budget untuk ${item.name}`}>
+                <FaPlus className="w-3 h-3" />
+              </TButton>
+            ) : (
+              <div className="w-8 h-8"></div>
+            )}
+          </div>
 
-          {/* Edit Button */}
-          <TButton variant="subtle" color="blue" size="sm" circle onClick={() => handleEditBudget(item)} className="transition-all duration-200" title={`Edit ${item.name}`}>
-            <FaEdit className="w-4 h-4" />
-          </TButton>
+          {/* Allocation Button - Position 2 */}
+          <div className="w-8 h-8 flex items-center justify-center">
+            {getChildrenCount(item.id) === 0 ? (
+              <TButton variant="subtle" color="blue" size="sm" circle onClick={() => handleAllocationBudget(item)} className="transition-all duration-200" title={`Edit allocation untuk ${item.name}`}>
+                <FaMoneyBillWave className="w-4 h-4" />
+              </TButton>
+            ) : (
+              <div className="w-8 h-8"></div>
+            )}
+          </div>
+
+          {/* Edit Button - Position 3 */}
+          <div className="w-8 h-8 flex items-center justify-center">
+            <TButton variant="subtle" color="blue" size="sm" circle onClick={() => handleEditBudget(item)} className="transition-all duration-200" title={`Edit ${item.name}`}>
+              <FaEdit className="w-4 h-4" />
+            </TButton>
+          </div>
           
-          {/* Delete Button */}
-          <TButton variant="subtle" color="red" size="sm" circle onClick={() => handleDeleteBudget(item.id, item.name)} className="transition-all duration-200" title={`Padam ${item.name}`}>
-            <FaTrash className="w-4 h-4" />
-          </TButton>
+          {/* Delete Button - Position 4 */}
+          <div className="w-8 h-8 flex items-center justify-center">
+            <TButton variant="subtle" color="red" size="sm" circle onClick={() => handleDeleteBudget(item.id, item.name)} className="transition-all duration-200" title={`Padam ${item.name}`}>
+              <FaTrash className="w-4 h-4" />
+            </TButton>
+          </div>
         </div>
       )
     }
   ];
 
   return (
-    <div>
+    <>
       {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-start mb-4">
@@ -159,28 +184,23 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
       </div>
 
       {/* Budget Table */}
-      <div className={`rounded-xl border shadow-lg ${
-        isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-      }`}>
-        <div className="p-6">
-
-          {isLoading ? (
-            <div className="flex flex-col items-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Memuat data budget...
-              </p>
-            </div>
-          ) : (
-            <DataTable data={hierarchicalBudgets} columns={tableColumns} itemsPerPage={10} searchPlaceholder="Cari budget..." isDark={isDark} className="max-h-[calc(100vh-30rem)]"/>
-          )}
+      {isLoading ? (
+        <div className="flex flex-col items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Memuat data budget...
+          </p>
         </div>
-      </div>
+      ) : (
+        <DataTable data={hierarchicalBudgets} columns={tableColumns} itemsPerPage={10} searchPlaceholder="Cari budget..." isDark={isDark}/>
+      )}
 
       {/* Budget Form Dialog */}
       <BudgetFormDialog isOpen={showDialog} onClose={handleDialogClose} selectedBudget={selectedBudget} initialFormData={initialFormData} departments={departments} 
       budgets={budgets} isDark={isDark} onSave={handleSaveBudget} onUnsavedChanges={onUnsavedChanges}/>
-    </div>
+
+      <BudgetAllocationDialog isOpen={showAllocationDialog} onClose={handleAllocationDialogClose} selectedBudget={selectedBudget} onSave={handleSaveBudgetAllocation}/>
+    </>
   );
 };
 
