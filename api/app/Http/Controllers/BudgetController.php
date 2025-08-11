@@ -631,27 +631,27 @@ class BudgetController extends Controller
 			];
 
 			// dapatkan data dari table budgets_2024 tetapi perlu semak jika table ini wujud
-			$year = Date('Y') - 2;
-			if (DB::table('budgets_' . $year)->exists()) {
-				$budgetSummary2024 = DB::table('budgets_' . $year)
-				->where('level', 0)
-				->orderBy('type', 'asc')
-				->get();
+			// $year = Date('Y') - 2;
+			// if (DB::table('budgets_' . $year)->exists()) {
+			// 	$budgetSummary2024 = DB::table('budgets_' . $year)
+			// 	->where('level', 0)
+			// 	->orderBy('type', 'asc')
+			// 	->get();
 
-				$data['revenueData'] = $budgetSummary2024->where('type', 1)->map(fn($item) => $this->formatBudgetItem($item))->values();
-				$data['expenditureData'] = $budgetSummary2024->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values();
-			}
+			// 	$data['revenueData'] = $budgetSummary2024->where('type', 1)->map(fn($item) => $this->formatBudgetItem($item))->values();
+			// 	$data['expenditureData'] = $budgetSummary2024->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values();
+			// }
 
-			$year = Date('Y') - 1;
-			if (DB::table('budgets_' . $year)->exists()) {
-				$budgetSummary2025 = DB::table('budgets_' . $year)
-				->where('level', 0)
-				->orderBy('type', 'asc')
-				->get();
+			// $year = Date('Y') - 1;
+			// if (DB::table('budgets_' . $year)->exists()) {
+			// 	$budgetSummary2025 = DB::table('budgets_' . $year)
+			// 	->where('level', 0)
+			// 	->orderBy('type', 'asc')
+			// 	->get();
 
-				$data['revenueData'] = $budgetSummary2024->where('type', 1)->map(fn($item) => $this->formatBudgetItem($item))->values();
-				$data['expenditureData'] = $budgetSummary2024->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values();
-			}
+			// 	$data['revenueData'] = $budgetSummary2024->where('type', 1)->map(fn($item) => $this->formatBudgetItem($item))->values();
+			// 	$data['expenditureData'] = $budgetSummary2024->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values();
+			// }
 
 			return response()->json([
 				'success' => true,
