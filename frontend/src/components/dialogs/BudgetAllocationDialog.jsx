@@ -1,12 +1,32 @@
 import { useState, useEffect } from "react";
 import { FaTimes, FaSave, FaBan, FaLayerGroup, FaBuilding, FaHashtag, FaFont, FaCalculator } from "react-icons/fa";
 import TButton from "../Core/TButton";
+import apiClient from "../../utils/axios";
+import { toast } from "react-toastify";
 
+/**
+ * BudgetAllocationDialog - Dialog untuk menguruskan agihan bajet bulanan
+ * 
+ * @param {Object} props
+ * @param {boolean} props.isOpen - Status buka/tutup dialog
+ * @param {Function} props.onClose - Callback untuk menutup dialog
+ * @param {Object} props.selectedBudget - Budget yang dipilih untuk diedit
+ * @param {Function} [props.onSuccess] - Callback yang dipanggil setelah berjaya simpan (untuk reload data)
+ * 
+ * @example
+ * // Penggunaan dengan onSuccess callback
+ * <BudgetAllocationDialog 
+ *   isOpen={showDialog} 
+ *   onClose={() => setShowDialog(false)} 
+ *   selectedBudget={budget}
+ *   onSuccess={() => loadBudgets()} // Reload data setelah berjaya
+ * />
+ */
 const BudgetAllocationDialog = ({ 
   isOpen, 
   onClose, 
   selectedBudget, 
-  onSave
+  onSuccess // Callback untuk reload data atau custom logic
 }) => {
   // ===== STATE MANAGEMENT =====
   const [formData, setFormData] = useState({
@@ -301,12 +321,26 @@ const BudgetAllocationDialog = ({
         bdgtotal: getTotalAmount() // Use helper function
       };
 
-      await onSave(submitData, selectedBudget);
+      // Make API call directly
+      if (!selectedBudget) {
+        throw new Error('Tiada budget dipilih');
+      }
+
+      const response = await apiClient.put(`/budgets/${selectedBudget.id}/budget-allocation`, submitData);
+      console.log(response);
+      toast.success('Agihan bajet bulanan berjaya dikemaskini');
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
       
       setOriginalData({ ...formData });
       onClose();
     } catch (error) {
       console.error('Error saving budget allocation:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Ralat mengemaskini agihan bajet';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -81,25 +81,9 @@ export const useBudgetSettings = () => {
     }
   }, [budgets, initialFormData, loadBudgets]);
 
-  // Save budget allocation (monthly budget distribution)
-  const handleSaveBudgetAllocation = useCallback(async (budgetData, selectedBudget) => {
-    try {
-      if (!selectedBudget) {
-        throw new Error('Tiada budget dipilih');
-      }
-
-      const response = await apiClient.put(`/budgets/${selectedBudget.id}/budget-allocation`, budgetData);
-      console.log(response);
-      // The API returns the response data directly
-      toast.success('Agihan bajet bulanan berjaya dikemaskini');
-      await loadBudgets(); // Reload budgets to get updated data
-      
-    } catch (error) {
-      console.error('Error updating budget allocation:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Ralat mengemaskini agihan bajet';
-      toast.error(errorMessage);
-      throw error;
-    }
+  // Reload budgets after budget allocation update
+  const handleSaveBudgetAllocation = useCallback(async () => {
+    await loadBudgets();
   }, [loadBudgets]);
 
   // Update budget hierarchy after inserting parent

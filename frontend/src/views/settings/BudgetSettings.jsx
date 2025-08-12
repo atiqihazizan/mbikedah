@@ -110,9 +110,9 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
       key: 'bdgtotal',
       label: 'Jumlah Bajet',
       textAlign: 'right',
-      render: (value) => (
+      render: (value, item) => (
         <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-          {formatUtils.formatDecimal(value, 2)}
+          {getChildrenCount(item.id) === 0 ? formatUtils.formatDecimal(value, 2) : ''}
         </span>
       )
     },
@@ -199,7 +199,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
       <BudgetFormDialog isOpen={showDialog} onClose={handleDialogClose} selectedBudget={selectedBudget} initialFormData={initialFormData} departments={departments} 
       budgets={budgets} isDark={isDark} onSave={handleSaveBudget} onUnsavedChanges={onUnsavedChanges}/>
 
-      <BudgetAllocationDialog isOpen={showAllocationDialog} onClose={handleAllocationDialogClose} selectedBudget={selectedBudget} onSave={handleSaveBudgetAllocation}/>
+      <BudgetAllocationDialog isOpen={showAllocationDialog} onClose={handleAllocationDialogClose} selectedBudget={selectedBudget} onSuccess={handleSaveBudgetAllocation}/>
     </>
   );
 };
