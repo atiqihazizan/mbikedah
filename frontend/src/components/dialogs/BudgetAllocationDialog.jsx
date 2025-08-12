@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { FaTimes, FaSave, FaBan, FaLayerGroup, FaBuilding, FaHashtag, FaFont, FaCalculator } from "react-icons/fa";
-import TButton from "../Core/TButton";
-import apiClient from "../../utils/axios";
+import { apiClient, formatUtils } from "../../utils";
 import { toast } from "react-toastify";
+import TButton from "../Core/TButton";
 
 /**
  * BudgetAllocationDialog - Dialog untuk menguruskan agihan bajet bulanan
@@ -32,6 +32,7 @@ const BudgetAllocationDialog = ({
   // ===== STATE MANAGEMENT =====
   const [formData, setFormData] = useState({
     totalAmount: 0,
+    acttotal: 0,
     selectedMonths: [],
     bdg1: 0, bdg2: 0, bdg3: 0, bdg4: 0, bdg5: 0, bdg6: 0,
     bdg7: 0, bdg8: 0, bdg9: 0, bdg10: 0, bdg11: 0, bdg12: 0
@@ -210,6 +211,7 @@ const BudgetAllocationDialog = ({
       // Reset form for new budget
       const resetData = {
         totalAmount: 0,
+        acttotal: 0,
         selectedMonths: [],
         bdg1: 0, bdg2: 0, bdg3: 0, bdg4: 0, bdg5: 0, bdg6: 0,
         bdg7: 0, bdg8: 0, bdg9: 0, bdg10: 0, bdg11: 0, bdg12: 0
@@ -320,6 +322,7 @@ const BudgetAllocationDialog = ({
         bdg11: formData.bdg11,
         bdg12: formData.bdg12,
         bdgtotal: getTotalAmount(), // Use helper function
+        acttotal: formData.acttotal || 0, // Add actual total
         year: selectedYear
       };
 
@@ -389,8 +392,8 @@ const BudgetAllocationDialog = ({
               Jumlah Bajet
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+              <div className="md:col-span-1">
                 <label className={`block text-sm font-medium mb-2 text-gray-700`}>
                   Jumlah Bajet (RM) <span className="text-red-500">*</span>
                 </label>
@@ -406,6 +409,24 @@ const BudgetAllocationDialog = ({
                 {errors.totalAmount && (
                   <p className="mt-1 text-sm text-red-500">{errors.totalAmount}</p>
                 )}
+              </div>
+              
+              <div className="md:col-span-1">
+                <label className={`block text-sm font-medium mb-2 text-gray-700`}>
+                  Jumlah Sebenar (RM)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.acttotal || 0}
+                  onChange={(e) => handleInputChange('acttotal', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white border-gray-300 text-gray-900 placeholder-gray-500`}
+                  placeholder="Masukkan jumlah sebenar"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Jumlah sebenar yang telah dibelanjakan (tidak wajib diisi)
+                </p>
               </div>
             </div>
           </div>
@@ -503,7 +524,13 @@ const BudgetAllocationDialog = ({
                 <div>
                   <span className="text-gray-600">Jumlah Bajet:</span>
                   <div className="font-semibold text-gray-900">
-                    RM {getTotalAmount().toFixed(2)}
+                    {formatUtils.formatCurrency(getTotalAmount())}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Jumlah Sebenar:</span>
+                  <div className="font-semibold text-gray-900">
+                    RM {formatUtils.formatCurrency(formData.acttotal || 0)}
                   </div>
                 </div>
                 <div>
@@ -518,7 +545,7 @@ const BudgetAllocationDialog = ({
                     {formData.selectedMonths.length > 0 ? `RM ${(calculateMonthlyBudget() || 0).toFixed(2)}` : 'RM 0.00'}
                   </div>
                 </div>
-                <div>
+                <div className="md:col-span-2">
                   <span className="text-gray-600">Bulan:</span>
                   <div className="font-semibold text-gray-900">
                     {formData.selectedMonths.length > 0 

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class BudgetController extends Controller
 {
@@ -216,6 +217,7 @@ class BudgetController extends Controller
 				'bdg11' => 'sometimes|numeric|min:0',
 				'bdg12' => 'sometimes|numeric|min:0',
 				'bdgtotal' => 'sometimes|numeric|min:0', // Accept bdgtotal from frontend
+				'acttotal' => 'sometimes|numeric|min:0', // Accept acttotal from frontend
 				'year' => 'sometimes|integer|min:2000|max:2100', // Add year validation
 			]);
 
@@ -237,7 +239,7 @@ class BudgetController extends Controller
 				$tableName = 'budgets_' . $requestYear;
 				
 				// Check if the archive table exists
-				if (!\Illuminate\Support\Facades\Schema::hasTable($tableName)) {
+				if (!Schema::hasTable($tableName)) {
 					return response()->json([
 						'message' => 'Table ' . $tableName . ' tidak wujud',
 						'error' => 'Archive table not found'
@@ -286,6 +288,11 @@ class BudgetController extends Controller
 						$budget->bdg10 ?? 0, $budget->bdg11 ?? 0, $budget->bdg12 ?? 0
 					]);
 				}
+			}
+
+			// Update acttotal from frontend if provided
+			if ($request->has('acttotal')) {
+				$budget->acttotal = $request->acttotal;
 			}
 
 			// Update budget_months based on which months have budget allocation
@@ -343,6 +350,7 @@ class BudgetController extends Controller
 					'bdg11' => $budget->bdg11,
 					'bdg12' => $budget->bdg12,
 					'bdgtotal' => $budget->bdgtotal,
+					'acttotal' => $budget->acttotal,
 					'budget_months' => json_encode($budget->budget_months),
 					'budget_month_count' => $budget->budget_month_count,
 					'budget_type' => $budget->budget_type,
@@ -689,7 +697,7 @@ class BudgetController extends Controller
 					->get();
 			} else if ($year >= 2023 && $year < $currentYear) {
 				// Archive year - check if archive table exists
-				if (\Illuminate\Support\Facades\Schema::hasTable($archiveTable)) {
+				if (Schema::hasTable($archiveTable)) {
 					$budgets = DB::table($archiveTable)
 						->where('yearly', $year)
 						->orderBy('type')
@@ -768,7 +776,7 @@ class BudgetController extends Controller
 
 		try {
 			// 1) Create archive table if not exists (MySQL specific CREATE LIKE)
-			if (!\Illuminate\Support\Facades\Schema::hasTable($archiveTable)) {
+			if (!Schema::hasTable($archiveTable)) {
 				DB::statement("CREATE TABLE `{$archiveTable}` LIKE `budgets`");
 			}
 
@@ -804,44 +812,32 @@ class BudgetController extends Controller
 	public function getBudgetSummaryData()
 	{
 		try {
-
+			$currentYear = date('Y');
+			$year1 = $currentYear - 1;
+			$year2 = $currentYear - 2;
+			
+			// Get current year data from main budgets table
 			$budgetSummary = Budget::where('level', 0)
 				->orderBy('type', 'asc')
 				->get();
 
+			// Initialize data structure
 			$data = [
-				'revenueData' => $budgetSummary->where('type', 1)->map(fn($item) => $this->formatBudgetItem($item))->values(),
-				'expenditureData' => $budgetSummary->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values(),
-				'operationData' => $budgetSummary->where('type', 0)->map(fn($item) => $this->formatBudgetItem($item))->values()
+				'revenueData' => $budgetSummary->where('type', 1)->map(fn($item) => $this->formatBudgetItemWithYears($item, $currentYear, $year1, $year2))->values(),
+				'expenditureData' => $budgetSummary->where('type', 2)->map(fn($item) => $this->formatBudgetItemWithYears($item, $currentYear, $year1, $year2))->values(),
+				'operationData' => $budgetSummary->where('type', 0)->map(fn($item) => $this->formatBudgetItemWithYears($item, $currentYear, $year1, $year2))->values()
 			];
 
-			// dapatkan data dari table budgets_2024 tetapi perlu semak jika table ini wujud
-			// $year = Date('Y') - 2;
-			// if (DB::table('budgets_' . $year)->exists()) {
-			// 	$budgetSummary2024 = DB::table('budgets_' . $year)
-			// 	->where('level', 0)
-			// 	->orderBy('type', 'asc')
-			// 	->get();
+			// Get data from previous years if tables exist
+			$data = $this->mergeYearData($data, $year1, $year2);
 
-			// 	$data['revenueData'] = $budgetSummary2024->where('type', 1)->map(fn($item) => $this->formatBudgetItem($item))->values();
-			// 	$data['expenditureData'] = $budgetSummary2024->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values();
-			// }
-
-			// $year = Date('Y') - 1;
-			// if (DB::table('budgets_' . $year)->exists()) {
-			// 	$budgetSummary2025 = DB::table('budgets_' . $year)
-			// 	->where('level', 0)
-			// 	->orderBy('type', 'asc')
-			// 	->get();
-
-			// 	$data['revenueData'] = $budgetSummary2024->where('type', 1)->map(fn($item) => $this->formatBudgetItem($item))->values();
-			// 	$data['expenditureData'] = $budgetSummary2024->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values();
-			// }
+			// Ensure all items have the value array with 3 years
+			$data = $this->ensureValueArrayStructure($data);
 
 			return response()->json([
 				'success' => true,
 				'data' => $data,
-				'message' => 'Budget summary data retrieved successfully'
+				'message' => 'Budget summary data retrieved successfully',
 			]);
 
 		} catch (\Exception $e) {
@@ -852,6 +848,170 @@ class BudgetController extends Controller
 				'error' => $e->getMessage()
 			], 500);
 		}
+	}
+
+	/**
+	 * Merge data from previous years into the main data structure
+	 */
+	private function mergeYearData($data, $year1, $year2)
+	{
+		// Check and get data from year1 (current-1)
+		if (Schema::hasTable('budgets_' . $year1)) {
+			$budgetSummaryYear1 = DB::table('budgets_' . $year1)
+				->where('level', 0)
+				->orderBy('type', 'asc')
+				->get();
+
+			$data = $this->updateDataWithYearValues($data, $budgetSummaryYear1, $year1);
+		}
+
+		// Check and get data from year2 (current-2)
+		if (Schema::hasTable('budgets_' . $year2)) {
+			$budgetSummaryYear2 = DB::table('budgets_' . $year2)
+				->where('level', 0)
+				->orderBy('type', 'asc')
+				->get();
+
+			$data = $this->updateDataWithYearValues($data, $budgetSummaryYear2, $year2);
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Update data structure with values from specific year
+	 */
+	private function updateDataWithYearValues($data, $yearData, $year)
+	{
+		$yearIndex = $this->getYearIndex($year);
+		
+		// Convert collections to arrays for modification
+		$revenueArray = $data['revenueData']->toArray();
+		$expenditureArray = $data['expenditureData']->toArray();
+		$operationArray = $data['operationData']->toArray();
+		
+		// Update revenue data
+		foreach ($revenueArray as $key => $revenueItem) {
+			$yearItem = $yearData->where('code', $revenueItem['code'])->first();
+			if ($yearItem) {
+				$revenueArray[$key]['bdgttotalvalue'][$yearIndex] = $yearItem->bdgtotal;
+				$revenueArray[$key]['acttotalvalue'][$yearIndex] = $yearItem->acttotal;
+			} else {
+				$revenueArray[$key]['bdgttotalvalue'][$yearIndex] = '0.00';
+				$revenueArray[$key]['acttotalvalue'][$yearIndex] = '0.00';
+			}
+		}
+
+		// Update expenditure data
+		foreach ($expenditureArray as $key => $expenditureItem) {
+			$yearItem = $yearData->where('code', $expenditureItem['code'])->first();
+			if ($yearItem) {
+				$expenditureArray[$key]['bdgttotalvalue'][$yearIndex] = $yearItem->bdgtotal;
+				$expenditureArray[$key]['acttotalvalue'][$yearIndex] = $yearItem->acttotal;
+			} else {
+				$expenditureArray[$key]['bdgttotalvalue'][$yearIndex] = '0.00';
+				$expenditureArray[$key]['acttotalvalue'][$yearIndex] = '0.00';
+			}
+		}
+
+		// Update operation data
+		foreach ($operationArray as $key => $operationItem) {
+			$yearItem = $yearData->where('code', $operationItem['code'])->first();
+			if ($yearItem) {
+				$operationArray[$key]['bdgttotalvalue'][$yearIndex] = $yearItem->bdgtotal;
+				$operationArray[$key]['acttotalvalue'][$yearIndex] = $yearItem->acttotal;
+			} else {
+				$operationArray[$key]['bdgttotalvalue'][$yearIndex] = '0.00';
+				$operationArray[$key]['acttotalvalue'][$yearIndex] = '0.00';
+			}
+		}
+
+		// Update the data structure with modified arrays
+		$data['revenueData'] = collect($revenueArray);
+		$data['expenditureData'] = collect($expenditureArray);
+		$data['operationData'] = collect($operationArray);
+
+		return $data;
+	}
+
+	/**
+	 * Get year index for value array (0 = current year, 1 = year-1, 2 = year-2)
+	 */
+	private function getYearIndex($year)
+	{
+		$currentYear = date('Y');
+		if ($year == $currentYear) return 0;
+		if ($year == $currentYear - 1) return 1;
+		if ($year == $currentYear - 2) return 2;
+		return 0;
+	}
+
+	/**
+	 * Ensure all items have the bdgttotalvalue and acttotalvalue arrays with 3 years
+	 */
+	private function ensureValueArrayStructure($data)
+	{
+		// Ensure revenue data has bdgttotalvalue and acttotalvalue arrays
+		foreach ($data['revenueData'] as &$item) {
+			if (!isset($item['bdgttotalvalue'])) {
+				$item['bdgttotalvalue'] = ['0.00', '0.00', '0.00'];
+			}
+			if (!isset($item['acttotalvalue'])) {
+				$item['acttotalvalue'] = ['0.00', '0.00', '0.00'];
+			}
+			// Ensure all 3 years are present
+			for ($i = 0; $i < 3; $i++) {
+				if (!isset($item['bdgttotalvalue'][$i])) {
+					$item['bdgttotalvalue'][$i] = '0.00';
+				}
+				if (!isset($item['acttotalvalue'][$i])) {
+					$item['acttotalvalue'][$i] = '0.00';
+				}
+			}
+		}
+
+		// Ensure expenditure data has bdgttotalvalue and acttotalvalue arrays
+		foreach ($data['expenditureData'] as &$item) {
+			if (!isset($item['bdgttotalvalue'])) {
+				$item['bdgttotalvalue'] = ['0.00', '0.00', '0.00'];
+			}
+			if (!isset($item['acttotalvalue'])) {
+				$item['acttotalvalue'] = ['0.00', '0.00', '0.00'];
+			}
+			// Ensure all 3 years are present
+			for ($i = 0; $i < 3; $i++) {
+				if (!isset($item['bdgttotalvalue'][$i])) {
+					$item['bdgttotalvalue'][$i] = '0.00';
+				}
+				if (!isset($item['acttotalvalue'][$i])) {
+					$item['acttotalvalue'][$i] = '0.00';
+				}
+			}
+		}
+
+		// Ensure operation data has bdgttotalvalue and acttotalvalue arrays
+		foreach ($data['operationData'] as &$item) {
+			if (!isset($item['bdgttotalvalue'])) {
+				$item['bdgttotalvalue'] = ['0.00', '0.00', '0.00'];
+			}
+			if (!isset($item['acttotalvalue'])) {
+				$item['acttotalvalue'] = ['0.00', '0.00', '0.00'];
+			}
+			// Ensure all 3 years are present
+			for ($i = 0; $i < 3; $i++) {
+				if (!isset($item['bdgttotalvalue'][$i])) {
+					$item['bdgttotalvalue'][$i] = '0.00';
+				}
+				if (!isset($item['acttotalvalue'][$i])) {
+					$item['acttotalvalue'][$i] = '0.00';
+				}
+			}
+		}
+
+		// Unset references
+		unset($item);
+
+		return $data;
 	}
 	/**
 	 * Get expense breakdown data (similar to ExpenseBreakdown.json)
@@ -1440,6 +1600,33 @@ class BudgetController extends Controller
 				'acttotal' => $item->acttotal,
 				'balance' => $item->balance,
 			];
+	}
+
+	/**
+	 * Format budget item for response with year values
+	 */
+	private function formatBudgetItemWithYears($item, $currentYear, $year1, $year2)
+	{
+		return [
+			'id' => $item->id,
+			'code' => $item->code,
+			'name' => $item->name,
+			'type' => $item->type,
+			'level' => $item->level,
+			'bdgtotal' => $item->bdgtotal,
+			'acttotal' => $item->acttotal,
+			'balance' => $item->balance,
+			'bdgttotalvalue' => [
+				$item->bdgtotal, // Current year (2025) - index 0
+				'0.00',          // Year-1 (2024) - index 1 - will be updated later
+				'0.00'           // Year-2 (2023) - index 2 - will be updated later
+			],
+			'acttotalvalue' => [
+				$item->acttotal, // Current year (2025) - index 0
+				'0.00',          // Year-1 (2024) - index 1 - will be updated later
+				'0.00'           // Year-2 (2023) - index 2 - will be updated later
+			]
+		];
 	}
 
 }

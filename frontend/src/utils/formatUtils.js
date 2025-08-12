@@ -2,13 +2,15 @@
 
 export const formatUtils = {
   // Format currency untuk Malaysian Ringgit
-  formatCurrency: (amount) => {
-    if (!amount || isNaN(amount)) return 'RM 0.00';
+  formatCurrency: (amount, showCurrency = true) => {
+    if (!amount || isNaN(amount)) return showCurrency ? 'RM 0.00' : '0.00';
     
-    return `RM ${Number(amount).toLocaleString('en-MY', {
+    const formattedAmount = Number(amount).toLocaleString('en-MY', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    })}`;
+    });
+    
+    return showCurrency ? `RM ${formattedAmount}` : formattedAmount;
   },
 
   // Enhanced title formatting dengan sensitive case handling

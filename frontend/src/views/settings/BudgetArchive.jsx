@@ -75,11 +75,21 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
     },
     {
       key: 'bdgtotal',
-      label: 'Jumlah (RM)',
+      label: 'Nilai Bajet (RM)',
       textAlign: 'right',
       render: (value) => (
         <span className="font-mono">
-          {formatUtils.formatCurrency(value || 0)}
+          {formatUtils.formatCurrency(value || 0, false)}
+        </span>
+      )
+    },
+    {
+      key: 'acttotal',
+      label: 'Nilai Sebenar (RM)',
+      textAlign: 'right',
+      render: (value) => (
+        <span className="font-mono">
+          {formatUtils.formatCurrency(value || 0, false)}
         </span>
       )
     },

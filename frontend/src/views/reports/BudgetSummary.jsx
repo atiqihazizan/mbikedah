@@ -263,19 +263,19 @@ const BudgetSummary = () => {
                   BAKI AWAL
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.openingBalance?.actual2023 || 0)}
+                  {formatUtils.formatCurrency(openingBalance?.acttotalvalue[2] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.openingBalance?.actual2024 || 0)}
+                  {formatUtils.formatCurrency(openingBalance?.acttotalvalue[1] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.openingBalance?.budget2023 || 0)}
+                  {formatUtils.formatCurrency(openingBalance?.bdgttotalvalue[2] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.openingBalance?.budget2024 || 0)}
+                  {formatUtils.formatCurrency(openingBalance?.bdgttotalvalue[1] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(openingBalance?.bdgtotal || 0)}
+                  {formatUtils.formatCurrency(openingBalance?.bdgttotalvalue[0] || 0)}
                 </td>
               </tr>
 
@@ -307,19 +307,19 @@ const BudgetSummary = () => {
                   (-)TABUNGAN KHAS (3%)
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.specialSavings?.actual2023 || 0)}
+                  {formatUtils.formatCurrency(specialSavings?.acttotalvalue[2] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.specialSavings?.actual2024 || 0)}
+                  {formatUtils.formatCurrency(specialSavings?.acttotalvalue[1] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.specialSavings?.budget2023 || 0)}
+                  {formatUtils.formatCurrency(specialSavings?.bdgttotalvalue[2] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.specialSavings?.budget2024 || 0)}
+                  {formatUtils.formatCurrency(specialSavings?.bdgttotalvalue[1] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(specialSavings?.bdgtotal || 0)}
+                  {formatUtils.formatCurrency(specialSavings?.bdgttotalvalue[0] || 0)}
                 </td>
               </tr>
 
@@ -329,19 +329,19 @@ const BudgetSummary = () => {
                   DEPOSIT SIMPANAN TETAP
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.fixedDepositAmounts?.actual2023 || 0)}
+                  {formatUtils.formatCurrency(fixedDepositAmounts?.acttotalvalue[2] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.fixedDepositAmounts?.actual2024 || 0)}
+                  {formatUtils.formatCurrency(fixedDepositAmounts?.acttotalvalue[1] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.fixedDepositAmounts?.budget2023 || 0)}
+                  {formatUtils.formatCurrency(fixedDepositAmounts?.bdgttotalvalue[2] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.fixedDepositAmounts?.budget2024 || 0)}
+                  {formatUtils.formatCurrency(fixedDepositAmounts?.bdgttotalvalue[1] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(fixedDepositAmounts?.bdgtotal || 0)}
+                  {formatUtils.formatCurrency(fixedDepositAmounts?.bdgttotalvalue[0] || 0)}
                 </td>
               </tr>
             </tbody>
