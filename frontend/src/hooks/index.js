@@ -1,6 +1,6 @@
 // hooks/index.js
 // Auto-generated on: 8/4/2025, 2:27:14 PM
-// Total hooks: 18
+// Total hooks: 19
 
 /**
  * Centralized exports for all custom React hooks
@@ -37,6 +37,7 @@ export { useTheme } from './useTheme';
 // Hooks for business logic, roles, permissions, and domain operations
 export { useActiveRole } from './useActiveRole';
 export { useBudgetSettings } from './useBudgetSettings';
+export { useBudgetArchive } from './useBudgetArchive';
 
 // ==================== UTILITY HOOKS ====================
 // General utility hooks for common functionality
