@@ -39,16 +39,16 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <RouterProvider router={router} />
         <ToastContainer
           position="top-right"
-          autoClose={5000}
-          // limit={1}
+          autoClose={1000}
           hideProgressBar={false}
           newestOnTop
           closeOnClick
           rtl={false}
-          // pauseOnFocusLoss
+          pauseOnFocusLoss={false}
           draggable
           pauseOnHover={true}
           theme="colored"
+          limit={3}
         />
         
         {/* React Query DevTools - hanya untuk development */}

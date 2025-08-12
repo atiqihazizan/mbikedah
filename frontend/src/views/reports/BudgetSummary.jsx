@@ -56,8 +56,12 @@ const BudgetSummary = () => {
     );
   }
 
-  const { revenueData, expenditureData, summary } = data;
-  const summaryData = summary;
+  const { revenueData, expenditureData, operationData } = data;
+  const summaryData = operationData;
+  const openingBalance = operationData.find(item => item.code === '0001');
+  // const runningBalance = operationData.find(item => item.code === '0000000001');
+  const specialSavings = operationData.find(item => item.code === '0002');
+  const fixedDepositAmounts = operationData.find(item => item.code === '0003');
 
   return (
     <div className=" bg-white print:bg-white">
@@ -271,7 +275,7 @@ const BudgetSummary = () => {
                   {formatUtils.formatCurrency(summaryData?.openingBalance?.budget2024 || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.openingBalance?.budget2025 || 0)}
+                  {formatUtils.formatCurrency(openingBalance?.bdgtotal || 0)}
                 </td>
               </tr>
 
@@ -293,7 +297,7 @@ const BudgetSummary = () => {
                   {formatUtils.formatCurrency(summaryData?.runningBalance?.budget2024 || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.runningBalance?.budget2025 || 0)}
+                  {formatUtils.formatCurrency(summaryData?.runningBalance?.bdgtotal || 0)}
                 </td>
               </tr>
 
@@ -315,7 +319,7 @@ const BudgetSummary = () => {
                   {formatUtils.formatCurrency(summaryData?.specialSavings?.budget2024 || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.specialSavings?.budget2025 || 0)}
+                  {formatUtils.formatCurrency(specialSavings?.bdgtotal || 0)}
                 </td>
               </tr>
 
@@ -337,7 +341,7 @@ const BudgetSummary = () => {
                   {formatUtils.formatCurrency(summaryData?.fixedDepositAmounts?.budget2024 || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(summaryData?.fixedDepositAmounts?.budget2025 || 0)}
+                  {formatUtils.formatCurrency(fixedDepositAmounts?.bdgtotal || 0)}
                 </td>
               </tr>
             </tbody>

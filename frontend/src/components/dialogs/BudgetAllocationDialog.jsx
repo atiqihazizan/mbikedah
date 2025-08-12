@@ -26,7 +26,8 @@ const BudgetAllocationDialog = ({
   isOpen, 
   onClose, 
   selectedBudget, 
-  onSuccess // Callback untuk reload data atau custom logic
+  onSuccess, // Callback untuk reload data atau custom logic
+  selectedYear
 }) => {
   // ===== STATE MANAGEMENT =====
   const [formData, setFormData] = useState({
@@ -318,7 +319,8 @@ const BudgetAllocationDialog = ({
         bdg10: formData.bdg10,
         bdg11: formData.bdg11,
         bdg12: formData.bdg12,
-        bdgtotal: getTotalAmount() // Use helper function
+        bdgtotal: getTotalAmount(), // Use helper function
+        year: selectedYear
       };
 
       // Make API call directly

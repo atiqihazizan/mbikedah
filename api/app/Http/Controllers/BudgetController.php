@@ -638,7 +638,9 @@ class BudgetController extends Controller
 				'message' => 'Budget berjaya dipadam'
 			]);
 		} catch (\Exception $e) {
-			DB::rollBack();
+			if (DB::transactionLevel() > 0) {
+				DB::rollBack();
+			}
 			Log::error('Error deleting budget: ' . $e->getMessage(), ['budget_id' => $id]);
 			return response()->json([
 				'message' => 'Ralat memadam budget',
@@ -653,51 +655,88 @@ class BudgetController extends Controller
 	public function getByYear($year)
 	{
 		try {
-			$budgets = Budget::where('yearly', $year)
-				->with(['department', 'parent', 'children'])
-				->orderBy('type')
-				->orderBy('level')
-				->orderBy('sort_order')
-				->orderBy('code')
-				->get();
+			// Validate year parameter
+			if (!is_numeric($year) || $year < 2000 || $year > 2100) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Tahun tidak sah. Tahun mestilah antara 2000-2100',
+					'error' => 'Invalid year parameter'
+				], 400);
+			}
 
+			$year = (int) $year;
+			$budgets = [];
+			$currentYear = (int) date('Y');
+			$archiveTable = 'budgets_' . $year;
+
+			// Handle different year scenarios
+			if ($year > $currentYear) {
+				// Future year - return empty with message
+				return response()->json([
+					'success' => true,
+					'data' => [],
+					'year' => $year,
+					'message' => 'Tahun hadapan - tiada data budget tersedia'
+				]);
+			} else if ($year === $currentYear) {
+				// Current year - get from main budgets table
+				$budgets = Budget::with(['department', 'parent', 'children'])
+					->where('yearly', $year)
+					->orderBy('type')
+					->orderBy('level')
+					->orderBy('sort_order')
+					->orderBy('code')
+					->get();
+			} else if ($year >= 2023 && $year < $currentYear) {
+				// Archive year - check if archive table exists
+				if (\Illuminate\Support\Facades\Schema::hasTable($archiveTable)) {
+					$budgets = DB::table($archiveTable)
+						->where('yearly', $year)
+						->orderBy('type')
+						->orderBy('level')
+						->orderBy('sort_order')
+						->orderBy('code')
+						->get();
+				} else {
+					// Archive table doesn't exist for this year
+					return response()->json([
+						'success' => true,
+						'data' => [],
+						'year' => $year,
+						'message' => 'Tiada data arkib tersedia untuk tahun ini'
+					]);
+				}
+			} else {
+				// Year before 2023 - return empty with message
+				return response()->json([
+					'success' => true,
+					'data' => [],
+					'year' => $year,
+					'message' => 'Tiada data budget tersedia untuk tahun sebelum 2023'
+				]);
+			}
+			
 			return response()->json([
+				'success' => true,
 				'data' => $budgets,
 				'year' => $year,
-				'count' => $budgets->count()
+				'count' => count($budgets)
 			]);
 		} catch (\Exception $e) {
-			Log::error('Error getting budget by year: ' . $e->getMessage(), ['year' => $year]);
+			Log::error('Error getting budget by year: ' . $e->getMessage(), [
+				'year' => $year,
+				'file' => __FILE__,
+				'line' => __LINE__
+			]);
+			
 			return response()->json([
+				'success' => false,
 				'message' => 'Ralat mendapatkan budget tahun',
 				'error' => $e->getMessage()
 			], 500);
 		}
 	}
 
-	/**
-	 * List distinct budget years available
-	 */
-	public function getYears()
-	{
-		try {
-			$years = Budget::select('yearly')
-				->distinct()
-				->orderBy('yearly', 'desc')
-				->pluck('yearly');
-
-			return response()->json([
-				'data' => $years,
-				'count' => $years->count()
-			]);
-		} catch (\Exception $e) {
-			Log::error('Error getting budget years: ' . $e->getMessage());
-			return response()->json([
-				'message' => 'Ralat mendapatkan senarai tahun budget',
-				'error' => $e->getMessage()
-			], 500);
-		}
-	}
 
 	/**
 	 * Archive current year's budgets into a year-suffixed table
@@ -724,15 +763,10 @@ class BudgetController extends Controller
 			], 400);
 		}
 		
-		$toYear = $fromYear + 1; // Automatically set to next year
-		$copyAmounts = (bool) $request->boolean('copy_amounts', true);
 		$force = (bool) $request->boolean('force', false);
-
 		$archiveTable = 'budgets_' . $fromYear;
 
 		try {
-			DB::beginTransaction();
-
 			// 1) Create archive table if not exists (MySQL specific CREATE LIKE)
 			if (!\Illuminate\Support\Facades\Schema::hasTable($archiveTable)) {
 				DB::statement("CREATE TABLE `{$archiveTable}` LIKE `budgets`");
@@ -742,50 +776,21 @@ class BudgetController extends Controller
 			$archivedCount = 0;
 			if ($force || (DB::table($archiveTable)->count() === 0)) {
 				$archivedCount = DB::table('budgets')->where('yearly', $fromYear)->count();
-				DB::statement("INSERT INTO `{$archiveTable}` SELECT * FROM `budgets` WHERE `yearly` = ?", [$fromYear]);
+				// DB::statement("INSERT INTO `{$archiveTable}` SELECT * FROM `budgets` WHERE `yearly` = ?", [$fromYear]);
+				DB::statement("INSERT INTO `{$archiveTable}` SELECT * FROM `budgets`");
 			}
 
 			// 3) Update existing budgets year to target year
-			$updatedCount = DB::table('budgets')->where('yearly', $fromYear)->update(['yearly' => $toYear]);
+			DB::table('budgets')->update(['yearly' => $currentYear]);
+			DB::table($archiveTable)->update(['yearly' => $fromYear]);
 			
-			// Reset actual spending for new year
-			DB::table('budgets')->where('yearly', $toYear)->update([
-				'act1' => 0, 'act2' => 0, 'act3' => 0, 'act4' => 0,
-				'act5' => 0, 'act6' => 0, 'act7' => 0, 'act8' => 0,
-				'act9' => 0, 'act10' => 0, 'act11' => 0, 'act12' => 0,
-				'acttotal' => 0
-			]);
-			
-			// Recalculate balance if copy_amounts is false
-			if (!$copyAmounts) {
-				DB::table('budgets')->where('yearly', $toYear)->update([
-					'bdg1' => 0, 'bdg2' => 0, 'bdg3' => 0, 'bdg4' => 0,
-					'bdg5' => 0, 'bdg6' => 0, 'bdg7' => 0, 'bdg8' => 0,
-					'bdg9' => 0, 'bdg10' => 0, 'bdg11' => 0, 'bdg12' => 0,
-					'bdgtotal' => 0,
-					'balance' => 0
-				]);
-			}
-
-			DB::commit();
-
 			$this->clearAllBudgetCache();
 
 			return response()->json([
+				'success' => true,
 				'message' => 'Arkib budget berjaya',
-				'archived_table' => $archiveTable,
-				'archived_count' => $archivedCount,
-				'updated_year' => $toYear,
-				'updated_count' => $updatedCount,
-				'copy_amounts' => $copyAmounts
 			]);
 		} catch (\Exception $e) {
-			DB::rollBack();
-			Log::error('Error during budget archive: ' . $e->getMessage(), [
-				'from_year' => $fromYear,
-				'to_year' => $toYear,
-				'trace' => $e->getTraceAsString()
-			]);
 			return response()->json([
 				'message' => 'Ralat proses arkib budget',
 				'error' => $e->getMessage()
@@ -806,7 +811,8 @@ class BudgetController extends Controller
 
 			$data = [
 				'revenueData' => $budgetSummary->where('type', 1)->map(fn($item) => $this->formatBudgetItem($item))->values(),
-				'expenditureData' => $budgetSummary->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values()
+				'expenditureData' => $budgetSummary->where('type', 2)->map(fn($item) => $this->formatBudgetItem($item))->values(),
+				'operationData' => $budgetSummary->where('type', 0)->map(fn($item) => $this->formatBudgetItem($item))->values()
 			];
 
 			// dapatkan data dari table budgets_2024 tetapi perlu semak jika table ini wujud

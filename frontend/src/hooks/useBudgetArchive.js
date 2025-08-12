@@ -15,39 +15,11 @@ export const useBudgetArchive = () => {
   const [showAllocationDialog, setShowAllocationDialog] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState(null);
 
-  // Load distinct years for selection
-  useEffect(() => {
-    const loadYears = async () => {
-      try {
-        const res = await apiClient.get("/budgets/years");
-        const data = res.data || res?.data?.data || [];
-        const arr = Array.isArray(res?.data) ? res.data : data;
-        const y = (arr || []).filter((v) => !!v);
-        setYears(y);
-        
-        // Set default selected year to current year if available, otherwise use first available year
-        if (y.length > 0) {
-          if (y.includes(currentYear)) {
-            setSelectedYear(currentYear);
-          } else {
-            setSelectedYear(y[0]);
-          }
-        }
-        
-        // Set archive year to previous year (cannot archive current or future years)
-        setArchiveYear(Math.max(currentYear - 7, Math.max(currentYear - 1, y.length > 0 ? y[0] : currentYear - 1)));
-      } catch (e) {
-        console.error("Error loading years:", e);
-        toast.error("Ralat memuat senarai tahun");
-      }
-    };
-    loadYears();
-  }, []); // Remove currentYear dependency to prevent re-runs
-
   const loadBudgetsForYear = async (year, showToast = false) => {
     try {
       const response = await apiClient.get(`/budgets/year/${year}`);
-      const list = response.data?.data || response.data || [];
+      const list = response.data || [];
+      
       setBudgets(list);
       // Only show toast for manual refresh
       if (showToast) {
@@ -69,10 +41,10 @@ export const useBudgetArchive = () => {
 
   // Load budgets when selected year changes
   useEffect(() => {
-    if (selectedYear && years.length > 0) {
+    if (selectedYear) {
       loadBudgetsForYear(selectedYear, false); // Don't show toast for automatic loading
     }
-  }, [selectedYear, years.length]); // Only depend on selectedYear and years.length
+  }, [selectedYear]); // Only depend on selectedYear
 
   const filteredBudgets = useMemo(() => {
     return budgets;
@@ -107,26 +79,16 @@ export const useBudgetArchive = () => {
         from_year: archiveYear,
       });
 
-      if (response.data?.success) {
+      if (response.success) {
         toast.success("Arkib berjaya! Data arkib telah diarchive dan dikemaskini untuk tahun baru.");
-        // Refresh data and years
-        const yearsRes = await apiClient.get("/budgets/years");
-        const yearsData = yearsRes.data || yearsRes?.data?.data || [];
-        const yearsArr = Array.isArray(yearsRes?.data) ? yearsRes.data : yearsData;
-        const y = (yearsArr || []).filter((v) => !!v);
-        setYears(y);
-        
-        // Load budgets for the year after archive
-        if (archiveYear + 1 <= currentYear) {
-          setSelectedYear(archiveYear + 1);
-          loadBudgetsForYear(archiveYear + 1, false); // Don't show toast for automatic loading
-        }
+        setSelectedYear(archiveYear );
+        loadBudgetsForYear(archiveYear, false); // Don't show toast for automatic loading
       } else {
-        toast.error(response.data?.message || "Arkib gagal");
+        toast.error(response.message || "Arkib gagal");
       }
     } catch (error) {
       console.error("Archive error:", error);
-      const msg = error.response?.data?.message || "Ralat semasa arkib";
+      const msg = error.response?.message || "Ralat semasa arkib";
       toast.error(msg);
     } finally {
       setIsProcessing(false);

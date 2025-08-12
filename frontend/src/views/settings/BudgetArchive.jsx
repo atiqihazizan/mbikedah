@@ -136,7 +136,7 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
                     isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"
                   }`}
                 >
-                  {years.map((year) => (
+                  {Array.from({ length: currentYear - 2023 + 1 }, (_, i) => 2023 + i).map((year) => (
                     <option key={year} value={year}>
                       {year}
                     </option>
@@ -155,7 +155,7 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
                     isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"
                   }`}
                 >
-                  {Array.from({ length: currentYear - (currentYear - 7) + 1 }, (_, i) => (currentYear - 7) + i).map((year) => (
+                  {Array.from({ length: currentYear - 2023 + 1 }, (_, i) => 2023 + i).map((year) => (
                     <option key={year} value={year}>
                       {year}
                     </option>
@@ -167,7 +167,7 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
                 color="blue" 
                 onClick={handleArchive} 
                 onChecking={isProcessing} 
-                isDisable={isProcessing || archiveYear >= currentYear || filteredBudgets.length === 0}
+                isDisable={isProcessing || archiveYear >= currentYear }
                 size="sm"
               >
                 <FaExchangeAlt className="w-4 h-4 mr-1" />
@@ -189,7 +189,7 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
       </div>
 
       {/* Budget Allocation Dialog */}
-      <BudgetAllocationDialog isOpen={showAllocationDialog} onClose={handleAllocationDialogClose} selectedBudget={selectedBudget} onSuccess={handleSaveBudgetAllocation}/>
+      <BudgetAllocationDialog isOpen={showAllocationDialog} onClose={handleAllocationDialogClose} selectedBudget={selectedBudget} onSuccess={handleSaveBudgetAllocation} selectedYear={selectedYear}/>
     </div>
   );
 }

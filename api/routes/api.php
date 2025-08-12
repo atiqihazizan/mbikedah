@@ -117,8 +117,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/income-expenditure-statement', [BudgetController::class, 'getIncomeExpenditureStatementData']);
 
     // Year and archive management
-    Route::get('/years', [BudgetController::class, 'getYears']);
-    // Route::get('/check-archive/{year}', [BudgetController::class, 'checkArchive']);
     Route::post('/archive', [BudgetController::class, 'archiveYear']);
 
     // Basic CRUD Routes
