@@ -167,7 +167,7 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
                 color="blue" 
                 onClick={handleArchive} 
                 onChecking={isProcessing} 
-                isDisable={isProcessing || archiveYear >= currentYear}
+                isDisable={isProcessing || archiveYear >= currentYear || filteredBudgets.length === 0}
                 size="sm"
               >
                 <FaExchangeAlt className="w-4 h-4 mr-1" />
