@@ -175,7 +175,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
               Urus struktur hierarki dan kategori budget organisasi
             </p>
           </div>
-          <TButton variant="solid" color="blue" size="lg" onClick={handleNewBudget} className="shadow-lg hover:shadow-xl px-4 py-2">
+          <TButton variant="solid" color="blue" size="lg" onClick={() => handleNewBudget(budgets)} className="shadow-lg hover:shadow-xl px-4 py-2">
             <FaPlus className="w-4 h-4" />
             <span>Tambah Budget</span>
           </TButton>

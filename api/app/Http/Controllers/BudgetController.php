@@ -216,10 +216,51 @@ class BudgetController extends Controller
 				'bdg11' => 'sometimes|numeric|min:0',
 				'bdg12' => 'sometimes|numeric|min:0',
 				'bdgtotal' => 'sometimes|numeric|min:0', // Accept bdgtotal from frontend
+				'year' => 'sometimes|integer|min:2000|max:2100', // Add year validation
 			]);
 
-			$budget = Budget::findOrFail($id);
-			$oldTotal = $budget->bdgtotal;
+			// Determine which table to use based on year parameter
+			$currentYear = (int) date('Y');
+			$requestYear = $request->has('year') ? (int) $request->input('year') : $currentYear;
+			
+			// Validate that we're not trying to update future years
+			if ($requestYear > $currentYear) {
+				return response()->json([
+					'message' => 'Tidak boleh mengemaskini budget untuk tahun hadapan',
+					'error' => 'Cannot update budget for future years'
+				], 400);
+			}
+			
+			// Semak jika table budgets_[tahun] wujud atau tidak
+			// Jika tahun sekarang dan ke atas, pilih table budgets
+			if ($requestYear < $currentYear) {
+				$tableName = 'budgets_' . $requestYear;
+				
+				// Check if the archive table exists
+				if (!\Illuminate\Support\Facades\Schema::hasTable($tableName)) {
+					return response()->json([
+						'message' => 'Table ' . $tableName . ' tidak wujud',
+						'error' => 'Archive table not found'
+					], 404);
+				}
+				
+				// Get budget from archive table
+				$budget = DB::table($tableName)->where('id', $id)->first();
+				if (!$budget) {
+					return response()->json([
+						'message' => 'Budget tidak dijumpai dalam table ' . $tableName,
+						'error' => 'Budget not found in archive table'
+					], 404);
+				}
+				
+				// Convert to object for easier manipulation
+				$budget = (object) $budget;
+				$oldTotal = $budget->bdgtotal ?? 0;
+			} else {
+				// Gunakan table budgets untuk tahun sekarang dan ke atas
+				$budget = Budget::findOrFail($id);
+				$oldTotal = $budget->bdgtotal;
+			}
 
 			// Update budget fields
 			$budgetFields = ['bdg1', 'bdg2', 'bdg3', 'bdg4', 'bdg5', 'bdg6', 'bdg7', 'bdg8', 'bdg9', 'bdg10', 'bdg11', 'bdg12'];
@@ -234,7 +275,17 @@ class BudgetController extends Controller
 				$budget->bdgtotal = $request->bdgtotal;
 			} else {
 				// Fallback: calculate if not provided
-				$budget->bdgtotal = $budget->calculateBudgetTotal();
+				if (method_exists($budget, 'calculateBudgetTotal')) {
+					$budget->bdgtotal = $budget->calculateBudgetTotal();
+				} else {
+					// For archive tables, calculate manually
+					$budget->bdgtotal = array_sum([
+						$budget->bdg1 ?? 0, $budget->bdg2 ?? 0, $budget->bdg3 ?? 0,
+						$budget->bdg4 ?? 0, $budget->bdg5 ?? 0, $budget->bdg6 ?? 0,
+						$budget->bdg7 ?? 0, $budget->bdg8 ?? 0, $budget->bdg9 ?? 0,
+						$budget->bdg10 ?? 0, $budget->bdg11 ?? 0, $budget->bdg12 ?? 0
+					]);
+				}
 			}
 
 			// Update budget_months based on which months have budget allocation
@@ -254,7 +305,7 @@ class BudgetController extends Controller
 			if ($budget->budget_month_count === 0) {
 				$budget->budget_type = 'yearly'; // No monthly allocation (default to monthly)
 			} elseif ($budget->budget_month_count === 12) {
-				$budget->budget_type = 'monthly	'; // All 12 months
+				$budget->budget_type = 'monthly'; // All 12 months
 			} elseif ($budget->budget_month_count === 1) {
 				$budget->budget_type = 'yearly'; // Single month
 			} else {
@@ -268,25 +319,74 @@ class BudgetController extends Controller
 			
 			// Update balance based on new bdgtotal
 			$budget->balance = $budget->bdgtotal - $budget->acttotal;
-			$budget->save();
+			
+			// Save budget based on which table we're using
+			if (isset($tableName) && $tableName !== 'budgets') {
+				// Update archive table
+				Log::info('Updating budget allocation in archive table', [
+					'table' => $tableName,
+					'budget_id' => $id,
+					'year' => $requestYear
+				]);
+				
+				DB::table($tableName)->where('id', $id)->update([
+					'bdg1' => $budget->bdg1,
+					'bdg2' => $budget->bdg2,
+					'bdg3' => $budget->bdg3,
+					'bdg4' => $budget->bdg4,
+					'bdg5' => $budget->bdg5,
+					'bdg6' => $budget->bdg6,
+					'bdg7' => $budget->bdg7,
+					'bdg8' => $budget->bdg8,
+					'bdg9' => $budget->bdg9,
+					'bdg10' => $budget->bdg10,
+					'bdg11' => $budget->bdg11,
+					'bdg12' => $budget->bdg12,
+					'bdgtotal' => $budget->bdgtotal,
+					'budget_months' => json_encode($budget->budget_months),
+					'budget_month_count' => $budget->budget_month_count,
+					'budget_type' => $budget->budget_type,
+					'balance' => $budget->balance,
+					'updated_at' => now()
+				]);
+			} else {
+				// Save to main budgets table
+				Log::info('Updating budget allocation in main table', [
+					'table' => 'budgets',
+					'budget_id' => $id,
+					'year' => $requestYear
+				]);
+				$budget->save();
+			}
 
 			DB::commit();
 
 			// Clear cache
 			$this->clearAllBudgetCache();
 
-			return response()->json([
+			// Prepare response data
+			$responseData = [
 				'message' => 'Budget allocation berjaya dikemaskini',
-				'data' => $budget->load(['department', 'parent', 'children']),
+				'table_used' => isset($tableName) ? $tableName : 'budgets',
 				'summary' => [
 					'bdgtotal' => $budget->bdgtotal,
-					'acttotal' => $budget->acttotal,
+					'acttotal' => $budget->acttotal ?? 0,
 					'balance' => $budget->bdgtotal - $oldTotal,
 					'budget_months' => $budgetMonths,
 					'budget_month_count' => $budget->budget_month_count,
 					'budget_type' => $budget->budget_type
 				]
-			]);
+			];
+			
+			// Add detailed data if using main table (can load relationships)
+			if (!isset($tableName) || $tableName === 'budgets') {
+				$responseData['data'] = $budget->load(['department', 'parent', 'children']);
+			} else {
+				// For archive tables, just return the basic budget data
+				$responseData['data'] = $budget;
+			}
+			
+			return response()->json($responseData);
 		} catch (\Exception $e) {
 			DB::rollBack();
 			Log::error('Error updating budget allocation: ' . $e->getMessage(), [
@@ -369,6 +469,72 @@ class BudgetController extends Controller
 			]);
 			return response()->json([
 				'message' => 'Ralat mengemaskini actual spending',
+				'error' => $e->getMessage()
+			], 500);
+		}
+	}
+
+	/**
+	 * Update budget structure fields (child_count, is_group, sort_order)
+	 */
+	public function updateBudgetStructure(Request $request, $id)
+	{
+		try {
+			DB::beginTransaction();
+
+			$request->validate([
+				'child_count' => 'sometimes|integer|min:0',
+				'is_group' => 'sometimes|boolean',
+				'sort_order' => 'sometimes|integer|min:1',
+				'year' => 'sometimes|integer|min:2000|max:2100'
+			]);
+
+			$budget = Budget::findOrFail($id);
+
+			// Update the fields
+			$updateData = [];
+			
+			if ($request->has('child_count')) {
+				$updateData['child_count'] = $request->child_count;
+			}
+			
+			if ($request->has('is_group')) {
+				$updateData['is_group'] = $request->is_group;
+			}
+			
+			if ($request->has('sort_order')) {
+				$updateData['sort_order'] = $request->sort_order;
+			}
+
+			// Only update if there are changes
+			if (!empty($updateData)) {
+				$budget->update($updateData);
+			}
+
+			DB::commit();
+
+			// Clear all budget-related cache
+			$this->clearAllBudgetCache();
+
+			Log::info('Budget structure updated', [
+				'budget_id' => $budget->id,
+				'changes' => $updateData
+			]);
+
+			return response()->json([
+				'success' => true,
+				'message' => 'Struktur budget berjaya dikemaskini',
+				'data' => $budget->load(['department', 'parent', 'children'])
+			]);
+		} catch (\Exception $e) {
+			DB::rollBack();
+			Log::error('Error updating budget structure: ' . $e->getMessage(), [
+				'budget_id' => $id,
+				'request_data' => $request->all()
+			]);
+			return response()->json([
+				'success' => false,
+				'message' => 'Ralat mengemaskini struktur budget',
 				'error' => $e->getMessage()
 			], 500);
 		}
@@ -489,6 +655,7 @@ class BudgetController extends Controller
 		try {
 			$budgets = Budget::where('yearly', $year)
 				->with(['department', 'parent', 'children'])
+				->orderBy('type')
 				->orderBy('level')
 				->orderBy('sort_order')
 				->orderBy('code')
@@ -534,9 +701,9 @@ class BudgetController extends Controller
 
 	/**
 	 * Archive current year's budgets into a year-suffixed table
-	 * and optionally create budgets for a new year (rollover)
+	 * and optionally create budgets for a new year (archive)
 	 */
-	public function rolloverYear(Request $request)
+	public function archiveYear(Request $request)
 	{
 		$request->validate([
 			'from_year' => 'required|integer|min:2000|max:2100',
@@ -545,6 +712,18 @@ class BudgetController extends Controller
 		]);
 
 		$fromYear = (int) $request->input('from_year');
+		$currentYear = (int) date('Y');
+		
+		// Validate that from_year is not current year or future years
+		if ($fromYear >= $currentYear) {
+			return response()->json([
+				'message' => 'Tidak boleh arkib budget untuk tahun sekarang dan ke atas',
+				'error' => 'Cannot archive budget for current year or future years',
+				'from_year' => $fromYear,
+				'current_year' => $currentYear
+			], 400);
+		}
+		
 		$toYear = $fromYear + 1; // Automatically set to next year
 		$copyAmounts = (bool) $request->boolean('copy_amounts', true);
 		$force = (bool) $request->boolean('force', false);
@@ -593,7 +772,7 @@ class BudgetController extends Controller
 			$this->clearAllBudgetCache();
 
 			return response()->json([
-				'message' => 'Rollover budget berjaya',
+				'message' => 'Arkib budget berjaya',
 				'archived_table' => $archiveTable,
 				'archived_count' => $archivedCount,
 				'updated_year' => $toYear,
@@ -602,13 +781,13 @@ class BudgetController extends Controller
 			]);
 		} catch (\Exception $e) {
 			DB::rollBack();
-			Log::error('Error during budget rollover: ' . $e->getMessage(), [
+			Log::error('Error during budget archive: ' . $e->getMessage(), [
 				'from_year' => $fromYear,
 				'to_year' => $toYear,
 				'trace' => $e->getTraceAsString()
 			]);
 			return response()->json([
-				'message' => 'Ralat proses rollover budget',
+				'message' => 'Ralat proses arkib budget',
 				'error' => $e->getMessage()
 			], 500);
 		}

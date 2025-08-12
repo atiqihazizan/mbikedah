@@ -150,10 +150,14 @@ export const useBudgetSettings = () => {
     setShowDialog(true);
   }, []);
 
-  const handleNewBudget = useCallback(() => {
+  const handleNewBudget = useCallback((data) => {
+    const parentCount = getParentCount(data);
+    const nextSortOrder = parentCount + 1;
     setSelectedBudget(null);
-    setInitialFormData(null);
     setShowDialog(true);
+    setInitialFormData({
+      sort_order: nextSortOrder
+    });
   }, []);
 
   const handleAddChild = useCallback((parentBudget) => {
@@ -220,6 +224,10 @@ export const useBudgetSettings = () => {
 
   const getChildrenCount = useCallback((budgetId) => {
     return budgets.filter(b => b.parent_id === budgetId).length;
+  }, [budgets]);
+
+  const getParentCount = useCallback((data) => {
+    return data.filter(b => b.level === 0).length;
   }, [budgets]);
 
   // Build hierarchical display

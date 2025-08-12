@@ -20,7 +20,6 @@ export const useBudgetArchive = () => {
     const loadYears = async () => {
       try {
         const res = await apiClient.get("/budgets/years");
-        console.log("Available years:", res);
         const data = res.data || res?.data?.data || [];
         const arr = Array.isArray(res?.data) ? res.data : data;
         const y = (arr || []).filter((v) => !!v);

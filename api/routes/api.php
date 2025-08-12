@@ -116,10 +116,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/revenue-breakdown', [BudgetController::class, 'getRevenueBreakdownData']);
     Route::get('/reports/income-expenditure-statement', [BudgetController::class, 'getIncomeExpenditureStatementData']);
 
-    // Year and rollover management
+    // Year and archive management
     Route::get('/years', [BudgetController::class, 'getYears']);
     // Route::get('/check-archive/{year}', [BudgetController::class, 'checkArchive']);
-    Route::post('/rollover', [BudgetController::class, 'rolloverYear']);
+    Route::post('/archive', [BudgetController::class, 'archiveYear']);
 
     // Basic CRUD Routes
     Route::get('/', [BudgetController::class, 'index']);
@@ -132,6 +132,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/{id}/name-level', [BudgetController::class, 'updateNameAndLevel']);
     Route::put('/{id}/budget-allocation', [BudgetController::class, 'updateBudgetAllocation']);
     Route::put('/{id}/actual-spending', [BudgetController::class, 'updateActualSpending']);
+    Route::put('/{id}/structure', [BudgetController::class, 'updateBudgetStructure']);
   });
 
   /*

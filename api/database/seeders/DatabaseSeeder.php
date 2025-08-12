@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
       DepartmentSeeder::class, // Tambah ini
       UserSeeder::class,
       BillingRecipientSeeder::class,
-      BudgetSeeder::class,
+      // BudgetSeeder::class,
       BankSeeder::class,
       PositionSeeder::class
     ]);

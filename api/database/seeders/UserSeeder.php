@@ -18,7 +18,9 @@ class UserSeeder extends Seeder
 				'username' => 'admin',
 				'email' => 'admin@mbikedah.com.my',
 				'password' => Hash::make('123456'),
-				'ability_id' => 1	
+				'abilities' => [1], // 1 = admin ability
+				'is_admin' => true,
+				'is_active' => true
 			]);
 		}
 
@@ -78,7 +80,9 @@ class UserSeeder extends Seeder
 						'username' => $userData['username'],
 						'email' => $userData['username'] . '@mbikedah.com.my', // Assuming email format
 						'password' => Hash::make('123456'),
-						'department_id' => $userData['department_id']
+						'department_id' => $userData['department_id'],
+						'abilities' => [2], // 2 = applicant ability (default)
+						'is_active' => true
 					]);
 				}
 			}

@@ -17,7 +17,7 @@ import PasswordChangeDialog from '../components/dialogs/PasswordChangeDialog';
 // Import icons
 import { FaUser, FaShieldAlt, FaLock, FaBell, FaEye, FaChartLine, FaMoneyBillWave, FaArrowLeft } from 'react-icons/fa';
 import BudgetSettings from "../views/settings/BudgetSettings";
-import BudgetRollover from "../views/settings/BudgetRollover";
+import BudgetArchive from "../views/settings/BudgetArchive";
 import ProfileSettings from "../views/settings/ProfileSettings";
 import BankBalanceSettings from "../views/settings/BankBalanceSettings";
 import SecuritySettings from "../views/settings/SecuritySettings";
@@ -198,7 +198,7 @@ const SettingsSidebar = ({ currentSection, isDark, userRoles = [] }) => {
   // Finance-specific menu items
   const financeMenuItems = [
     { id: 'budget', label: 'Maklumat Budget', icon: FaChartLine, path: '/settings/budget', requiresFinance: true },
-    { id: 'budget-rollover', label: 'Rollover Bajet', icon: FaChartLine, path: '/settings/budget-rollover', requiresFinance: true },
+    { id: 'budget-archive', label: 'Arkib Bajet', icon: FaChartLine, path: '/settings/budget-archive', requiresFinance: true },
     { id: 'bank-balance', label: 'Baki Bank', icon: FaMoneyBillWave, path: '/settings/bank-balance', requiresFinance: true },
   ];
 
@@ -282,8 +282,8 @@ const SettingsContent = ({
         return (<AppearanceSettings theme={theme} isDark={isDark} onToggleTheme={onToggleTheme} />);
       case 'budget':
         return (<BudgetSettings isDark={isDark} currentUser={currentUser} onUnsavedChanges={onUnsavedChanges}/>);
-      case 'budget-rollover':
-        return (<BudgetRollover isDark={isDark} onUnsavedChanges={onUnsavedChanges} />);
+      case 'budget-archive':
+        return (<BudgetArchive isDark={isDark} onUnsavedChanges={onUnsavedChanges} />);
       case 'bank-balance':
         return (<BankBalanceSettings isDark={isDark} currentUser={currentUser} onUnsavedChanges={onUnsavedChanges}/>);
       default:

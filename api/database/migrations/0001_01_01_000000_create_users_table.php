@@ -20,9 +20,12 @@ return new class extends Migration
 			$table->string('email')->unique();
 			$table->timestamp('email_verified_at')->nullable();
 			$table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('set null');
-			$table->integer('ability_id')->default(Config::get('constants.abilities.applicant'));
+			$table->foreignId('position_id')->nullable()->constrained('positions')->onDelete('set null');
+			$table->json('abilities')->nullable();//default(json_encode([Config::get('constants.abilities.applicant')]));
 			$table->string('phone',20)->nullable();
 			$table->boolean('is_admin')->default(false);
+			$table->boolean('is_active')->default(true);
+			
 			$table->rememberToken();
 			$table->timestamps();
 		});

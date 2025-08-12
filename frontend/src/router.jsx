@@ -80,7 +80,7 @@ const router = createBrowserRouter([
 			// { path: "notifications", element: <SettingsLayout /> },
 			// { path: "appearance", element: <SettingsLayout /> },
 			{ path: "budget", element: <SettingsLayout /> },
-			{ path: "budget-rollover", element: <SettingsLayout /> },
+			{ path: "budget-archive", element: <SettingsLayout /> },
 			{ path: "bank-balance", element: <SettingsLayout /> },
 		]
 	},
