@@ -33,7 +33,7 @@ return new class extends Migration {
 			$table->decimal('bdg10', 8, 2)->default(0);
 			$table->decimal('bdg11', 8, 2)->default(0);
 			$table->decimal('bdg12', 8, 2)->default(0);
-			$table->decimal('bdgtotal', 8, 2)->default(0);
+			$table->decimal('bdgtotal', 12, 2)->default(0);
 			// actual amount
 			$table->decimal('act1', 8, 2)->default(0);
 			$table->decimal('act2', 8, 2)->default(0);
@@ -47,8 +47,8 @@ return new class extends Migration {
 			$table->decimal('act10', 8, 2)->default(0);
 			$table->decimal('act11', 8, 2)->default(0);
 			$table->decimal('act12', 8, 2)->default(0);
-			$table->decimal('acttotal', 8, 2)->default(0);
-			$table->decimal('balance', 8, 2)->default(0);
+			$table->decimal('acttotal', 12, 2)->default(0);
+			$table->decimal('balance', 12, 2)->default(0);
 			$table->timestamps();
 		});
 	}
