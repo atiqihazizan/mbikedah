@@ -20,7 +20,6 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
     showAllocationDialog,
     budgets,
     hierarchicalBudgets,
-    
     // Actions
     handleSaveBudget,
     handleSaveBudgetAllocation,
@@ -36,8 +35,8 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
     getBudgetTypeLabel,
     getDepartmentName,
     canHaveChildren,
-    getChildrenCount
   } = useBudgetSettings();
+
 
   // DataTable columns configuration
   const tableColumns = [
@@ -91,37 +90,49 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
       )
     },
     {
-      key: 'children_count',
-      label: 'Children',
+      key: 'child_count',
+      label: 'Bil Sub',
       textAlign: 'center',
       render: (value, item) => (
         <div className="text-center">
           <span className={`px-2 py-1 rounded-full text-xs ${
-            getChildrenCount(item.id) > 0
+            value > 0
               ? isDark ? 'bg-blue-800 text-blue-200' : 'bg-blue-100 text-blue-800'
               : isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'
           }`}>
-            {getChildrenCount(item.id)}
+            {value}
           </span>
         </div>
       )
     },
     {
-      key: 'bdgtotal',
-      label: 'Jumlah Bajet',
-      textAlign: 'right',
+      key: 'sort_order',
+      label: 'Urutan',
+      textAlign: 'center',
       render: (value, item) => (
-        <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-          {getChildrenCount(item.id) === 0 ? formatUtils.formatDecimal(value, 2) : ''}
-        </span>
+        <div className="text-center">
+          <span className={`px-2 py-1 rounded-full text-xs ${isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+            {value}
+          </span>
+        </div>
       )
     },
+    // {
+    //   key: 'bdgtotal',
+    //   label: 'Jumlah Bajet',
+    //   textAlign: 'right',
+    //   render: (value, item) => (
+    //     <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+    //       {getChildrenCount(item.id) === 0 ? formatUtils.formatDecimal(value, 2) : ''}
+    //     </span>
+    //   )
+    // },
     {
       key: 'actions',
       label: 'Tindakan',
       textAlign: 'center',
       render: (value, item) => (
-        <div className="grid grid-cols-4 gap-1 justify-items-center">
+        <div className="grid grid-cols-3 gap-1 justify-items-center">
           {/* Add Child Button - Position 1 */}
           <div className="w-8 h-8 flex items-center justify-center">
             {canHaveChildren(item) ? (
@@ -134,7 +145,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
           </div>
 
           {/* Allocation Button - Position 2 */}
-          <div className="w-8 h-8 flex items-center justify-center">
+          {/* <div className="w-8 h-8 flex items-center justify-center">
             {getChildrenCount(item.id) === 0 ? (
               <TButton variant="subtle" color="blue" size="sm" circle onClick={() => handleAllocationBudget(item)} className="transition-all duration-200" title={`Edit allocation untuk ${item.name}`}>
                 <FaMoneyBillWave className="w-4 h-4" />
@@ -142,7 +153,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
             ) : (
               <div className="w-8 h-8"></div>
             )}
-          </div>
+          </div> */}
 
           {/* Edit Button - Position 3 */}
           <div className="w-8 h-8 flex items-center justify-center">
@@ -179,6 +190,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
             <FaPlus className="w-4 h-4" />
             <span>Tambah Budget</span>
           </TButton>
+          
         </div>
 
       </div>
@@ -192,7 +204,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
           </p>
         </div>
       ) : (
-        <DataTable data={hierarchicalBudgets} columns={tableColumns} itemsPerPage={10} searchPlaceholder="Cari budget..." isDark={isDark}/>
+        <DataTable data={hierarchicalBudgets} columns={tableColumns} itemsPerPage={10} searchPlaceholder="Cari budget..." isDark={isDark} tableId="budget-settings"/>
       )}
 
       {/* Budget Form Dialog */}

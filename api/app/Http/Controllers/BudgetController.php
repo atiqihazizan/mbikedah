@@ -83,6 +83,15 @@ class BudgetController extends Controller
 
 			$budget = Budget::create($validated);
 
+			// Update parent's child_count if this budget has a parent
+			if ($budget->parent_id) {
+				$parent = Budget::find($budget->parent_id);
+				if ($parent) {
+					$parent->child_count = $parent->children()->count();
+					$parent->save();
+				}
+			}
+
 			DB::commit();
 
 			// Clear all budget-related cache
@@ -167,6 +176,27 @@ class BudgetController extends Controller
 				'name', 'code', 'level', 'is_group', 'group_type',
 				'sort_order', 'parent_id', 'department_id', 'type'
 			]));
+
+			// Update child_count on parent budgets if parent_id changed
+			if ($request->has('parent_id')) {
+				// Update old parent's child_count (if budget had a previous parent)
+				if ($budget->getOriginal('parent_id')) {
+					$oldParent = Budget::find($budget->getOriginal('parent_id'));
+					if ($oldParent) {
+						$oldParent->child_count = $oldParent->children()->count();
+						$oldParent->save();
+					}
+				}
+
+				// Update new parent's child_count (if new parent exists)
+				if ($request->parent_id) {
+					$newParent = Budget::find($request->parent_id);
+					if ($newParent) {
+						$newParent->child_count = $newParent->children()->count();
+						$newParent->save();
+					}
+				}
+			}
 
 			DB::commit();
 

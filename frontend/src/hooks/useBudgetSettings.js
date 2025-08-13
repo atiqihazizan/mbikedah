@@ -15,6 +15,7 @@ export const useBudgetSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [showAllocationDialog, setShowAllocationDialog] = useState(false);
+
   
   // Load budgets with pagination and search
   const loadBudgets = useCallback(async () => {
@@ -22,7 +23,9 @@ export const useBudgetSettings = () => {
     try {
       const response = await apiClient.get(`/budgets`);
       
-      if (response.success) setBudgets(response.data || []);
+      if (response.success) {
+        setBudgets(response.data || []);
+      }
     } catch (error) {
       toast.error('Ralat memuat senarai budget');
       console.error('Error loading budgets:', error);
@@ -151,8 +154,10 @@ export const useBudgetSettings = () => {
   }, []);
 
   const handleNewBudget = useCallback((data) => {
-    const parentCount = getParentCount(data);
-    const nextSortOrder = parentCount + 1;
+    // Calculate next sort_order for root level budgets
+    const rootBudgets = data.filter(b => b.level === 0);
+    let nextSortOrder = rootBudgets.length + 1;
+    
     setSelectedBudget(null);
     setShowDialog(true);
     setInitialFormData({
@@ -161,8 +166,9 @@ export const useBudgetSettings = () => {
   }, []);
 
   const handleAddChild = useCallback((parentBudget) => {
-    const existingChildrenCount = getChildrenCount(parentBudget.id);
-    const nextSortOrder = existingChildrenCount + 1;
+    // Calculate next sort_order for children of this parent
+    const existingChildren = budgets.filter(b => b.parent_id === parentBudget.id);
+    let nextSortOrder = existingChildren.length + 1;
     
     setInitialFormData({
       parent_id: parentBudget.id.toString(),
@@ -173,7 +179,7 @@ export const useBudgetSettings = () => {
       sort_order: nextSortOrder
     });
     setShowDialog(true);
-  }, []);
+  }, [budgets]);
 
   const handleDialogClose = useCallback(() => {
     setShowDialog(false);
@@ -221,15 +227,6 @@ export const useBudgetSettings = () => {
   const canHaveChildren = useCallback((budget) => {
     return (budget.level || 0) < 10;
   }, []);
-
-  const getChildrenCount = useCallback((budgetId) => {
-    return budgets.filter(b => b.parent_id === budgetId).length;
-  }, [budgets]);
-
-  const getParentCount = useCallback((data) => {
-    return data.filter(b => b.level === 0).length;
-  }, [budgets]);
-
   // Build hierarchical display
   const buildHierarchicalDisplay = useCallback((budgets) => {
     const budgetMap = {};
@@ -300,6 +297,5 @@ export const useBudgetSettings = () => {
     getBudgetTypeLabel,
     getDepartmentName,
     canHaveChildren,
-    getChildrenCount,
   };
 };

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FaSearch, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 
 const DataTable = ({ 
@@ -9,20 +9,63 @@ const DataTable = ({
   className = "",
   thClassName = "",
   textAlign = "left",
-  isDark = false
+  isDark = false,
+  tableId = "default" // Unique identifier for localStorage key
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
-  // Filter data based on search term
+  // Load search term from localStorage on component mount and when data changes
+  useEffect(() => {
+    const savedSearchTerm = localStorage.getItem(`datatable_search_${tableId}`);
+    if (savedSearchTerm) {
+      setSearchTerm(savedSearchTerm);
+    }
+  }, [tableId, data]);
+
+  // Save search term to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(`datatable_search_${tableId}`, searchTerm);
+  }, [searchTerm, tableId]);
+
+  // Reset search term function
+  const resetSearch = () => {
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
+  // Filter data based on search term with special symbols
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     
     return data.filter(item =>
-      Object.values(item).some(value =>
-        String(value).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      Object.values(item).some(value => {
+        const stringValue = String(value).toLowerCase();
+        const searchLower = searchTerm.toLowerCase();
+        
+        // Check for special symbols
+        if (searchTerm.startsWith('^') && searchTerm.endsWith('$')) {
+          // Exact match: ^word$ - match from start to end
+          const exactWord = searchTerm.slice(1, -1).toLowerCase();
+          return stringValue === exactWord;
+        } else if (searchTerm.startsWith('^')) {
+          // Start match: ^word - match from beginning of word
+          const startWord = searchTerm.slice(1).toLowerCase();
+          return stringValue.startsWith(startWord);
+        } else if (searchTerm.endsWith('$')) {
+          // End match: word$ - match from end of word
+          const endWord = searchTerm.slice(0, -1).toLowerCase();
+          return stringValue.endsWith(endWord);
+        } else if (searchTerm.startsWith('*') && searchTerm.endsWith('*')) {
+          // Contains match: *word* - match anywhere (default behavior)
+          const containsWord = searchTerm.slice(1, -1).toLowerCase();
+          return stringValue.includes(containsWord);
+        } else {
+          // Default: match anywhere
+          return stringValue.includes(searchLower);
+        }
+      })
     );
   }, [data, searchTerm]);
 
@@ -109,22 +152,44 @@ const DataTable = ({
     <div className={`w-full ${className}`}>
       {/* Search Bar */}
       <div className="mb-4">
-        <div className="relative">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder={searchPlaceholder}
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page when searching
-            }}
-            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-              isDark 
-                ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
-                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-            }`}
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder={searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page when searching
+              }}
+              className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                isDark 
+                  ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+            />
+          </div>
+          {searchTerm && (
+            <button
+              onClick={resetSearch}
+              className={`px-4 py-2 border rounded-lg transition-all duration-200 ${
+                isDark
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white'
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+        
+        {/* Search Help Text */}
+        <div className={`mt-2 text-xs ${
+          isDark ? 'text-gray-400' : 'text-gray-500'
+        }`}>
+          <span className="font-medium">Search tips:</span> 
+          <span className="ml-1">^word (start), word$ (end), ^word$ (exact), *word* (contains)</span>
         </div>
       </div>
 
