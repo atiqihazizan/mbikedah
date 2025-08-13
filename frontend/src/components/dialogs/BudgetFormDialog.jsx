@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FaTimes, FaSave, FaBan, FaLayerGroup, FaBuilding, FaHashtag, FaFont } from "react-icons/fa";
 import TButton from "../Core/TButton";
 
@@ -30,6 +30,9 @@ const BudgetFormDialog = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [originalData, setOriginalData] = useState({});
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // ===== REFS =====
+  const nameInputRef = useRef(null);
 
   // ===== UTILITY FUNCTIONS =====
   const deepEqual = (obj1, obj2) => {
@@ -68,7 +71,7 @@ const BudgetFormDialog = ({
   const getPotentialParents = () => {
     const currentLevel = parseInt(formData.level) || 0;
     
-    // Level 0 tidak ada parent
+    // Level 0 tidak ada bajet induk
     if (currentLevel === 0) return [];
     
     return budgets.filter(budget => 
@@ -80,14 +83,14 @@ const BudgetFormDialog = ({
   // Get dialog title based on context
   const getDialogTitle = () => {
     if (selectedBudget) {
-      return 'Kemaskini Budget';
+      return 'Kemaskini Bajet';
     } else if (initialFormData?._insertParentFor) {
       return `Insert Parent untuk ${initialFormData._childBudgetCode}`;
     } else if (initialFormData?.parent_id) {
       const parent = budgets.find(b => b.id === parseInt(initialFormData.parent_id));
-      return parent ? `Tambah Child Budget untuk ${parent.code}` : 'Tambah Budget Baru';
+      return parent ? `Tambah Sub Bajet untuk ${parent.code}` : 'Tambah Bajet Baru';
     } else {
-      return 'Tambah Budget Baru';
+      return 'Tambah Bajet Baru';
     }
   };
 
@@ -135,8 +138,29 @@ const BudgetFormDialog = ({
       setErrors({});
       setHasUnsavedChanges(false);
       setIsInitialized(true);
+      
+      // Set focus to name input after form is initialized
+      setTimeout(() => {
+        if (nameInputRef.current) {
+          nameInputRef.current.focus();
+        }
+      }, 100);
     } else {
       setIsInitialized(false);
+      
+      // Reset form when dialog closes
+      setFormData({
+        name: '',
+        code: '',
+        department_id: '',
+        yearly: new Date().getFullYear(),
+        type: 0,
+        level: 0,
+        parent_id: '',
+        sort_order: 1
+      });
+      setErrors({});
+      setHasUnsavedChanges(false);
     }
   }, [isOpen, selectedBudget, initialFormData]);
 
@@ -163,11 +187,19 @@ const BudgetFormDialog = ({
         }
       }
       
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (canSave() && !isLoading) {
+          const form = document.getElementById('budget-form');
+          if (form) form.requestSubmit();
+        }
+      }
+      
       if (e.key === 'Escape') {
         e.preventDefault();
         if (hasUnsavedChanges) {
           const action = selectedBudget ? 'kemaskini' : 'tambah';
-          const message = `Terdapat perubahan yang belum disimpan untuk ${action} budget. Adakah anda pasti untuk menutup tanpa menyimpan?`;
+          const message = `Terdapat perubahan yang belum disimpan untuk ${action} bajet. Adakah anda pasti untuk menutup tanpa menyimpan?`;
           if (confirm(message)) onClose();
         } else {
           onClose();
@@ -224,7 +256,7 @@ const BudgetFormDialog = ({
   const handleClose = () => {
     if (hasUnsavedChanges) {
       const action = selectedBudget ? 'kemaskini' : 'tambah';
-      const message = `Terdapat perubahan yang belum disimpan untuk ${action} budget. Adakah anda pasti untuk menutup tanpa menyimpan?`;
+      const message = `Terdapat perubahan yang belum disimpan untuk ${action} bajet. Adakah anda pasti untuk menutup tanpa menyimpan?`;
       
       if (confirm(message)) {
         setHasUnsavedChanges(false);
@@ -242,13 +274,13 @@ const BudgetFormDialog = ({
 
     // Required fields
     if (!formData.name.trim()) {
-      newErrors.name = 'Nama budget wajib diisi';
+      newErrors.name = 'Nama bajet wajib diisi';
     }
 
     if (!formData.code.trim()) {
-      newErrors.code = 'Kod budget wajib diisi';
+      newErrors.code = 'Kod bajet wajib diisi';
     } else if (formData.code.length > 50) {
-      newErrors.code = 'Kod budget tidak boleh melebihi 50 aksara';
+      newErrors.code = 'Kod bajet tidak boleh melebihi 50 aksara';
     }
 
     // Check duplicate code
@@ -257,12 +289,12 @@ const BudgetFormDialog = ({
       b.id !== selectedBudget?.id
     );
     if (existingBudget) {
-      newErrors.code = 'Kod budget ini telah digunakan';
+      newErrors.code = 'Kod bajet ini telah digunakan';
     }
 
     // Type validation
     if (![0, 1, 2].includes(parseInt(formData.type))) {
-      newErrors.type = 'Jenis budget tidak sah';
+      newErrors.type = 'Jenis bajet tidak sah';
     }
 
     // Level validation
@@ -275,17 +307,17 @@ const BudgetFormDialog = ({
     if (formData.parent_id) {
       const parent = budgets.find(b => b.id === parseInt(formData.parent_id));
       if (!parent) {
-        newErrors.parent_id = 'Parent budget tidak dijumpai';
+        newErrors.parent_id = 'Bajet induk tidak dijumpai';
       } else if (parent.level >= level) {
-        newErrors.parent_id = 'Parent mesti mempunyai level yang lebih rendah';
+        newErrors.parent_id = 'Bajet induk mesti mempunyai level yang lebih rendah';
       } else if (parent.id === selectedBudget?.id) {
-        newErrors.parent_id = 'Budget tidak boleh menjadi parent kepada dirinya sendiri';
+        newErrors.parent_id = 'Bajet tidak boleh menjadi bajet induk kepada dirinya sendiri';
       }
     }
 
-    // Level 0 tidak boleh ada parent
+    // Level 0 tidak boleh ada bajet induk
     if (level === 0 && formData.parent_id) {
-      newErrors.parent_id = 'Budget level 0 tidak boleh mempunyai parent';
+              newErrors.parent_id = 'Bajet level 0 tidak boleh mempunyai bajet induk';
     }
 
     // Department validation
@@ -296,7 +328,7 @@ const BudgetFormDialog = ({
     // Year validation
     const year = parseInt(formData.yearly);
     if (year < 2020 || year > 2050) {
-      newErrors.yearly = 'Tahun budget mesti antara 2020 hingga 2050';
+      newErrors.yearly = 'Tahun bajet mesti antara 2020 hingga 2050';
     }
 
     setErrors(newErrors);
@@ -345,7 +377,7 @@ const BudgetFormDialog = ({
           }`}>
             <div className="flex items-center text-sm">
               <FaLayerGroup className="w-4 h-4 mr-2" />
-              <span className="font-medium">Parent: </span>
+              <span className="font-medium">Bajet Induk: </span>
               <code className="ml-1 px-2 py-1 bg-blue-800 text-blue-100 rounded text-xs">
                 {parent.code}
               </code>
@@ -372,15 +404,15 @@ const BudgetFormDialog = ({
         }`}>
           <div className="flex items-center text-sm">
             <FaLayerGroup className="w-4 h-4 mr-2" />
-            <span className="font-medium">Insert Parent untuk: </span>
+                          <span className="font-medium">Insert Bajet Induk untuk: </span>
             <code className="ml-1 px-2 py-1 bg-purple-800 text-purple-100 rounded text-xs">
               {initialFormData._childBudgetCode}
             </code>
             <span className="ml-2">{initialFormData._childBudgetName}</span>
           </div>
           <div className={`mt-2 text-xs ${isDark ? 'text-purple-300' : 'text-purple-600'}`}>
-            💡 Parent baru ini akan disisipkan di antara struktur hierarki sedia ada. 
-            Budget {initialFormData._childBudgetCode} dan semua descendant akan naik satu level.
+            💡 Bajet induk baru ini akan disisipkan di antara struktur hierarki sedia ada. 
+            Bajet {initialFormData._childBudgetCode} dan semua descendant akan naik satu level.
           </div>
         </div>
       );
@@ -449,18 +481,34 @@ const BudgetFormDialog = ({
                 <label className={`block text-sm font-medium mb-2 ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  Nama Budget <span className="text-red-500">*</span>
+                  Nama Bajet <span className="text-red-500">*</span>
                 </label>
                 <input
+                  ref={nameInputRef}
                   type="text"
                   value={formData.name || ''}
-                  onChange={(e) => handleInputChange('name', e.target.value.toUpperCase())}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase();
+                    
+                    // Auto-extract kod bajet if format matches "XXXX/XXX DESCRIPTION"
+                    if (value.match(/^\d{4}\/\d{3}[\s\t]/)) {
+                      // Split by space or tab, then filter out empty strings
+                      const parts = value.split(/[\s\t]+/).filter(part => part.trim() !== '');
+                      const kodBajet = parts[0]; // Get "9205/000"
+                      const namaBajet = parts.slice(1).join(' '); // Get "PERKHIDMATAN IKTISAS DAN PERKHIDMATAN LAIN"
+                      
+                      handleInputChange('name', namaBajet);
+                      handleInputChange('code', kodBajet);
+                    } else {
+                      handleInputChange('name', value);
+                    }
+                  }}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     isDark
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                       : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                   } ${errors.name ? 'border-red-500' : ''}`}
-                  placeholder="Masukkan nama budget"
+                  placeholder="Masukkan nama bajet"
                 />
                 {errors.name && (
                   <p className="mt-1 text-sm text-red-500">{errors.name}</p>
@@ -470,7 +518,7 @@ const BudgetFormDialog = ({
               {/* Code Field */}
               <div>
                 <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Kod Budget <span className="text-red-500">*</span>
+                  Kod Bajet <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -491,7 +539,7 @@ const BudgetFormDialog = ({
                 <label className={`block text-sm font-medium mb-2 ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  Tahun Budget
+                  Tahun Bajet
                 </label>
                 <input
                   type="number"
@@ -526,7 +574,7 @@ const BudgetFormDialog = ({
               {/* Type Field */}
               <div>
                 <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Jenis Budget <span className="text-red-500">*</span>
+                  Jenis Bajet <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.type || '0'}
@@ -598,7 +646,7 @@ const BudgetFormDialog = ({
                 <label className={`block text-sm font-medium mb-2 ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  Parent Budget
+                  Bajet Induk
                 </label>
                 <select
                   value={formData.parent_id || ''}
@@ -609,7 +657,7 @@ const BudgetFormDialog = ({
                       : 'bg-white border-gray-300 text-gray-900'
                   } ${errors.parent_id ? 'border-red-500' : ''}`}
                 >
-                  <option value="">Pilih Parent Budget</option>
+                  <option value="">Pilih Bajet Induk</option>
                   {getPotentialParents().map(parent => (
                     <option key={parent.id} value={parent.id}>
                       [{parent.code}] {parent.name}
@@ -621,8 +669,8 @@ const BudgetFormDialog = ({
                 )}
                 {getPotentialParents().length === 0 && parseInt(formData.level || '0') > 0 && (
                   <p className={`mt-1 text-sm ${isDark ? 'text-yellow-400' : 'text-yellow-600'}`}>
-                    Tiada parent budget tersedia untuk level {formData.level}. 
-                    Sila buat budget level {parseInt(formData.level || '0') - 1} terlebih dahulu.
+                                      Tiada bajet induk tersedia untuk level {formData.level}.
+                  Sila buat bajet level {parseInt(formData.level || '0') - 1} terlebih dahulu.
                   </p>
                 )}
               </div>

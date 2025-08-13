@@ -51,6 +51,10 @@ jspm_packages/
 *.swp
 *.bak
 *.tmp
+*.sql
+*.xls
+*.xlsx
+*.sh
 
 # Backup folder
 backup/
