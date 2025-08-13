@@ -1,7 +1,7 @@
 import React from 'react';
 import { Printer, RefreshCw } from 'lucide-react';
 import { useStateContext } from '../../contexts/ContextProvider';
-import { useUserData } from '../../hooks';
+import { useUserData, usePrintout } from '../../hooks';
 import { TButton } from '../../components/Core';
 import useIncomeExpediturreStatment from '../../hooks/useIncomeExpediturreStatment';
 
@@ -26,8 +26,92 @@ function IncomeExpenditureStatement() {
     refetch: refetchStatement
   } = useIncomeExpediturreStatment();
 
+  // Initialize printout hook with specific options for income expenditure statement
+  const { printElement } = usePrintout({
+    title: `RINGKASAN ANGGARAN PENERIMAAN DAN PEMBAYARAN BAGI TAHUN ${summaryData?.budgetYear || new Date().getFullYear()}`,
+    orientation: 'landscape',
+    paperSize: 'a4',
+    includeStyles: true,
+    showHeader: false,
+    showFooter: true,
+    footerText: 'Dicetak pada: ' + new Date().toLocaleDateString('ms-MY', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }),
+    margins: {
+      top: 0.3,
+      right: 0.3,
+      bottom: 0.3,
+      left: 0.3
+    },
+    customPrintStyles: `
+      .statement-table {
+        width: 100% !important;
+        overflow: visible !important;
+      }
+      
+      table {
+        font-size: 0.6rem !important;
+        line-height: 0.8rem !important;
+      }
+      
+      th, td {
+        padding: 0.1rem 0.2rem !important;
+        border: 1px solid #333 !important;
+      }
+      
+      .print\\:bg-green-400 {
+        background-color: #4ade80 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      .print\\:bg-red-400 {
+        background-color: #f87171 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      .print\\:bg-blue-200 {
+        background-color: #93c5fd !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      .print\\:bg-yellow-100 {
+        background-color: #fef3c7 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      .print\\:bg-purple-100 {
+        background-color: #f3e8ff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      .print\\:bg-green-200 {
+        background-color: #bbf7d0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      .print\\:bg-red-200 {
+        background-color: #fecaca !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    `
+  });
+
   const isLoading = userLoading || loading;
   const hasError = userError || error;
+
+  // Handle print function
+  const handlePrint = () => {
+    printElement('.income-expenditure-container');
+  };
 
   if (isLoading) {
     return (
@@ -109,7 +193,7 @@ function IncomeExpenditureStatement() {
   };
 
   return (
-    <div className="min-h-screen bg-white print:bg-white">
+    <div className="income-expenditure-container min-h-screen bg-white print:bg-white">
       
       {/* Header with Print Button - Hidden in print */}
       <div className="p-4 border-b print:hidden">
@@ -121,10 +205,10 @@ function IncomeExpenditureStatement() {
           </div>
           <div className="flex space-x-2">
             <TButton onClick={refetchStatement} color="secondary" size="sm">
-              <RefreshCw className="w-4 h-4 mr-1" />
+              <RefreshCw className="w-4 h-4 mr-2" />
               Muat Semula
             </TButton>
-            <TButton onClick={() => window.print()} color="primary" size="sm">
+            <TButton onClick={handlePrint} color="primary" size="sm">
               <Printer className="w-4 h-4 mr-1" />
               Cetak
             </TButton>

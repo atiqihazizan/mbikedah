@@ -7,7 +7,8 @@ import { useCallback } from 'react';
  */
 export const usePrintout = (options = {}) => {
   const defaultOptions = {
-    title: document.title || 'Print Document',
+    // title: document.title || 'Print Document',
+    title:  '',
     orientation: 'portrait', // 'portrait' or 'landscape'
     paperSize: 'a4', // 'a4', 'letter', etc.
     includeStyles: true, // Whether to include Tailwind CSS
