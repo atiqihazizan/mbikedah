@@ -63,6 +63,12 @@ jspm_packages/
 # Backup folder
 backup/
 
+# Personal/Development files (keep locally but don't track in Git)
+*.xlsx
+*.xls
+*.sh
+preventive_maintenance/
+
 # Build directories
 build/
 dist/
