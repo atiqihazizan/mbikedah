@@ -5,6 +5,10 @@
 **/package-lock.json
 yarn.lock
 
+# Frontend vendor assets (third-party libraries)
+frontend/src/assets/vendors/
+frontend/src/assets/vendors/**/*
+
 billing-api/
 api_ver1/
 
