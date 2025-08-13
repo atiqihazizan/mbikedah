@@ -2,46 +2,109 @@
 
 ## 📋 Project Overview
 
-MBI Clicks is a comprehensive billing management system built with **Laravel 11** backend API and **React 18** frontend. The system handles billing processes, budget management, user authentication, and financial reporting for organizations.
+MBI Clicks is a comprehensive billing management system designed for organizational financial workflows. The system streamlines the entire billing process from initial request to final approval, ensuring proper budget control and financial accountability.
 
 ### 🚀 Key Features
-- **Billing Management**: Create, track, and manage billing workflows
-- **Budget Control**: Budget allocation and tracking with history
-- **User Management**: Role-based access control with multiple abilities
-- **Bank Integration**: Bank account management and balance tracking
-- **Reporting**: Financial reports and expense breakdowns
-- **Document Export**: PDF and Excel export capabilities
+- **Billing Workflow Management**: Complete end-to-end billing process automation
+- **Multi-Level Approval System**: Hierarchical approval workflow with role-based permissions
+- **Budget Control & Monitoring**: Real-time budget tracking and allocation management
+- **Financial Reporting**: Comprehensive financial statements and expense analysis
+- **Document Management**: Automated PDF generation and Excel export capabilities
+- **Bank Integration**: Centralized bank account and transaction management
 
-## 🛠️ Tech Stack
 
-### Backend (Laravel 11)
-- **PHP 8.2+**
-- **Laravel Framework 11.31**
-- **MySQL/PostgreSQL Database**
-- **Laravel Sanctum** for API authentication
-- **Laravel Excel** for data export
-- **Laravel DomPDF** for PDF generation
-- **Redis** for caching and queues
 
-### Frontend (React 18)
-- **React 18.2.0** with Vite build tool
-- **Tailwind CSS** for styling
-- **React Router** for navigation
-- **Axios** for API communication
-- **React Query** for state management
-- **Headless UI** for accessible components
+## 🔄 Business Workflow & User Levels
+
+### 📋 Billing Application Process (5 Steps)
+
+1. **Billing Request Creation**
+   - User submits billing request with details
+   - Attaches supporting documents
+   - Selects budget category and amount
+
+2. **Department Review**
+   - Department head reviews request
+   - Validates budget availability
+   - Approves or requests modifications
+
+3. **Budget Verification**
+   - Budget officer checks budget allocation
+   - Confirms sufficient funds
+   - Updates budget status
+
+4. **Bank Processing**
+   - Bank officer processes payment
+   - Updates bank balance
+   - Generates transaction records
+
+5. **Final Approval & Payment**
+   - Final approval by authorized personnel
+   - Payment processing and confirmation
+   - Completion notification
+
+### 👥 User Levels & Permissions
+
+#### **Level 1: Regular Users**
+- Create billing requests
+- View own billing history
+- Upload supporting documents
+- Track request status
+
+#### **Level 2: Department Heads**
+- Review department requests
+- Approve/reject within department
+- Monitor department budget usage
+- Generate department reports
+
+#### **Level 3: Budget Officers**
+- Manage budget allocations
+- Monitor overall budget status
+- Approve budget-related requests
+- Generate budget reports
+
+#### **Level 4: Bank Officers**
+- Process bank transactions
+- Manage bank accounts
+- Update payment status
+- Generate bank statements
+
+#### **Level 5: System Administrators**
+- User management and role assignment
+- System configuration
+- Access to all modules
+- System maintenance
+
+### 📊 Budget Categories
+- **Operational Expenses**: Day-to-day operational costs
+- **Capital Expenditure**: Equipment and infrastructure
+- **Travel & Entertainment**: Business travel and events
+- **Training & Development**: Employee training programs
+- **Maintenance & Repairs**: Facility and equipment maintenance
 
 ## 📥 Prerequisites
 
 Before installing, ensure you have:
 
+### **System Requirements**
 - **PHP 8.2+** with extensions:
   - BCMath, Ctype, JSON, Mbstring, OpenSSL, PDO, Tokenizer, XML, cURL, GD, ZIP
 - **Composer** (latest version)
 - **Node.js 18+** and **npm** or **yarn**
-- **MySQL 8.0+** or **PostgreSQL 13+**
-- **Redis** (optional, for caching)
 - **Git**
+
+### **Database Requirements**
+- **MySQL 8.0+** or **PostgreSQL 13+**
+- **Redis** (optional, for caching and queues)
+
+### **Development Framework Requirements**
+- **Laravel 11.31** (PHP Framework)
+- **React 18.2.0** (JavaScript Framework)
+- **Vite** (Build Tool)
+- **Tailwind CSS** (Styling Framework)
+- **Laravel Sanctum** (API Authentication)
+- **Laravel Excel** (Data Export)
+- **Laravel DomPDF** (PDF Generation)
 
 ## 🚀 Installation & Setup
 
@@ -215,16 +278,23 @@ After seeding the database, you can use:
 - **Admin User**: admin@mbiclicks.com / password
 - **Regular User**: user@mbiclicks.com / password
 
-## 📊 Database Tables
+## 📊 System Modules & Data Structure
 
-- `users` - User accounts and authentication
-- `departments` - Organizational departments
-- `positions` - Job positions
-- `billings` - Billing records
-- `billing_details` - Detailed billing information
-- `budgets` - Budget allocations
-- `banks` - Bank account information
-- `transactions` - Financial transactions
+### **Core Business Modules**
+- **User Management**: Employee accounts, roles, and permissions
+- **Department Structure**: Organizational hierarchy and reporting lines
+- **Billing Management**: Complete billing lifecycle and workflow
+- **Budget Control**: Budget allocation, tracking, and monitoring
+- **Bank Operations**: Account management and transaction processing
+- **Financial Reporting**: Comprehensive financial analysis and statements
+
+### **Key Business Entities**
+- **Users**: Employees with role-based access to system functions
+- **Departments**: Organizational units with budget allocations
+- **Billings**: Financial requests with approval workflow
+- **Budgets**: Financial allocations by category and department
+- **Banks**: Financial institutions and account management
+- **Transactions**: Payment records and financial movements
 
 ## 🚨 Troubleshooting
 
