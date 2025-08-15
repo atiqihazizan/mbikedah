@@ -62,6 +62,7 @@ jspm_packages/
 
 # Backup folder
 backup/
+sql/
 
 # Personal/Development files (keep locally but don't track in Git)
 *.xlsx

@@ -10,24 +10,34 @@ const DataTable = ({
   thClassName = "",
   textAlign = "left",
   isDark = false,
-  tableId = "default" // Unique identifier for localStorage key
+  tableId = "default", // Unique identifier for localStorage key
+  externalSearchTerm = "", // External search term
+  onSearchChange = null, // External search change handler
+  showSearch = true // Show/hide built-in search
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
+  // Use external search term if provided, otherwise use internal state
+  const effectiveSearchTerm = externalSearchTerm !== "" ? externalSearchTerm : searchTerm;
+
   // Load search term from localStorage on component mount and when data changes
   useEffect(() => {
-    const savedSearchTerm = localStorage.getItem(`datatable_search_${tableId}`);
-    if (savedSearchTerm) {
-      setSearchTerm(savedSearchTerm);
+    if (!externalSearchTerm) { // Only load from localStorage if no external search
+      const savedSearchTerm = localStorage.getItem(`datatable_search_${tableId}`);
+      if (savedSearchTerm) {
+        setSearchTerm(savedSearchTerm);
+      }
     }
-  }, [tableId, data]);
+  }, [tableId, data, externalSearchTerm]);
 
-  // Save search term to localStorage whenever it changes
+  // Save search term to localStorage whenever it changes (only for internal search)
   useEffect(() => {
-    localStorage.setItem(`datatable_search_${tableId}`, searchTerm);
-  }, [searchTerm, tableId]);
+    if (!externalSearchTerm) {
+      localStorage.setItem(`datatable_search_${tableId}`, searchTerm);
+    }
+  }, [searchTerm, tableId, externalSearchTerm]);
 
   // Reset search term function
   const resetSearch = () => {
@@ -37,29 +47,29 @@ const DataTable = ({
 
   // Filter data based on search term with special symbols
   const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
+    if (!effectiveSearchTerm) return data;
     
     return data.filter(item =>
       Object.values(item).some(value => {
         const stringValue = String(value).toLowerCase();
-        const searchLower = searchTerm.toLowerCase();
+        const searchLower = effectiveSearchTerm.toLowerCase();
         
         // Check for special symbols
-        if (searchTerm.startsWith('^') && searchTerm.endsWith('$')) {
+        if (effectiveSearchTerm.startsWith('^') && effectiveSearchTerm.endsWith('$')) {
           // Exact match: ^word$ - match from start to end
-          const exactWord = searchTerm.slice(1, -1).toLowerCase();
+          const exactWord = effectiveSearchTerm.slice(1, -1).toLowerCase();
           return stringValue === exactWord;
-        } else if (searchTerm.startsWith('^')) {
+        } else if (effectiveSearchTerm.startsWith('^')) {
           // Start match: ^word - match from beginning of word
-          const startWord = searchTerm.slice(1).toLowerCase();
+          const startWord = effectiveSearchTerm.slice(1).toLowerCase();
           return stringValue.startsWith(startWord);
-        } else if (searchTerm.endsWith('$')) {
+        } else if (effectiveSearchTerm.endsWith('$')) {
           // End match: word$ - match from end of word
-          const endWord = searchTerm.slice(0, -1).toLowerCase();
-          return stringValue.endsWith(endWord);
-        } else if (searchTerm.startsWith('*') && searchTerm.endsWith('*')) {
+          const endWord = effectiveSearchTerm.slice(0, -1).toLowerCase();
+          return stringValue.includes(endWord);
+        } else if (effectiveSearchTerm.startsWith('*') && effectiveSearchTerm.endsWith('*')) {
           // Contains match: *word* - match anywhere (default behavior)
-          const containsWord = searchTerm.slice(1, -1).toLowerCase();
+          const containsWord = effectiveSearchTerm.slice(1, -1).toLowerCase();
           return stringValue.includes(containsWord);
         } else {
           // Default: match anywhere
@@ -67,7 +77,7 @@ const DataTable = ({
         }
       })
     );
-  }, [data, searchTerm]);
+  }, [data, effectiveSearchTerm]);
 
   // Sort data
   const sortedData = useMemo(() => {
@@ -149,18 +159,26 @@ const DataTable = ({
   };
 
   return (
-    <div className={`w-full ${className}`}>
+    // <div className={`w-full ${className}`}>
+    <>
       {/* Search Bar */}
-      <div className="mb-4">
+      {showSearch && <div className="mb-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
               placeholder={searchPlaceholder}
-              value={searchTerm}
+              value={effectiveSearchTerm}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
+                const newValue = e.target.value;
+                if (onSearchChange) {
+                  // Use external handler if provided
+                  onSearchChange(newValue);
+                } else {
+                  // Use internal state
+                  setSearchTerm(newValue);
+                }
                 setCurrentPage(1); // Reset to first page when searching
               }}
               className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
@@ -170,9 +188,15 @@ const DataTable = ({
               }`}
             />
           </div>
-          {searchTerm && (
+          {effectiveSearchTerm && (
             <button
-              onClick={resetSearch}
+              onClick={() => {
+                if (onSearchChange) {
+                  onSearchChange("");
+                } else {
+                  resetSearch();
+                }
+              }}
               className={`px-4 py-2 border rounded-lg transition-all duration-200 ${
                 isDark
                   ? 'border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white'
@@ -191,10 +215,10 @@ const DataTable = ({
           <span className="font-medium">Search tips:</span> 
           <span className="ml-1">^word (start), word$ (end), ^word$ (exact), *word* (contains)</span>
         </div>
-      </div>
+      </div>}
 
       {/* Table */}
-      <div className={`overflow-x-auto border rounded-lg ${
+      <div className={`overflow-x-auto border rounded-lg shadow-md ${
         isDark ? 'border-gray-600' : 'border-gray-200'
       }`}>
         <table className="w-full">
@@ -272,7 +296,7 @@ const DataTable = ({
                     isDark ? 'text-gray-400' : 'text-gray-500'
                   }`}
                 >
-                  {searchTerm ? 'Tiada data yang dijumpai untuk carian anda.' : 'Tiada data.'}
+                  {effectiveSearchTerm ? 'Tiada data yang dijumpai untuk carian anda.' : 'Tiada data.'}
                 </td>
               </tr>
             )}
@@ -346,7 +370,7 @@ const DataTable = ({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

@@ -5,26 +5,50 @@ import RootLoading from "./components/RootLoading";
 import GuestLayout from "./layouts/GuestLayout";
 import Login from "./views/Login";
 import Signup from "./views/Signup";
-import NotFound from "./views/NotFound"; // Import komponen NotFound
+import NotFound from "./views/NotFound";
 
+import ProtectedRoute from "./components/ProtectedRouter";
+
+// Billing Components
 import BillingTableApplicant from "./views/billing/BillingTableApplicant";
 import BillingTableHOD from "./views/billing/BillingTableHOD";
 import BillingTableFinance from "./views/billing/BillingTableFinance";
-
 import BillingView from "./views/billing/BillingView";
 import BillingCheck from "./views/billing/BillingCheck";
 
-import ProtectedRoute from "./components/ProtectedRouter";
+// Layout Components
 import SettingsLayout from "./layouts/SettingsLayout";
+import ReportsFinanceLayout from "./layouts/ReportsFinanceLayout";
+
+// Report Components
 import BudgetSummary from "./views/reports/BudgetSummary";
 import IncomeExpenditureStatement from "./views/reports/IncomeExpenditureStatement";
 import RevenueBreakdown from "./views/reports/RevenueBreakdown";
 import ExpenseBreakdown from "./views/reports/ExpenseBreakdown";
 
+// Settings Components
+import ProfileSettings from "./views/settings/ProfileSettings";
+import SecuritySettings from "./views/settings/SecuritySettings";
+import BudgetSettings from "./views/settings/BudgetSettings";
+import BudgetArchive from "./views/settings/BudgetArchive";
+import BankBalanceSettings from "./views/settings/BankBalanceSettings";
+
+// Admin Components (perlu buat atau import)
+import AdminLayout from "./layouts/AdminLayout";
+import AdminDashboard from "./views/admin/AdminDashboard";
+import UserManagement from "./views/admin/UserManagement";
+import DepartmentManagement from "./views/admin/DepartmentManagement";
+import RoleManagement from "./views/admin/RoleManagement";
+import SystemSettings from "./views/admin/SystemSettings";
+
 const router = createBrowserRouter([
 	{
 		path: "/",
-		element: <DefaultLayout />,
+		element: (
+			<ProtectedRoute>
+				<DefaultLayout />
+			</ProtectedRoute>
+		),
 		children: [
 			// Root path will be handled by RootLoading with auto-redirect
 			{ path: "", element: <RootLoading /> },
@@ -41,29 +65,53 @@ const router = createBrowserRouter([
 			// Shared routes (accessible by all roles)
 			{ path: "finance/:idBilling/view", element: <BillingView /> },
 			{ path: "finance/:idBilling/check", element: <BillingCheck /> },
-
-			// Reports Routes - Protected for all authenticated users
-			{
-				path: "/reports",
-				children: [
-					// Root path will be handled by RootLoading with auto-redirect
-					{ path: "", element: <Navigate to="/reports/budget_summary" replace /> },
-					
-					// Pemohon specific routes
-					{ path: "budget_summary", element: <BudgetSummary /> },
-					
-					// HOD specific routes
-					{ path: "income_statement", element: <IncomeExpenditureStatement /> },
-					
-					// Finance specific routes
-					{ path: "revenue_breakdown", element: <RevenueBreakdown /> },
-					
-					// Finance specific routes
-					{ path: "expense_breakdown", element: <ExpenseBreakdown /> },
-				],
-			},
 		],
 	},
+	
+	// Report Routes - Protected for all authenticated users
+	{
+		path: "/reports",
+		element: (
+			<ProtectedRoute>
+				<ReportsFinanceLayout />
+			</ProtectedRoute>
+		),
+		children: [
+			// Root path will be handled by RootLoading with auto-redirect
+			{ path: "", element: <Navigate to="/reports/budget_summary" replace /> },
+					
+			// Pemohon specific routes
+			{ path: "budget_summary", element: <BudgetSummary /> },
+					
+			// HOD specific routes
+			{ path: "income_statement", element: <IncomeExpenditureStatement /> },
+					
+			// Finance specific routes
+			{ path: "revenue_breakdown", element: <RevenueBreakdown /> },
+					
+			// Finance specific routes
+			{ path: "expense_breakdown", element: <ExpenseBreakdown /> },
+		],
+	},
+	
+	// Admin Routes - Protected for admin users only
+	{
+		path: "/admin",
+		element: (
+			<ProtectedRoute requireRole={["admin", "superuser"]}>
+				<AdminLayout />
+			</ProtectedRoute>
+		),
+		children: [
+			{ path: "", element: <Navigate to="/admin/dashboard" replace /> },
+			{ path: "dashboard", element: <AdminDashboard /> },
+			{ path: "users", element: <UserManagement /> },
+			{ path: "departments", element: <DepartmentManagement /> },
+			{ path: "roles", element: <RoleManagement /> },
+			{ path: "system", element: <SystemSettings /> },
+		],
+	},
+	
 	// Settings Routes - Protected for all authenticated users
 	{
 		path: "/settings",
@@ -74,17 +122,15 @@ const router = createBrowserRouter([
 		),
 		children: [
 			{ path: "", element: <Navigate to="/settings/profile" replace /> },
-			{ path: "profile", element: <SettingsLayout /> },
-			{ path: "security", element: <SettingsLayout /> },
-			// { path: "privacy", element: <SettingsLayout /> },
-			// { path: "notifications", element: <SettingsLayout /> },
-			// { path: "appearance", element: <SettingsLayout /> },
-			{ path: "budget", element: <SettingsLayout /> },
-			{ path: "budget-archive", element: <SettingsLayout /> },
-			{ path: "bank-balance", element: <SettingsLayout /> },
+			{ path: "profile", element: <ProfileSettings /> },
+			{ path: "security", element: <SecuritySettings /> },
+			{ path: "budget", element: <BudgetSettings /> },
+			{ path: "budget-archive", element: <BudgetArchive /> },
+			{ path: "bank-balance", element: <BankBalanceSettings /> },
 		]
 	},
-	//
+	
+	// Guest Routes
 	{
 		path: "/login",
 		element: <GuestLayout />,
@@ -99,6 +145,8 @@ const router = createBrowserRouter([
 			{ path: "", element: <Signup /> },
 		],
 	},
+	
+	// Fallback
 	{
 		path: "*",
 		element: <NotFound />,

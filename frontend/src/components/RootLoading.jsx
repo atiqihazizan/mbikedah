@@ -27,26 +27,47 @@ export default function RootLoading() {
 }
 
 /**
- * Get default route based on user roles
+ * Get default route based on user abilities
  */
 function getDefaultRouteForUser(user) {
-  if (!user || !user.roles || user.roles.length === 0) {
+  if (!user) {
     return '/applicant'; // Default fallback
   }
 
-  const roles = Array.isArray(user.roles) ? user.roles : [user.roles];
+  // Check if user has abilities (new structure)
+  if (user.ability && user.ability.length > 0) {
+    const abilities = Array.isArray(user.ability) ? user.ability : [user.ability];
 
-  // Priority-based routing
-  if (roles.some(role => ['finance', 'kewangan'].includes(role))) {
-    return '/finance';
+    // Priority-based routing for abilities
+    if (abilities.some(ability => ['admin', 'superuser'].includes(ability))) {
+      return '/admin';
+    }
+    
+    if (abilities.some(ability => ['finance', 'kewangan'].includes(ability))) {
+      return '/finance';
+    }
+    
+    if (abilities.some(ability => ['hod', 'head_of_department'].includes(ability))) {
+      return '/hod';
+    }
   }
-  
-  if (roles.some(role => ['hod', 'head_of_department'].includes(role))) {
-    return '/hod';
-  }
-  
-  if (roles.some(role => ['admin', 'superuser'].includes(role))) {
-    return '/admin';
+
+  // Fallback: Check if user has roles (old structure for backward compatibility)
+  if (user.roles && user.roles.length > 0) {
+    const roles = Array.isArray(user.roles) ? user.roles : [user.roles];
+
+    // Priority-based routing for roles
+    if (roles.some(role => ['admin', 'superuser'].includes(role))) {
+      return '/admin';
+    }
+    
+    if (roles.some(role => ['finance', 'kewangan'].includes(role))) {
+      return '/finance';
+    }
+    
+    if (roles.some(role => ['hod', 'head_of_department'].includes(role))) {
+      return '/hod';
+    }
   }
 
   // Default to applicant

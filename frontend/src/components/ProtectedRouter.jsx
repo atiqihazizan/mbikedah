@@ -33,7 +33,7 @@ export default function ProtectedRoute({
       />
     );
   }
-
+  
   // Check role requirement if specified
   if (requireRole && !hasRequiredRole(currentUser, requireRole)) {
     return <UnauthorizedAccess isDark={isDark} />;
@@ -48,24 +48,47 @@ export default function ProtectedRoute({
  */
 function hasRequiredRole(user, requiredRole) {
   if (!requiredRole) return true;
-  if (!user.roles || user.roles.length === 0) return false;
+  
+  // Check if user has abilities (new structure)
+  if (user.ability && user.ability.length > 0) {
+    // Handle string role requirement
+    if (typeof requiredRole === 'string') {
+      return user.ability.some(ability => 
+        ability === requiredRole || 
+        (typeof ability === 'object' && ability.name === requiredRole)
+      );
+    }
 
-  // Handle string role requirement
-  if (typeof requiredRole === 'string') {
-    return user.roles.some(role => 
-      role === requiredRole || 
-      (typeof role === 'object' && role.name === requiredRole)
-    );
+    // Handle array of roles requirement
+    if (Array.isArray(requiredRole)) {
+      return requiredRole.some(reqRole =>
+        user.ability.some(userAbility =>
+          userAbility === reqRole ||
+          (typeof userAbility === 'object' && userAbility.name === reqRole)
+        )
+      );
+    }
   }
+  
+  // Fallback: Check if user has roles (old structure for backward compatibility)
+  if (user.roles && user.roles.length > 0) {
+    // Handle string role requirement
+    if (typeof requiredRole === 'string') {
+      return user.roles.some(role => 
+        role === requiredRole || 
+        (typeof role === 'object' && role.name === requiredRole)
+      );
+    }
 
-  // Handle array of roles requirement
-  if (Array.isArray(requiredRole)) {
-    return requiredRole.some(reqRole =>
-      user.roles.some(userRole =>
-        userRole === reqRole ||
-        (typeof userRole === 'object' && userRole.name === reqRole)
-      )
-    );
+    // Handle array of roles requirement
+    if (Array.isArray(requiredRole)) {
+      return requiredRole.some(reqRole =>
+        user.roles.some(userRole =>
+          userRole === reqRole ||
+          (typeof userRole === 'object' && userRole.name === reqRole)
+        )
+      );
+    }
   }
 
   return false;
@@ -150,18 +173,33 @@ export function usePermissions() {
   const { currentUser } = useStateContext();
 
   const hasRole = (role) => {
-    if (!currentUser?.roles) return false;
+    if (!currentUser?.ability && !currentUser?.roles) return false;
     return hasRequiredRole(currentUser, role);
   };
 
   const hasAnyRole = (roles) => {
-    if (!currentUser?.roles) return false;
+    if (!currentUser?.ability && !currentUser?.roles) return false;
     return hasRequiredRole(currentUser, roles);
   };
 
   const hasAllRoles = (roles) => {
-    if (!currentUser?.roles || !Array.isArray(roles)) return false;
+    if ((!currentUser?.ability && !currentUser?.roles) || !Array.isArray(roles)) return false;
     return roles.every(role => hasRequiredRole(currentUser, role));
+  };
+
+  const hasAbility = (ability) => {
+    if (!currentUser?.ability) return false;
+    return currentUser.ability.includes(ability);
+  };
+
+  const hasAnyAbility = (abilities) => {
+    if (!currentUser?.ability || !Array.isArray(abilities)) return false;
+    return abilities.some(ability => currentUser.ability.includes(ability));
+  };
+
+  const hasAllAbilities = (abilities) => {
+    if (!currentUser?.ability || !Array.isArray(abilities)) return false;
+    return abilities.every(ability => currentUser.ability.includes(ability));
   };
 
   return {
@@ -169,6 +207,9 @@ export function usePermissions() {
     hasRole,
     hasAnyRole,
     hasAllRoles,
+    hasAbility,
+    hasAnyAbility,
+    hasAllAbilities,
     isAuthenticated: !!currentUser
   };
 }
