@@ -24,7 +24,7 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
     filteredBudgets,
     showAllocationDialog,
     selectedBudget,
-    
+
     // Actions
     handleManualRefresh,
     handleAllocationBudget,
@@ -34,7 +34,7 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
     handleYearChange,
     handleArchiveYearChange,
     formatYearForDisplay,
-    
+
     // Setters
     setShowAllocationDialog,
     setSelectedBudget,
@@ -62,13 +62,12 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
       key: 'type',
       label: 'Jenis',
       render: (value) => (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-          value === 2
+        <span className={`px-3 py-1 rounded-full text-xs font-medium ${value === 2
             ? isDark ? 'bg-green-800 text-green-200' : 'bg-green-100 text-green-800'
-            : value === 1 
-            ? isDark ? 'bg-blue-800 text-blue-200' : 'bg-blue-100 text-blue-800'
-            : isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'
-        }`}>
+            : value === 1
+              ? isDark ? 'bg-blue-800 text-blue-200' : 'bg-blue-100 text-blue-800'
+              : isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'
+          }`}>
           {value === 0 ? "Operasi" : value === 1 ? "Pendapatan" : "Perbelanjaan"}
         </span>
       )
@@ -129,77 +128,75 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
       </div>
 
       {/* Bahagian Pengurusan Arkib */}
-      <div className={`rounded-xl border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+      {/* <div className={`rounded-xl border ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
         <div className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <div className={`flex items-center ${isDark ? "text-white" : "text-gray-900"}`}>
-                <FaDatabase className="mr-2" />
-                <span className="font-semibold">Senarai Arkib Tahun</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <FaCalendarAlt className={`w-4 h-4 ${isDark ? "text-gray-300" : "text-gray-600"}`} />
-                <select
-                  value={selectedYear}
-                  onChange={(e) => handleYearChange(e.target.value)}
-                  className={`px-3 py-1 border rounded-lg w-24 text-sm ${
-                    isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"
-                  }`}
-                >
-                  {Array.from({ length: currentYear - 2023 + 1 }, (_, i) => 2023 + i).map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <FaDatabase className={`w-4 h-4 ${isDark ? "text-gray-300" : "text-gray-600"}`} />
-                <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-600"}`}>Tahun Arkib:</span>
-                <select
-                  value={archiveYear}
-                  onChange={(e) => handleArchiveYearChange(e.target.value)}
-                  className={`px-3 py-1 border rounded-lg w-24 text-sm ${
-                    isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"
-                  }`}
-                >
-                  {Array.from({ length: currentYear - 2023 + 1 }, (_, i) => 2023 + i).map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <TButton 
-                variant="solid" 
-                color="blue" 
-                onClick={handleArchive} 
-                onChecking={isProcessing} 
-                isDisable={isProcessing || archiveYear >= currentYear }
-                size="sm"
-              >
-                <FaExchangeAlt className="w-4 h-4 mr-1" />
-                <span>Arkib Bajet</span>
-              </TButton>
-              <TButton variant="outline" color="ghost" onClick={handleManualRefresh} size="sm">
-                <FaSync className="w-4 h-4 mr-1" />
-                <span>Refresh</span>
-              </TButton>
-              <div className={`${isDark ? "text-gray-300" : "text-gray-600"} text-sm`}>
-                {filteredBudgets.length} rekod
-              </div>
-            </div>
+        </div>
+      </div> */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-4">
+          <div className={`flex items-center ${isDark ? "text-white" : "text-gray-900"}`}>
+            <FaDatabase className="mr-2" />
+            <span className="font-semibold">Senarai Arkib Tahun</span>
           </div>
-
-          {/* DataTable */}
-          <DataTable data={filteredBudgets} columns={tableColumns} itemsPerPage={8} searchPlaceholder="Cari kod/nama bajet..." isDark={isDark}/>
+          <div className="flex items-center space-x-2">
+            <FaCalendarAlt className={`w-4 h-4 ${isDark ? "text-gray-300" : "text-gray-600"}`} />
+            <select
+              value={selectedYear}
+              onChange={(e) => handleYearChange(e.target.value)}
+              className={`px-3 py-1 border rounded-lg w-24 text-sm ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"
+                }`}
+            >
+              {Array.from({ length: currentYear - 2023 + 1 }, (_, i) => 2023 + i).map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <FaDatabase className={`w-4 h-4 ${isDark ? "text-gray-300" : "text-gray-600"}`} />
+            <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-600"}`}>Tahun Arkib:</span>
+            <select
+              value={archiveYear}
+              onChange={(e) => handleArchiveYearChange(e.target.value)}
+              className={`px-3 py-1 border rounded-lg w-24 text-sm ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"
+                }`}
+            >
+              {Array.from({ length: currentYear - 2023 + 1 }, (_, i) => 2023 + i).map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+          <TButton
+            variant="solid"
+            color="blue"
+            onClick={handleArchive}
+            onChecking={isProcessing}
+            isDisable={isProcessing || archiveYear >= currentYear}
+            size="sm"
+          >
+            <FaExchangeAlt className="w-4 h-4 mr-1" />
+            <span>Arkib Bajet</span>
+          </TButton>
+          <TButton variant="outline" color="ghost" onClick={handleManualRefresh} size="sm">
+            <FaSync className="w-4 h-4 mr-1" />
+            <span>Refresh</span>
+          </TButton>
+          <div className={`${isDark ? "text-gray-300" : "text-gray-600"} text-sm`}>
+            {filteredBudgets.length} rekod
+          </div>
         </div>
       </div>
 
+      {/* DataTable */}
+      <DataTable data={filteredBudgets} columns={tableColumns} itemsPerPage={8} searchPlaceholder="Cari kod/nama bajet..." isDark={isDark} />
+
       {/* Budget Allocation Dialog */}
-      <BudgetAllocationDialog isOpen={showAllocationDialog} onClose={handleAllocationDialogClose} selectedBudget={selectedBudget} onSuccess={handleSaveBudgetAllocation} selectedYear={selectedYear}/>
+      <BudgetAllocationDialog isOpen={showAllocationDialog} onClose={handleAllocationDialogClose} selectedBudget={selectedBudget} onSuccess={handleSaveBudgetAllocation} selectedYear={selectedYear} />
     </div>
   );
 }

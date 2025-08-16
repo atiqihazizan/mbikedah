@@ -83,7 +83,7 @@ export default function SettingsLayout() {
         <div className="w-full">
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          <div className="grid  lg:grid-cols-7 gap-8">
             {/* Sidebar Navigation */}
             <div className="lg:col-span-1">
               <SettingsSidebar 
@@ -94,8 +94,7 @@ export default function SettingsLayout() {
             </div>
 
             {/* Settings Content */}
-            {/* <div className="lg:col-span-4 h-[calc(100vh-8.5rem)] overflow-y-auto"> */}
-            <div className="lg:col-span-4 h-[calc(100vh-8.5rem)] overflow-y-hidden">
+            <div className="lg:col-span-6 h-[calc(100vh-8.5rem)] overflow-y-auto">
               <SettingsContent 
                 currentSection={currentSection}
                 userDisplayInfo={userDisplayInfo}

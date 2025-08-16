@@ -204,7 +204,7 @@ const BudgetSettings = ({ isDark, currentUser, onUnsavedChanges }) => {
           </p>
         </div>
       ) : (
-        <DataTable data={hierarchicalBudgets} columns={tableColumns} itemsPerPage={10} searchPlaceholder="Cari budget..." isDark={isDark} tableId="budget-settings"/>
+        <DataTable data={hierarchicalBudgets} columns={tableColumns} itemsPerPage={9} searchPlaceholder="Cari budget..." isDark={isDark} tableId="budget-settings"/>
       )}
 
       {/* Budget Form Dialog */}
