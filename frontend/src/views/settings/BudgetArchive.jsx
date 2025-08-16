@@ -146,7 +146,7 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
               className={`px-3 py-1 border rounded-lg w-24 text-sm ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"
                 }`}
             >
-              {Array.from({ length: currentYear - 2023 + 1 }, (_, i) => 2023 + i).map((year) => (
+              {years.map((year) => (
                 <option key={year} value={year}>
                   {year}
                 </option>
@@ -164,7 +164,7 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
               className={`px-3 py-1 border rounded-lg w-24 text-sm ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"
                 }`}
             >
-              {Array.from({ length: currentYear - 2023 + 1 }, (_, i) => 2023 + i).map((year) => (
+              {years.map((year) => (
                 <option key={year} value={year}>
                   {year}
                 </option>

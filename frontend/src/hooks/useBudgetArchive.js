@@ -4,12 +4,18 @@ import apiClient from "../utils/axios";
 
 export const useBudgetArchive = () => {
   // State management
-  const [years, setYears] = useState([]);
   const [currentYear] = useState(new Date().getFullYear());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [archiveYear, setArchiveYear] = useState(new Date().getFullYear() - 1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [budgets, setBudgets] = useState([]);
+
+  // Generate years from 2024 to current year
+  const years = useMemo(() => {
+    const startYear = 2024;
+    const endYear = currentYear;
+    return Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
+  }, [currentYear]);
 
   // Allocation dialog state
   const [showAllocationDialog, setShowAllocationDialog] = useState(false);
