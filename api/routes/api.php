@@ -10,6 +10,7 @@ use App\Http\Controllers\BillingListController;
 use App\Http\Controllers\BillingRecipientController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\PositionController;
 use App\Http\Controllers\StatusValidationController;
 use App\Http\Controllers\UserController;
 use App\Models\Billing;
@@ -195,6 +196,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
   /*
    * |--------------------------------------------------------------------------
+   * | Position Routes
+   * |--------------------------------------------------------------------------
+   */
+  Route::prefix('positions')->group(function () {
+    Route::get('/', [PositionController::class, 'index']);
+    Route::post('/', [PositionController::class, 'store']);
+    Route::get('/{id}', [PositionController::class, 'show']);
+    Route::put('/{id}', [PositionController::class, 'update']);
+    Route::delete('/{id}', [PositionController::class, 'destroy']);
+    Route::put('/{id}/toggle-status', [PositionController::class, 'toggleStatus']);
+  });
+
+  /*
+   * |--------------------------------------------------------------------------
    * | Billing Recipient Routes
    * |--------------------------------------------------------------------------
    */
@@ -231,6 +246,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Route untuk kemaskini kata laluan pengguna tertentu (admin only)
     Route::post('/{id}/change-password', [UserController::class, 'changePassword']);
+
+    // Route untuk toggle status active/inactive pengguna
+    Route::put('/{id}/toggle-status', [UserController::class, 'toggleStatus']);
   });
 
   /*

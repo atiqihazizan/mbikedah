@@ -38,7 +38,8 @@ import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./views/admin/AdminDashboard";
 import UserManagement from "./views/admin/UserManagement";
 import DepartmentManagement from "./views/admin/DepartmentManagement";
-import RoleManagement from "./views/admin/RoleManagement";
+import PositionManagement from "./views/admin/PositionManagement";
+
 import SystemSettings from "./views/admin/SystemSettings";
 
 const router = createBrowserRouter([
@@ -107,7 +108,8 @@ const router = createBrowserRouter([
 			{ path: "dashboard", element: <AdminDashboard /> },
 			{ path: "users", element: <UserManagement /> },
 			{ path: "departments", element: <DepartmentManagement /> },
-			{ path: "roles", element: <RoleManagement /> },
+			{ path: "positions", element: <PositionManagement /> },
+
 			{ path: "system", element: <SystemSettings /> },
 		],
 	},

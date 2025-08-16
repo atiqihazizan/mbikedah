@@ -7,12 +7,12 @@ import useRevenueBreakdown from '../../hooks/useRevenueBreakdown';
 
 function RevenueBreakdown() {
   const { currentUser } = useStateContext();
-  
-  const { 
-    dashboardData, 
-    isLoading: userLoading, 
-    error: userError, 
-    refreshUserData: refetch 
+
+  const {
+    dashboardData,
+    isLoading: userLoading,
+    error: userError,
+    refreshUserData: refetch
   } = useUserData(currentUser);
 
   const {
@@ -136,7 +136,7 @@ function RevenueBreakdown() {
 
   return (
     <div className="revenue-breakdown-container min-h-screen bg-white print:bg-white">
-      
+
       {/* Header with Print Button - Hidden in print */}
       <div className="p-4 border-b print:hidden">
         <div className="flex items-center justify-between">
@@ -175,7 +175,7 @@ function RevenueBreakdown() {
       <div className="p-4 print:p-2">
         <div className="overflow-x-auto statement-table">
           <table className="w-full border-collapse border border-gray-400 text-xs">
-            
+
             {/* Table Header */}
             <thead>
               <tr className="bg-gray-600 text-white">
@@ -186,24 +186,24 @@ function RevenueBreakdown() {
                   PERIHAL
                 </th>
                 <th className="border border-gray-400 px-1 py-1 text-center font-bold">
-                  SEBENAR <br/> 2024 (RM)
+                  SEBENAR <br /> 2024 (RM)
                 </th>
                 <th className="border border-gray-400 px-1 py-1 text-center font-bold">
-                  BAJET <br/> 2024 (RM)
+                  BAJET <br /> 2024 (RM)
                 </th>
                 <th className="border border-gray-400 px-1 py-1 text-center font-bold">
-                  BAJET <br/> 2025 (RM)
+                  BAJET <br /> 2025 (RM)
                 </th>
                 {monthNames.map(month => (
                   <th key={month} className="border border-gray-400 px-1 py-1 text-center font-bold">
                     {month}<br />RM
-                </th>
+                  </th>
                 ))}
               </tr>
             </thead>
-            
+
             <tbody>
-              
+
               {/* Render all category sections */}
               {categorySections.map((section, index) => (
                 <React.Fragment key={section.title}>
@@ -229,7 +229,7 @@ function RevenueBreakdown() {
                         {formatCurrency(section.data.monthly?.[month])}
                       </td>
                     ))}
-              </tr>
+                  </tr>
 
                   {/* Sub Categories */}
                   {section.subCategories.map((subCategory, subIndex) => (
@@ -255,7 +255,7 @@ function RevenueBreakdown() {
                             {formatCurrency(subCategory.monthly?.[month])}
                           </td>
                         ))}
-              </tr>
+                      </tr>
 
                       {/* Details for subcategories */}
                       {subCategory.details?.map((detail, detailIndex) => (
@@ -280,7 +280,7 @@ function RevenueBreakdown() {
                               -
                             </td>
                           ))}
-              </tr>
+                        </tr>
                       ))}
                     </React.Fragment>
                   ))}

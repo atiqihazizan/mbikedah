@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaTimes, FaUser, FaEnvelope, FaPhone, FaBuilding, FaShieldAlt, FaCheck } from 'react-icons/fa';
+import { USER_ABILITIES_NAMES, USER_ABILITIES_COLORS } from '../../utils/constants';
 
 /**
  * User Modal Component
@@ -11,7 +12,7 @@ const UserModal = ({
   onSubmit, 
   formData, 
   setFormData, 
-  departments, 
+  departments = [], 
   selectedUser, 
   isDark 
 }) => {
@@ -33,12 +34,11 @@ const UserModal = ({
     }));
   };
 
-  const availableAbilities = [
-    { id: 'admin', label: 'Admin', color: 'bg-red-100 text-red-800' },
-    { id: 'finance', label: 'Finance', color: 'bg-green-100 text-green-800' },
-    { id: 'hod', label: 'Head of Department', color: 'bg-purple-100 text-purple-800' },
-    { id: 'applicant', label: 'Applicant', color: 'bg-blue-100 text-blue-800' }
-  ];
+  const availableAbilities = Object.entries(USER_ABILITIES_NAMES).map(([id, name]) => ({
+    id: parseInt(id),
+    label: name,
+    color: USER_ABILITIES_COLORS[id]
+  }));
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -182,7 +182,7 @@ const UserModal = ({
                   }`}
                 >
                   <option value="">Select Department</option>
-                  {departments.map((dept) => (
+                  {departments && Array.isArray(departments) && departments.map((dept) => (
                     <option key={dept.id} value={dept.id}>
                       {dept.name}
                     </option>

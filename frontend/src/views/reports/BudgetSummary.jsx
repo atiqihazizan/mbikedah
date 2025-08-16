@@ -19,15 +19,24 @@ const BudgetSummary = () => {
   
   const { data, loading, error, refreshData } = useBudgetSummary();
 
+  // Get current year and previous year for dynamic field names
+  const currentYear = new Date().getFullYear();
+  const previousYear = currentYear - 1;
+  
+  // Dynamic field names
+  const actualField = `actual${previousYear}`;
+  const budgetPreviousField = `budget${previousYear}`;
+  const budgetCurrentField = `budget${currentYear}`;
+
   // Initialize printout hook with specific options for budget summary
   const { printElement } = usePrintout({
-    title: 'RINGKASAN ANGGARAN BAGI TAHUN 2025',
-    orientation: 'landscape',
+    title: `RINGKASAN ANGGARAN BAGI TAHUN ${currentYear}`,
+    orientation: 'portrait',
     paperSize: 'a4',
     includeStyles: true,
     showHeader: false,
     showFooter: true,
-    headerText: 'RINGKASAN ANGGARAN BAGI TAHUN 2025',
+    headerText: `RINGKASAN ANGGARAN BAGI TAHUN ${currentYear}`,
     footerText: 'Dicetak pada: ' + new Date().toLocaleDateString('ms-MY', {
       year: 'numeric',
       month: 'long',
@@ -131,7 +140,7 @@ const BudgetSummary = () => {
   }
 
   const { revenueData, expenditureData, operationData } = data;
-  const summaryData = operationData;
+  // const summaryData = operationData; // This was incorrect
   const openingBalance = operationData.find(item => item.code === '0001');
   // const runningBalance = operationData.find(item => item.code === '0000000001');
   const specialSavings = operationData.find(item => item.code === '0002');
@@ -145,7 +154,7 @@ const BudgetSummary = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900">
-              RINGKASAN ANGGARAN BAGI TAHUN 2025
+              RINGKASAN ANGGARAN BAGI TAHUN {currentYear}
             </h1>
           </div>
           <div className="flex space-x-2">
@@ -164,7 +173,7 @@ const BudgetSummary = () => {
       {/* Print Header - Only visible when printing */}
       <div className="hidden print:block text-center py-4">
         <h1 className="text-sm font-bold uppercase">
-          RINGKASAN ANGGARAN BAGI TAHUN 2025
+          RINGKASAN ANGGARAN BAGI TAHUN {currentYear}
         </h1>
       </div>
 
@@ -183,19 +192,13 @@ const BudgetSummary = () => {
                   PERIHAL
                 </th>
                 <th className="border border-gray-400 px-1 py-1 text-center font-bold">
-                  SEBENAR<br />2023 RM
+                  SEBENAR<br />{previousYear} RM
                 </th>
                 <th className="border border-gray-400 px-1 py-1 text-center font-bold">
-                  SEBENAR<br />2024 RM
+                  BAJET<br />{previousYear} RM
                 </th>
                 <th className="border border-gray-400 px-1 py-1 text-center font-bold">
-                  BAJET<br />2023 RM
-                </th>
-                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
-                  BAJET<br />2024 RM
-                </th>
-                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
-                  BAJET<br />2025 RM
+                  BAJET<br />{currentYear} RM
                 </th>
               </tr>
             </thead>
@@ -211,19 +214,13 @@ const BudgetSummary = () => {
                     {item.name}
                   </td>
                   <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatUtils.formatCurrency(item.actual2023 || 0)}
+                    {formatUtils.formatCurrency(item[actualField] || 0)}
                   </td>
                   <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatUtils.formatCurrency(item.actual2024 || 0)}
+                    {formatUtils.formatCurrency(item[budgetPreviousField] || 0)}
                   </td>
                   <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatUtils.formatCurrency(item.budget2023 || 0)}
-                  </td>
-                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatUtils.formatCurrency(item.budget2024 || 0)}
-                  </td>
-                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatUtils.formatCurrency(item.budget2025 || 0)}
+                    {formatUtils.formatCurrency(item[budgetCurrentField] || 0)}
                   </td>
                 </tr>
               )) || []}
@@ -234,25 +231,19 @@ const BudgetSummary = () => {
                   JUMLAH PENDAPATAN DARI SEMUA PUNCA
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.revenueTotal?.actual2023 || 0)}
+                  {formatUtils.formatCurrency(data?.revenueTotal?.[actualField] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.revenueTotal?.actual2024 || 0)}
+                  {formatUtils.formatCurrency(data?.revenueTotal?.[budgetPreviousField] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.revenueTotal?.budget2023 || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.revenueTotal?.budget2024 || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.revenueTotal?.budget2025 || 0)}
+                  {formatUtils.formatCurrency(data?.revenueTotal?.[budgetCurrentField] || 0)}
                 </td>
               </tr>
 
               {/* Empty spacer row */}
               <tr>
-                <td colSpan={7} className="py-2"></td>
+                <td colSpan={5} className="py-2"></td>
               </tr>
 
               {/* Expenditure Data */}
@@ -265,19 +256,13 @@ const BudgetSummary = () => {
                     {item.name}
                   </td>
                   <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatUtils.formatCurrency(item.actual2023 || 0)}
+                    {formatUtils.formatCurrency(item[actualField] || 0)}
                   </td>
                   <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatUtils.formatCurrency(item.actual2024 || 0)}
+                    {formatUtils.formatCurrency(item[budgetPreviousField] || 0)}
                   </td>
                   <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatUtils.formatCurrency(item.budget2023 || 0)}
-                  </td>
-                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatUtils.formatCurrency(item.budget2024 || 0)}
-                  </td>
-                  <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                    {formatUtils.formatCurrency(item.budget2025 || 0)}
+                    {formatUtils.formatCurrency(item[budgetCurrentField] || 0)}
                   </td>
                 </tr>
               )) || []}
@@ -288,25 +273,19 @@ const BudgetSummary = () => {
                   JUMLAH PERBELANJAAN DARI SEMUA PUNCA
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.expenditureTotal?.actual2023 || 0)}
+                  {formatUtils.formatCurrency(data?.expenditureTotal?.[actualField] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.expenditureTotal?.actual2024 || 0)}
+                  {formatUtils.formatCurrency(data?.expenditureTotal?.[budgetPreviousField] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.expenditureTotal?.budget2023 || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.expenditureTotal?.budget2024 || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.expenditureTotal?.budget2025 || 0)}
+                  {formatUtils.formatCurrency(data?.expenditureTotal?.[budgetCurrentField] || 0)}
                 </td>
               </tr>
 
               {/* Empty spacer row */}
               <tr>
-                <td colSpan={7} className="py-2"></td>
+                <td colSpan={5} className="py-2"></td>
               </tr>
 
               {/* LEBIHAN /(KURANGAN) */}
@@ -315,19 +294,13 @@ const BudgetSummary = () => {
                   LEBIHAN /(KURANGAN)
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.netPosition?.actual2023 || 0)}
+                  {formatUtils.formatCurrency(data?.netPosition?.[actualField] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.netPosition?.actual2024 || 0)}
+                  {formatUtils.formatCurrency(data?.netPosition?.[budgetPreviousField] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.netPosition?.budget2023 || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.netPosition?.budget2024 || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.netPosition?.budget2025 || 0)}
+                  {formatUtils.formatCurrency(data?.netPosition?.[budgetCurrentField] || 0)}
                 </td>
               </tr>
 
@@ -337,13 +310,7 @@ const BudgetSummary = () => {
                   BAKI AWAL
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(openingBalance?.acttotalvalue[2] || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
                   {formatUtils.formatCurrency(openingBalance?.acttotalvalue[1] || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(openingBalance?.bdgttotalvalue[2] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
                   {formatUtils.formatCurrency(openingBalance?.bdgttotalvalue[1] || 0)}
@@ -359,19 +326,13 @@ const BudgetSummary = () => {
                   LEBIHAN /(KURANGAN) SELEPAS TABUNGAN
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.runningBalance?.actual2023 || 0)}
+                  {formatUtils.formatCurrency(data?.runningBalance?.[actualField] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.runningBalance?.actual2024 || 0)}
+                  {formatUtils.formatCurrency(data?.runningBalance?.[budgetPreviousField] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.runningBalance?.budget2023 || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.runningBalance?.budget2024 || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
-                  {formatUtils.formatCurrency(summaryData?.runningBalance?.bdgtotal || 0)}
+                  {formatUtils.formatCurrency(data?.runningBalance?.bdgtotal || 0)}
                 </td>
               </tr>
 
@@ -381,13 +342,7 @@ const BudgetSummary = () => {
                   (-)TABUNGAN KHAS (3%)
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(specialSavings?.acttotalvalue[2] || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
                   {formatUtils.formatCurrency(specialSavings?.acttotalvalue[1] || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(specialSavings?.bdgttotalvalue[2] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
                   {formatUtils.formatCurrency(specialSavings?.bdgttotalvalue[1] || 0)}
@@ -403,19 +358,30 @@ const BudgetSummary = () => {
                   DEPOSIT SIMPANAN TETAP
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(fixedDepositAmounts?.acttotalvalue[2] || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
                   {formatUtils.formatCurrency(fixedDepositAmounts?.acttotalvalue[1] || 0)}
-                </td>
-                <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                  {formatUtils.formatCurrency(fixedDepositAmounts?.bdgttotalvalue[2] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
                   {formatUtils.formatCurrency(fixedDepositAmounts?.bdgttotalvalue[1] || 0)}
                 </td>
                 <td className="border border-gray-400 px-1 py-1 text-right text-xs">
                   {formatUtils.formatCurrency(fixedDepositAmounts?.bdgttotalvalue[0] || 0)}
+                </td>
+              </tr>
+              
+
+              {/* LEBIHAN /(KURANGAN) SELEPAS TABUNGAN */}
+              <tr className="bg-blue-200 font-bold print:bg-blue-200">
+                <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
+                  LEBIHAN /(KURANGAN) SELEPAS TABUNGAN
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(data?.runningBalance?.[actualField] || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(data?.runningBalance?.[budgetPreviousField] || 0)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                  {formatUtils.formatCurrency(data?.runningBalance?.bdgtotal || 0)}
                 </td>
               </tr>
             </tbody>

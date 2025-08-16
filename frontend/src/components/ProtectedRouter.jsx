@@ -14,7 +14,7 @@ export default function ProtectedRoute({
   redirectTo = '/login',
   loadingComponent = null 
 }) {
-  const { currentUser, isLoading } = useStateContext(); // Now using isLoading from context
+  const { currentUser, isLoading, userToken } = useStateContext(); // Added userToken
   const location = useLocation();
   const { isDark } = useTheme();
 
@@ -23,8 +23,11 @@ export default function ProtectedRoute({
     return loadingComponent || <DefaultLoadingScreen isDark={isDark} />;
   }
 
-  // Redirect to login if no current user
-  if (!currentUser) {
+  // Check if user is in logout state (no token or currentUser)
+  const isLoggingOut = !userToken || userToken === "" || userToken === "undefined" || userToken === "null";
+  
+  // Redirect to login if no current user or logging out
+  if (!currentUser || isLoggingOut) {
     return (
       <Navigate 
         to={redirectTo} 

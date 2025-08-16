@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Config;
+use App\Constants\UserAbilities;
 
 class UserRequest extends FormRequest
 {
@@ -73,7 +73,13 @@ class UserRequest extends FormRequest
 		if ($isAdmin && !$isOwnerUpdate) {
 			$rules['department_id'] = 'nullable|exists:departments,id';
 			$rules['abilities'] = 'required|array|min:1';
-			$rules['abilities.*'] = 'required|integer|in:' . implode(',', array_keys(Config::get('constants.abilities_name')));
+			
+			// Use UserAbilities constants for validation
+			$abilitiesList = implode(',', array_keys(UserAbilities::getAbilitiesName()));
+			$rules['abilities.*'] = 'required|integer|in:' . $abilitiesList;
+			
+			// Admin can update is_active status
+			$rules['is_active'] = 'nullable|boolean';
 		}
 
 		// Password rules

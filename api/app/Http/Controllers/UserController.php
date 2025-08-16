@@ -3,25 +3,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ChangePasswordRequest;
-use App\Http\Requests\UserRequest;
-use App\Models\Department;
 use App\Models\User;
+use App\Models\Department;
+use App\Http\Requests\UserRequest;
+use App\Http\Requests\ChangePasswordRequest;
+use App\Constants\UserAbilities;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
 	/**
-	 * Helper method to safely get abilities array
+	 * Helper method to get abilities array from JSON string
 	 */
 	private function getAbilitiesArray($abilities)
 	{
-		return is_array($abilities) ? $abilities : (json_decode($abilities) ?? []);
+		if (is_array($abilities)) {
+			return $abilities;
+		}
+
+		if (is_string($abilities)) {
+			$decoded = json_decode($abilities, true);
+			return is_array($decoded) ? $decoded : [];
+		}
+
+		return [];
 	}
 
 	/**
@@ -30,7 +39,7 @@ class UserController extends Controller
 	private function formatUserData($user, $abilities = null)
 	{
 		$userAbilities = $abilities ?? $this->getAbilitiesArray($user->abilities);
-		$abilities_name = Config::get('constants.abilities_name');
+		$abilities_name = UserAbilities::getAbilitiesName();
 
 		return [
 			'id' => $user->id,
@@ -44,7 +53,8 @@ class UserController extends Controller
 				return $abilities_name[$ability_id] ?? 'Peranan ' . $ability_id;
 			}, $userAbilities),
 			'department_id' => $user->department_id,
-			'department' => $user->department ? $user->department->name : null
+			'department' => $user->department ? $user->department->name : null,
+			'is_active' => $user->is_active
 		];
 	}
 
@@ -71,6 +81,71 @@ class UserController extends Controller
 		}
 
 		return $phone;
+	}
+
+	/**
+	 * Helper method to get abilities config with fallback
+	 */
+	private function getAbilitiesConfig()
+	{
+		return UserAbilities::getAbilitiesName();
+	}
+
+	/**
+	 * Helper method to get abilities validation list
+	 */
+	private function getAbilitiesValidationList()
+	{
+		$abilitiesConfig = UserAbilities::getAbilitiesName();
+		return implode(',', array_keys($abilitiesConfig));
+	}
+
+	/**
+	 * Toggle user active status
+	 */
+	public function toggleStatus(Request $request, $id)
+	{
+		try {
+			$user = User::findOrFail($id);
+			
+			// Check if user is trying to deactivate themselves
+			if ($user->id === Auth::id()) {
+				return response()->json([
+					'success' => false,
+					'message' => 'You cannot deactivate your own account'
+				], 400);
+			}
+
+			// Toggle the status
+			$newStatus = !$user->is_active;
+			$user->is_active = $newStatus;
+			$user->save();
+
+			$action = $newStatus ? 'activated' : 'deactivated';
+			
+			return response()->json([
+				'success' => true,
+				'message' => "User '{$user->name}' has been {$action} successfully",
+				'data' => [
+					'id' => $user->id,
+					'is_active' => $user->is_active,
+					'name' => $user->name
+				]
+			]);
+
+		} catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+			return response()->json([
+				'success' => false,
+				'message' => 'User not found'
+			], 404);
+		} catch (\Exception $e) {
+			Log::error('Error toggling user status: ' . $e->getMessage());
+			
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to update user status'
+			], 500);
+		}
 	}
 
 	/**
@@ -165,14 +240,15 @@ class UserController extends Controller
 		$isOwnerUpdate = (int) $currentUser->id === (int) $id;
 
 		// Store original data for logging
-		$originalData = [
-			'name' => $user->name,
-			'username' => $user->username,
-			'email' => $user->email,
-			'phone' => $user->phone,
-			'department_id' => $user->department_id,
-			'abilities' => $user->abilities
-		];
+		// $originalData = [
+		// 	'name' => $user->name,
+		// 	'username' => $user->username,
+		// 	'email' => $user->email,
+		// 	'phone' => $user->phone,
+		// 	'department_id' => $user->department_id,
+		// 	'abilities' => $user->abilities,
+		// 	'is_active' => $user->is_active
+		// ];
 
 		// Base update data (available to both admin and owner)
 		$updateData = [
@@ -180,12 +256,20 @@ class UserController extends Controller
 			'username' => $request->username,
 			'email' => $request->email,
 			'phone' => $request->phone,
+			'department_id' => $request->department_id,
+			'abilities' => $request->abilities,
+			'is_active' => $request->is_active
 		];
 
 		// Admin-only fields
 		if ($isAdmin && !$isOwnerUpdate) {
 			$updateData['department_id'] = $request->department_id;
 			$updateData['abilities'] = json_encode($request->abilities);
+			
+			// Admin can update is_active status
+			if ($request->has('is_active')) {
+				$updateData['is_active'] = $request->boolean('is_active');
+			}
 		}
 
 		// Password update (both admin and owner can update password)
@@ -197,27 +281,6 @@ class UserController extends Controller
 		$user->load('department');
 
 		// Log user update activity
-		Log::info('User updated successfully', [
-			'updated_user_id' => $user->id,
-			'updated_user_email' => $user->email,
-			'updated_by' => Auth::id(),
-			'is_admin_update' => $isAdmin && !$isOwnerUpdate,
-			'is_owner_update' => $isOwnerUpdate,
-			'original_data' => $originalData,
-			'new_data' => array_merge([
-				'name' => $request->name,
-				'username' => $request->username,
-				'email' => $request->email,
-				'phone' => $request->phone,
-			], $isAdmin && !$isOwnerUpdate ? [
-				'department_id' => $request->department_id,
-				'abilities' => $request->abilities
-			] : []),
-			'password_changed' => $request->filled('password'),
-			'ip_address' => $request->ip(),
-			'user_agent' => $request->userAgent()
-		]);
-
 		return response()->json([
 			'success' => true,
 			'message' => 'Pengguna berjaya dikemaskini',
@@ -242,14 +305,14 @@ class UserController extends Controller
 
 		$request->validate([
 			'abilities' => 'required|array',
-			'abilities.*' => 'required|integer|in:' . implode(',', array_keys(Config::get('constants.abilities_name')))
+			'abilities.*' => 'required|integer|in:' . $this->getAbilitiesValidationList()
 		]);
 
 		$user->update([
 			'abilities' => json_encode($request->abilities)
 		]);
 
-		$abilities_name = Config::get('constants.abilities_name');
+		$abilities_name = $this->getAbilitiesConfig();
 
 		// Log ability update
 		Log::info('User abilities updated', [
@@ -322,10 +385,10 @@ class UserController extends Controller
 
 		// Get users yang ada abilities Finance Approver (6)
 		$users = User::with('department')
-			->whereRaw('JSON_CONTAINS(abilities, ?)', [json_encode(6)])
+			->whereRaw('JSON_CONTAINS(abilities, ?)', [json_encode(UserAbilities::FINANCE_APPROVER)])
 			->get();
 
-		$abilities_name = Config::get('constants.abilities_name');
+		$abilities_name = UserAbilities::getAbilitiesName();
 
 		return response()->json([
 			'success' => true,
@@ -348,7 +411,7 @@ class UserController extends Controller
 					}, $abilities),
 					'department_id' => $user->department_id,
 					'department' => $user->department ? $user->department->name : null,
-					'can_approve_finance' => in_array(6, $abilities)  // Finance Approver check
+					'can_approve_finance' => in_array(UserAbilities::FINANCE_APPROVER, $abilities)  // Finance Approver check
 				];
 			})
 		]);

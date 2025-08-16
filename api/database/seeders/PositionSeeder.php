@@ -31,7 +31,12 @@ class PositionSeeder extends Seeder
     ];
 
     foreach ($positions as $name) {
-      Position::create(['name' => $name]);
+      Position::create([
+        'name' => $name,
+        'code' => strtoupper(str_replace(' ', '_', $name)), // Generate code from name
+        'description' => 'Jawatan ' . $name,
+        'is_active' => true
+      ]);
     }
   }
 }

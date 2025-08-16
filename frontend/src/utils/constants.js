@@ -3,6 +3,70 @@
  * Application-wide constants and configuration
  */
 
+// User Abilities - Sync with API UserAbilities.php
+export const USER_ABILITIES = {
+  ADMIN: 1,
+  APPLICANT: 2,
+  HOD: 3,
+  FINANCE_CHECKER: 4,
+  FINANCE_VERIFIER: 5,
+  FINANCE_APPROVER: 6,
+  PAYMENT_MAKER: 7
+};
+
+export const USER_ABILITIES_NAMES = {
+  1: 'Pentadbir',
+  2: 'Pemohon',
+  3: 'Ketua Jabatan',
+  4: 'Pemeriksa Kewangan',
+  5: 'Penyemak Kewangan',
+  6: 'Pengesah Kewangan',
+  7: 'Pembuat Bayaran'
+};
+
+export const USER_ABILITIES_COLORS = {
+  1: 'bg-red-100 text-red-800',     // Admin
+  2: 'bg-blue-100 text-blue-800',   // Pemohon
+  3: 'bg-purple-100 text-purple-800', // HOD
+  4: 'bg-green-100 text-green-800', // Pemeriksa Kewangan
+  5: 'bg-yellow-100 text-yellow-800', // Penyemak Kewangan
+  6: 'bg-pink-100 text-pink-800',   // Pengesah Kewangan
+  7: 'bg-gray-100 text-gray-800'    // Pembuat Bayaran
+};
+
+// Menu permissions mapping (sync with API ABILITIES_MENU)
+export const ABILITIES_MENU = {
+  1: ['all'], // Admin boleh akses semua menu
+  2: ['dashboard.view', 'billing.create', 'billing.incomplete', 'billing.archive'], // Pemohon
+  3: ['dashboard.view', 'billing.hod'], // Ketua Jabatan
+  4: ['dashboard.view', 'billing.finance'], // Penyemak Kewangan
+  5: ['dashboard.view', 'billing.finance'], // Pengesah Kewangan
+  6: ['dashboard.view', 'billing.finance'], // Pelulus Kewangan
+  7: ['dashboard.view', 'billing.finance']  // Pembayar
+};
+
+// User Abilities Helper Functions
+export const getAbilityName = (abilityId) => {
+  return USER_ABILITIES_NAMES[abilityId] || `Peranan ${abilityId}`;
+};
+
+export const getAbilityColor = (abilityId) => {
+  return USER_ABILITIES_COLORS[abilityId] || 'bg-gray-100 text-gray-800';
+};
+
+export const hasPermission = (userAbilities, permission) => {
+  if (!userAbilities || !Array.isArray(userAbilities)) return false;
+  
+  // Admin has all permissions
+  if (userAbilities.includes(USER_ABILITIES.ADMIN)) return true;
+  
+  // Check specific permissions for other roles
+  return userAbilities.some(abilityId => {
+    const menuPermissions = ABILITIES_MENU[abilityId] || [];
+    return menuPermissions.includes(permission) || menuPermissions.includes('all');
+  });
+};
+
 // API Endpoints
 export const API_ENDPOINTS = {
   // Authentication
@@ -307,6 +371,13 @@ export const DEFAULTS = {
 };
 
 export default {
+  USER_ABILITIES,
+  USER_ABILITIES_NAMES,
+  USER_ABILITIES_COLORS,
+  ABILITIES_MENU,
+  getAbilityName,
+  getAbilityColor,
+  hasPermission,
   API_ENDPOINTS,
   ROLE_TYPES,
   ROLE_COLORS,

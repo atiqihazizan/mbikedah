@@ -12,9 +12,13 @@ export const useUserActions = (logout) => {
   
   const handleLogout = useCallback(async () => {
     try {
-      logout();
+      // Call logout function from context
+      await logout();
+      // Note: Redirect is now handled in ContextProvider logout function
     } catch (error) {
       console.error('Logout error:', error);
+      // Force redirect to login even if logout fails
+      window.location.href = '/login';
     }
   }, [logout]);
 

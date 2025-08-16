@@ -2,16 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import apiClient from '../../utils/axios';
-
-const abilities = {
-  1: 'Pentadbir',
-  2: 'Pemohon',
-  3: 'Ketua Jabatan',
-  4: 'Penyemak',
-  5: 'Pengesah',
-  6: 'Pelulus',
-  7: 'Pembayar',
-};
+import { USER_ABILITIES_NAMES } from '../../utils/constants';
 
 export default function UserAbilitiesModal({ user, show = false, onClose }) {
   const [selectedAbilities, setSelectedAbilities] = useState([]);
@@ -79,7 +70,7 @@ export default function UserAbilitiesModal({ user, show = false, onClose }) {
 
             <div className="space-y-2">
               <p className="font-medium mb-2">Pilih Peranan:</p>
-              {Object.entries(abilities).map(([id, name]) => (
+              {Object.entries(USER_ABILITIES_NAMES).map(([id, name]) => (
                 <label
                   key={id}
                   className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50"

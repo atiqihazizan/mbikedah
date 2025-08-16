@@ -44,12 +44,19 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle token expiration
-    // if (error.response?.status === 401) {
-    //   localStorage.removeItem("MBI_TOKEN");
-    //   window.location.href = '/login';
-    //   return Promise.reject(new Error('Sesi anda telah tamat. Sila log masuk semula.'));
-    // }
+    // Handle token expiration and unauthorized access
+    if (error.response?.status === 401) {
+      // Clear token and redirect to login
+      localStorage.removeItem("MBI_TOKEN");
+      if (apiClient.defaults.headers.common["Authorization"]) {
+        delete apiClient.defaults.headers.common["Authorization"];
+      }
+      // Force redirect to login
+      if (window.location.pathname !== "/login") {
+        window.location.href = '/login';
+      }
+      return Promise.reject(new Error('Sesi anda telah tamat. Sila log masuk semula.'));
+    }
 
     // Retry logic for network errors or 5xx errors
     if (

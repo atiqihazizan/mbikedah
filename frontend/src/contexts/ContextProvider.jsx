@@ -32,9 +32,15 @@ export const ContextProvider = ({ children }) => {
     if (token && token !== "undefined" && token !== "null" && token.trim() !== "") {
       localStorage.setItem("MBI_TOKEN", token);
       _setUserToken(token);
+      // Set axios default header
+      apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     } else {
       localStorage.removeItem("MBI_TOKEN");
       _setUserToken("");
+      // Clear axios default header
+      if (apiClient.defaults.headers.common["Authorization"]) {
+        delete apiClient.defaults.headers.common["Authorization"];
+      }
       // Can't use navigate here, handle redirection in useEffect
     }
   };
@@ -42,31 +48,37 @@ export const ContextProvider = ({ children }) => {
   const logout = async (ev) => {
     if (ev) ev.preventDefault();
     
-    setIsLoading(true); // Set loading during logout process
+    // Immediately clear user data and token to prevent access denied
+    setCurrentUser(null);
+    setUserToken("");
+    localStorage.removeItem("MBI_TOKEN");
+    
+    // Clear axios default headers
+    if (apiClient.defaults.headers.common["Authorization"]) {
+      delete apiClient.defaults.headers.common["Authorization"];
+    }
     
     try {
-      // Hanya cuba panggilan API jika token wujud
+      // Only try API call if token exists and is valid
       if (userToken && userToken !== "undefined" && userToken !== "null" && userToken.trim() !== "") {
         await apiClient.post("/auth/logout");
       }
-      setCurrentUser({});
-      setUserToken(null);
-      // Redirect will be handled by useEffect
     } catch (error) {
       console.error("Ralat semasa log keluar. Sila cuba sebentar lagi.");
-      // Tetap navigasi ke login walaupun API logout gagal
-      setCurrentUser({});
-      setUserToken(null);
-      // Redirect will be handled by useEffect
+      // Continue with logout even if API fails
     } finally {
       setIsLoading(false);
+      // Force redirect to login immediately
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
     }
   };
 
   useEffect(() => {
     // Periksa token tidak sah dan redirect jika perlu
     if (!userToken || userToken === "undefined" || userToken === "null" || userToken.trim() === "") {
-      setCurrentUser({});
+      setCurrentUser(null);
       setIsLoading(false); // Stop loading when no token
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
@@ -85,8 +97,9 @@ export const ContextProvider = ({ children }) => {
         const { success, user } = response.data || response;
         
         if (!success || !user) {
-          setCurrentUser({});
-          setUserToken(null); // Ini akan mencetuskan navigasi ke login
+          setCurrentUser(null);
+          setUserToken(""); // Clear token immediately
+          localStorage.removeItem("MBI_TOKEN");
           if (user && user.message) {
             console.error(user.message);
           }
@@ -96,8 +109,9 @@ export const ContextProvider = ({ children }) => {
       } catch (error) {
         console.error("Ralat semasa mendapatkan maklumat pengguna:", error);
         // Kendalikan ralat pengesahan (401, 403) atau ralat lain
-        setCurrentUser({});
-        setUserToken(null); // Ini akan mencetuskan navigasi ke login
+        setCurrentUser(null);
+        setUserToken(""); // Clear token immediately
+        localStorage.removeItem("MBI_TOKEN");
       } finally {
         setIsLoading(false); // Stop loading after request completes
         requestInProgress.current = false;
@@ -110,6 +124,8 @@ export const ContextProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem("MBI_TOKEN");
     if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+      setCurrentUser(null);
+      setUserToken("");
       setIsLoading(false); // Stop loading if no token on mount
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";

@@ -18,13 +18,13 @@ import {
   FaCog, 
   FaChartBar, 
   FaUsers, 
-  FaUserTie, 
   FaSignOutAlt,
   FaMoon,
   FaSun,
   FaBars,
   FaTimes,
-  FaBuilding
+  FaBuilding,
+  FaUserTie
 } from 'react-icons/fa';
 
 /**
@@ -222,18 +222,19 @@ const AdminSidebar = ({ currentSection, isDark, onClose }) => {
       description: "Manage departments"
     },
     {
-      id: 'roles',
+      id: 'positions',
       icon: FaUserTie,
-      label: "Role Management",
-      path: "/admin/roles",
-      description: "Manage user roles and permissions"
+      label: "Position Management",
+      path: "/admin/positions",
+      description: "Manage job positions"
     },
     {
       id: 'system',
       icon: FaCog,
       label: "System Settings",
       path: "/admin/system",
-      description: "Configure system settings"
+      description: "Configure system settings",
+      disabled: true
     }
   ];
 
@@ -272,33 +273,41 @@ const AdminSidebar = ({ currentSection, isDark, onClose }) => {
           {adminMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
+            const isDisabled = item.disabled;
             
             return (
               <button
                 key={item.id}
-                onClick={() => handleSectionChange(item.path)}
+                onClick={() => !isDisabled && handleSectionChange(item.path)}
+                disabled={isDisabled}
                 className={`w-full flex items-start px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                  isActive
+                  isDisabled
                     ? isDark
-                      ? 'bg-blue-900 text-blue-200 border border-blue-700'
-                      : 'bg-blue-50 text-blue-700 border border-blue-200'
-                    : isDark
-                      ? 'text-gray-300 hover:text-white hover:bg-gray-700'
-                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed opacity-50'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+                    : isActive
+                      ? isDark
+                        ? 'bg-blue-900 text-blue-200 border border-blue-700'
+                        : 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : isDark
+                        ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                        : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
                 }`}
-                title={item.description}
+                title={isDisabled ? "System Settings is currently disabled" : item.description}
               >
                 <Icon className={`w-5 h-5 mr-3 mt-0.5 ${
-                  isActive ? '' : 'opacity-70'
+                  isDisabled ? 'opacity-30' : isActive ? '' : 'opacity-70'
                 }`} />
                 <div className="text-left">
                   <div className="font-medium">{item.label}</div>
                   <div className={`text-xs mt-1 ${
-                    isActive 
-                      ? isDark ? 'text-blue-300' : 'text-blue-600'
-                      : isDark ? 'text-gray-500' : 'text-gray-400'
+                    isDisabled
+                      ? isDark ? 'text-gray-500' : 'text-gray-400'
+                      : isActive 
+                        ? isDark ? 'text-blue-300' : 'text-blue-600'
+                        : isDark ? 'text-gray-500' : 'text-gray-400'
                   }`}>
-                    {item.description}
+                    {isDisabled ? "Currently disabled" : item.description}
                   </div>
                 </div>
               </button>
