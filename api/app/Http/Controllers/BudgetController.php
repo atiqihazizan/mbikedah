@@ -1447,11 +1447,12 @@ class BudgetController extends Controller
 	{
 		try {
 			$data = Cache::remember('income_expenditure_statement_data', now()->addMinutes(self::CACHE_TTL), function () {
-				// Get revenue data (type 0, 1) - only level 0 and 1
-				$revenues = Budget::whereIn('type', [0, 1])
+				// Get revenue data (type 1) - only level 0 and 1
+				$revenues = Budget::where('type', 1)
 					->whereIn('level', [0, 1])
 					->where('is_group', false)
 					->with(['department', 'parent', 'children'])
+					->orderBy('sort_order')
 					->get();
 
 				// Get expenditure data (type 2) - only level 0 and 1
@@ -1459,30 +1460,27 @@ class BudgetController extends Controller
 					->whereIn('level', [0, 1])
 					->where('is_group', false)
 					->with(['department', 'parent', 'children'])
+					->orderBy('sort_order')
 					->get();
+
+				// Initialize monthly arrays
+				$months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+				$revenueMonthlyTotals = array_fill_keys($months, 0);
+				$expenditureMonthlyTotals = array_fill_keys($months, 0);
 
 				// Build hierarchical revenue structure with monthly data
 				$revenueHierarchy = [];
 				$revenueRoots = $revenues->where('level', 0);
-				$revenueMonthlyTotals = [
-					'JAN' => 0, 'FEB' => 0, 'MAR' => 0, 'APR' => 0, 'MAY' => 0, 'JUN' => 0,
-					'JUL' => 0, 'AUG' => 0, 'SEP' => 0, 'OCT' => 0, 'NOV' => 0, 'DEC' => 0
-				];
 				
 				foreach ($revenueRoots as $root) {
-					$rootMonthly = [
-						'JAN' => $root->bdg1 ?? 0, 'FEB' => $root->bdg2 ?? 0, 'MAR' => $root->bdg3 ?? 0,
-						'APR' => $root->bdg4 ?? 0, 'MAY' => $root->bdg5 ?? 0, 'JUN' => $root->bdg6 ?? 0,
-						'JUL' => $root->bdg7 ?? 0, 'AUG' => $root->bdg8 ?? 0, 'SEP' => $root->bdg9 ?? 0,
-						'OCT' => $root->bdg10 ?? 0, 'NOV' => $root->bdg11 ?? 0, 'DEC' => $root->bdg12 ?? 0
-					];
-
+					$rootMonthly = $this->extractMonthlyData($root, 'bdg');
+					
 					$rootItem = [
 						'id' => $root->id,
 						'code' => $root->code,
 						'description' => $root->name,
 						'monthly' => $rootMonthly,
-						'department' => $root->department?->name,
+						'department' => $root->department?->name ?? 'N/A',
 						'level' => $root->level,
 						'children' => []
 					];
@@ -1495,27 +1493,22 @@ class BudgetController extends Controller
 					// Get children (level 1)
 					$children = $revenues->where('parent_id', $root->id);
 					foreach ($children as $child) {
-						$childMonthly = [
-							'JAN' => $child->bdg1 ?? 0, 'FEB' => $child->bdg2 ?? 0, 'MAR' => $child->bdg3 ?? 0,
-							'APR' => $child->bdg4 ?? 0, 'MAY' => $child->bdg5 ?? 0, 'JUN' => $child->bdg6 ?? 0,
-							'JUL' => $child->bdg7 ?? 0, 'AUG' => $child->bdg8 ?? 0, 'SEP' => $child->bdg9 ?? 0,
-							'OCT' => $child->bdg10 ?? 0, 'NOV' => $child->bdg11 ?? 0, 'DEC' => $child->bdg12 ?? 0
-						];
-
+						$childMonthly = $this->extractMonthlyData($child, 'bdg');
+						
 						$rootItem['children'][] = [
 							'id' => $child->id,
 							'code' => $child->code,
 							'description' => $child->name,
 							'monthly' => $childMonthly,
-							'department' => $child->department?->name,
+							'department' => $child->department?->name ?? 'N/A',
 							'level' => $child->level,
 							'parent_id' => $child->parent_id
 						];
 
 						// Add to monthly totals
-						foreach ($childMonthly as $month => $amount) {
-							$revenueMonthlyTotals[$month] += $amount;
-						}
+						// foreach ($childMonthly as $month => $amount) {
+						// 	$revenueMonthlyTotals[$month] += $amount;
+						// }
 					}
 
 					$revenueHierarchy[] = $rootItem;
@@ -1524,25 +1517,16 @@ class BudgetController extends Controller
 				// Build hierarchical expenditure structure with monthly data
 				$expenditureHierarchy = [];
 				$expenditureRoots = $expenditures->where('level', 0);
-				$expenditureMonthlyTotals = [
-					'JAN' => 0, 'FEB' => 0, 'MAR' => 0, 'APR' => 0, 'MAY' => 0, 'JUN' => 0,
-					'JUL' => 0, 'AUG' => 0, 'SEP' => 0, 'OCT' => 0, 'NOV' => 0, 'DEC' => 0
-				];
 				
 				foreach ($expenditureRoots as $root) {
-					$rootMonthly = [
-						'JAN' => $root->bdg1 ?? 0, 'FEB' => $root->bdg2 ?? 0, 'MAR' => $root->bdg3 ?? 0,
-						'APR' => $root->bdg4 ?? 0, 'MAY' => $root->bdg5 ?? 0, 'JUN' => $root->bdg6 ?? 0,
-						'JUL' => $root->bdg7 ?? 0, 'AUG' => $root->bdg8 ?? 0, 'SEP' => $root->bdg9 ?? 0,
-						'OCT' => $root->bdg10 ?? 0, 'NOV' => $root->bdg11 ?? 0, 'DEC' => $root->bdg12 ?? 0
-					];
-
+					$rootMonthly = $this->extractMonthlyData($root, 'bdg');
+					
 					$rootItem = [
 						'id' => $root->id,
 						'code' => $root->code,
 						'description' => $root->name,
 						'monthly' => $rootMonthly,
-						'department' => $root->department?->name,
+						'department' => $root->department?->name ?? 'N/A',
 						'level' => $root->level,
 						'children' => []
 					];
@@ -1555,27 +1539,22 @@ class BudgetController extends Controller
 					// Get children (level 1)
 					$children = $expenditures->where('parent_id', $root->id);
 					foreach ($children as $child) {
-						$childMonthly = [
-							'JAN' => $child->bdg1 ?? 0, 'FEB' => $child->bdg2 ?? 0, 'MAR' => $child->bdg3 ?? 0,
-							'APR' => $child->bdg4 ?? 0, 'MAY' => $child->bdg5 ?? 0, 'JUN' => $child->bdg6 ?? 0,
-							'JUL' => $child->bdg7 ?? 0, 'AUG' => $child->bdg8 ?? 0, 'SEP' => $child->bdg9 ?? 0,
-							'OCT' => $child->bdg10 ?? 0, 'NOV' => $child->bdg11 ?? 0, 'DEC' => $child->bdg12 ?? 0
-						];
-
+						$childMonthly = $this->extractMonthlyData($child, 'bdg');
+						
 						$rootItem['children'][] = [
 							'id' => $child->id,
 							'code' => $child->code,
 							'description' => $child->name,
 							'monthly' => $childMonthly,
-							'department' => $child->department?->name,
+							'department' => $child->department?->name ?? 'N/A',
 							'level' => $child->level,
 							'parent_id' => $child->parent_id
 						];
 
 						// Add to monthly totals
-						foreach ($childMonthly as $month => $amount) {
-							$expenditureMonthlyTotals[$month] += $amount;
-						}
+						// foreach ($childMonthly as $month => $amount) {
+						// 	$expenditureMonthlyTotals[$month] += $amount;
+						// }
 					}
 
 					$expenditureHierarchy[] = $rootItem;
@@ -1584,68 +1563,52 @@ class BudgetController extends Controller
 				// Calculate net position monthly
 				$netPositionMonthly = [];
 				$netPositionTotal = 0;
-				foreach (['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] as $month) {
+				foreach ($months as $month) {
 					$netPositionMonthly[$month] = $revenueMonthlyTotals[$month] - $expenditureMonthlyTotals[$month];
 					$netPositionTotal += $netPositionMonthly[$month];
 				}
 
-				// Calculate monthly values for footer
-				$openingBalanceMonthly = [
-					'JAN' => 1021929.88, 'FEB' => null, 'MAR' => 1491501.51, 'APR' => 4911934.77,
-					'MAY' => 11799896.84, 'JUN' => 11791605.20, 'JUL' => 5716533.21, 'AUG' => 7287479.81,
-					'SEP' => 6722625.10, 'OCT' => 5974083.45, 'NOV' => 4927259.44, 'DEC' => 4512603.08
-				];
-
-				$fixedDepositMonthly = [
-					'JAN' => 1000000.00, 'FEB' => null, 'MAR' => 500000.00, 'APR' => null,
-					'MAY' => null, 'JUN' => 500000.00, 'JUL' => null, 'AUG' => null,
-					'SEP' => null, 'OCT' => null, 'NOV' => null, 'DEC' => null
-				];
-
-				$specialSavingsMonthly = [
-					'JAN' => 1063096.14, 'FEB' => 86192.60, 'MAR' => 174776.61, 'APR' => 281477.10,
-					'MAY' => 50449.86, 'JUN' => 47485.98, 'JUL' => 155814.59, 'AUG' => 26479.02,
-					'SEP' => 79668.01, 'OCT' => 32986.53, 'NOV' => 62206.53, 'DEC' => 6358.48
-				];
-
-				$runningBalanceMonthly = [
-					'JAN' => 3115635.71, 'FEB' => 1491501.51, 'MAR' => 4911934.77, 'APR' => 11799896.84,
-					'MAY' => 11791605.20, 'JUN' => 5716533.21, 'JUL' => 7287479.81, 'AUG' => 6722625.10,
-					'SEP' => 5974083.45, 'OCT' => 4927259.44, 'NOV' => 4512603.08, 'DEC' => 2912592.81
-				];
+				// Get financial position data from configuration or database
+				$financialPosition = $this->getFinancialPositionData();
 
 				$statementData = [
 					'income' => [
-						'total' => $revenues->sum('bdgtotal'),
-						'actual' => $revenues->sum('acttotal'),
+						'total' => $revenues->sum('bdgtotal') ?? 0,
+						'actual' => $revenues->sum('acttotal') ?? 0,
 						'monthly' => $revenueMonthlyTotals,
 						'items' => $revenueHierarchy
 					],
 					'expenditure' => [
-						'total' => $expenditures->sum('bdgtotal'),
-						'actual' => $expenditures->sum('acttotal'),
+						'total' => $expenditures->sum('bdgtotal') ?? 0,
+						'actual' => $expenditures->sum('acttotal') ?? 0,
 						'monthly' => $expenditureMonthlyTotals,
 						'items' => $expenditureHierarchy
 					],
 					'summary' => [
-						'netIncome' => $revenues->sum('bdgtotal') - $expenditures->sum('bdgtotal'),
-						'netActual' => $revenues->sum('acttotal') - $expenditures->sum('acttotal'),
+						'netIncome' => ($revenues->sum('bdgtotal') ?? 0) - ($expenditures->sum('bdgtotal') ?? 0),
+						'netActual' => ($revenues->sum('acttotal') ?? 0) - ($expenditures->sum('acttotal') ?? 0),
 						'netPosition' => [
 							'monthly' => $netPositionMonthly,
 							'total' => $netPositionTotal
 						],
-						'openingBalance' => $openingBalanceMonthly,
+						'openingBalance' => $financialPosition['openingBalance'],
 						'fixedDepositAmounts' => [
-							'monthly' => $fixedDepositMonthly,
-							'total' => array_sum(array_filter($fixedDepositMonthly, function($val) { return $val !== null; }))
+							'monthly' => $financialPosition['fixedDeposit'],
+							'total' => array_sum(array_filter($financialPosition['fixedDeposit'], function($val) { 
+								return $val !== null && is_numeric($val); 
+							}))
 						],
 						'specialSavings' => [
-							'monthly' => $specialSavingsMonthly,
-							'total' => array_sum($specialSavingsMonthly)
+							'monthly' => $financialPosition['specialSavings'],
+							'total' => array_sum(array_filter($financialPosition['specialSavings'], function($val) { 
+								return $val !== null && is_numeric($val); 
+							}))
 						],
 						'runningBalance' => [
-							'monthly' => $runningBalanceMonthly,
-							'total' => array_sum($runningBalanceMonthly)
+							'monthly' => $financialPosition['runningBalance'],
+							'total' => array_sum(array_filter($financialPosition['runningBalance'], function($val) { 
+								return $val !== null && is_numeric($val); 
+							}))
 						],
 						'year' => date('Y'),
 						'generated_at' => now()->toDateTimeString()
@@ -1655,19 +1618,81 @@ class BudgetController extends Controller
 				return $statementData;
 			});
 
+			// Log what we're sending
+			Log::info('Sending income expenditure statement response:', [
+				'success' => true,
+				'data' => $data,
+				'source' => Cache::has('income_expenditure_statement_data') ? 'cache' : 'database'
+			]);
+
+			// Return response in the exact structure the frontend expects
 			return response()->json([
 				'success' => true,
 				'data' => $data,
 				'source' => Cache::has('income_expenditure_statement_data') ? 'cache' : 'database'
 			]);
+			
 		} catch (\Exception $e) {
-			Log::error('Error getting income expenditure statement data: ' . $e->getMessage());
+			Log::error('Error getting income expenditure statement data: ' . $e->getMessage(), [
+				'file' => $e->getFile(),
+				'line' => $e->getLine(),
+				'trace' => $e->getTraceAsString()
+			]);
+			
 			return response()->json([
 				'success' => false,
 				'message' => 'Ralat mendapatkan data penyata pendapatan dan perbelanjaan',
-				'error' => $e->getMessage()
+				'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
 			], 500);
 		}
+	}
+
+	/**
+	 * Extract monthly data from budget model
+	 */
+	private function extractMonthlyData($budget, $prefix = 'bdg')
+	{
+		$months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+		$monthlyData = [];
+		
+		foreach ($months as $index => $month) {
+			$fieldName = $prefix . ($index + 1);
+			$monthlyData[$month] = $budget->$fieldName ?? 0;
+		}
+		
+		return $monthlyData;
+	}
+
+	/**
+	 * Get financial position data (opening balance, fixed deposits, etc.)
+	 * This can be moved to a configuration file or database table in the future
+	 */
+	private function getFinancialPositionData()
+	{
+		// These values should ideally come from a configuration file or database
+		// For now, keeping them as constants but they can be made configurable
+		return [
+			'openingBalance' => [
+				'JAN' => 1021929.88, 'FEB' => null, 'MAR' => 1491501.51, 'APR' => 4911934.77,
+				'MAY' => 11799896.84, 'JUN' => 11791605.20, 'JUL' => 5716533.21, 'AUG' => 7287479.81,
+				'SEP' => 6722625.10, 'OCT' => 5974083.45, 'NOV' => 4927259.44, 'DEC' => 4512603.08
+			],
+			'fixedDeposit' => [
+				'JAN' => 1000000.00, 'FEB' => null, 'MAR' => 500000.00, 'APR' => null,
+				'MAY' => null, 'JUN' => 500000.00, 'JUL' => null, 'AUG' => null,
+				'SEP' => null, 'OCT' => null, 'NOV' => null, 'DEC' => null
+			],
+			'specialSavings' => [
+				'JAN' => 1063096.14, 'FEB' => 86192.60, 'MAR' => 174776.61, 'APR' => 281477.10,
+				'MAY' => 50449.86, 'JUN' => 47485.98, 'JUL' => 155814.59, 'AUG' => 26479.02,
+				'SEP' => 79668.01, 'OCT' => 32986.53, 'NOV' => 62206.53, 'DEC' => 6358.48
+			],
+			'runningBalance' => [
+				'JAN' => 3115635.71, 'FEB' => 1491501.51, 'MAR' => 4911934.77, 'APR' => 11799896.84,
+				'MAY' => 11791605.20, 'JUN' => 5716533.21, 'JUL' => 7287479.81, 'AUG' => 6722625.10,
+				'SEP' => 5974083.45, 'OCT' => 4927259.44, 'NOV' => 4512603.08, 'DEC' => 2912592.81
+			]
+		];
 	}
 
 	// ==================== PRIVATE HELPER METHODS ====================

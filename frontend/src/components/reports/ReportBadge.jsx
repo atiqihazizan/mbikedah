@@ -225,7 +225,8 @@ const BadgeContent = ({
     )}
 
     {/* Report Title */}
-    <span className="font-medium truncate max-w-32">
+    {/* <span className="font-medium truncate max-w-32"> */}
+    <span className="font-medium truncate ">
       {/* {size === 'sm' ? (report.shortTitle || report.title?.substring(0, 10) + '...') : report.title} */}
       {report.title}
     </span>

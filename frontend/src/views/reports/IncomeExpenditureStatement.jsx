@@ -131,10 +131,19 @@ function IncomeExpenditureStatement() {
       <div className="p-6 bg-white min-h-screen">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <p className="font-medium text-red-600 mb-3">Ralat memuat data</p>
-          <TButton onClick={refetchStatement} color="primary" size="sm">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Cuba Lagi
-          </TButton>
+          <p className="text-sm text-red-500 mb-4">
+            {userError || error || 'Unknown error occurred'}
+          </p>
+          <div className="flex justify-center space-x-2">
+            <TButton onClick={refetch} color="secondary" size="sm">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Muat Semula User Data
+            </TButton>
+            <TButton onClick={refetchStatement} color="primary" size="sm">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Cuba Lagi Statement
+            </TButton>
+          </div>
         </div>
       </div>
     );
@@ -162,7 +171,7 @@ function IncomeExpenditureStatement() {
       ...data.map((item, index) => (
         <tr key={`${title}-${index}`} className={`hover:bg-gray-50 print:hover:bg-transparent ${item.isChild ? 'bg-gray-50' : ''}`}>
           <td className="border border-gray-400 px-2 py-1 text-xs text-center">
-            {item.isChild && item.code}
+            {item.isChild ? item.code : ''}
           </td>
           <td className={`border border-gray-400 px-2 py-1 text-xs ${item.isChild ? 'pl-6' : 'font-bold'}`}>
             {item.isChild && <span className="text-gray-400 mr-2">&nbsp;</span>}
@@ -170,14 +179,15 @@ function IncomeExpenditureStatement() {
           </td>
           {monthNames.map(month => (
             <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
-              {item.isChild && formatCurrency(item.monthly?.[month] || 0)}
+              {item.isChild ? formatCurrency(item.monthly?.[month] || 0) : 
+               item.isParent ? formatCurrency(item.monthly?.[month] || 0) : '-'}
             </td>
           ))}
         </tr>
       )),
       
       // Category Total
-      ...(totals ? [(
+      ...(totals && Object.keys(totals).length > 0 ? [(
         <tr key={`${title}-total`} className={`${bgColor} font-semibold print:${bgColor}`}>
           <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs">
             JUMLAH {title}
@@ -202,6 +212,11 @@ function IncomeExpenditureStatement() {
             <h1 className="text-xl font-bold text-gray-900">
               RINGKASAN ANGGARAN PENERIMAAN DAN PEMBAYARAN BAGI TAHUN {summaryData?.budgetYear}
             </h1>
+            {dataSource && (
+              <p className="text-sm text-gray-600 mt-1">
+                Data source: {dataSource} • Last updated: {summaryData?.generated_at ? new Date(summaryData.generated_at).toLocaleString('ms-MY') : 'Unknown'}
+              </p>
+            )}
           </div>
           <div className="flex space-x-2">
             <TButton onClick={refetchStatement} color="secondary" size="sm">
@@ -453,6 +468,32 @@ function IncomeExpenditureStatement() {
           </table>
         </div>
       </div>
+
+      {/* Debug Information - Only visible in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="p-4 border-t print:hidden">
+          <details className="text-xs text-gray-600">
+            <summary className="cursor-pointer font-medium">Debug Information</summary>
+            <div className="mt-2 space-y-2">
+              <div>
+                <strong>Statement Data:</strong> {statementData ? 'Loaded' : 'Not loaded'}
+              </div>
+              <div>
+                <strong>Income Items:</strong> {incomeData?.operatingRevenue?.length || 0} items
+              </div>
+              <div>
+                <strong>Expenditure Items:</strong> {expenditureData?.nonCurrentAssets?.length || 0} items
+              </div>
+              <div>
+                <strong>Summary Data:</strong> {summaryData ? 'Available' : 'Not available'}
+              </div>
+              <div>
+                <strong>Data Source:</strong> {dataSource || 'Unknown'}
+              </div>
+            </div>
+          </details>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,7 +13,7 @@ const ToolbarBadgesSection = ({ userRoles, isLoading }) => {
     },
     {
       id: 'income_statement', 
-      title: 'Penyata Hasil', 
+      title: 'Penyata Hasil & Belanja', 
       type: 'income_statement', 
       status: 'Completed', 
       priority: 'High',
