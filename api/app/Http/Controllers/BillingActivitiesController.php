@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class BillingActivitiesController extends Controller
 {
@@ -236,44 +237,8 @@ class BillingActivitiesController extends Controller
       $billing->paid_by = Auth::id();
       $billing->save();
 
-      // Update budget actuals (gabungan dari updateBudgetActuals method)
-      $approvedDetails = $billing->details()->where('approve', true)->get();
-      $budgetData = [];
-      $month = $billing->paid_at ? $billing->paid_at->format('n') : now()->month;
-
-      foreach ($approvedDetails as $detail) {
-        if (!$detail->budget_id)
-          continue;
-
-        $budgetData[$detail->budget_id] = ($budgetData[$detail->budget_id] ?? 0) + $detail->total;
-      }
-
-      // Update setiap budget
-      foreach ($budgetData as $budgetId => $amount) {
-        $budget = Budget::find($budgetId);
-        if (!$budget)
-          continue;
-
-        // Dapatkan current actual untuk bulan tersebut
-        $monthField = 'act' . $month;
-        $currentActual = $budget->$monthField;
-
-        // Update actual untuk bulan tersebut
-        $budget->$monthField = $currentActual + $amount;
-
-        // Kira semula acttotal
-        $actTotal = 0;
-        for ($i = 1; $i <= 12; $i++) {
-          $actField = 'act' . $i;
-          $actTotal += $budget->$actField;
-        }
-
-        // Update acttotal dan balance
-        $budget->acttotal = $actTotal;
-        $budget->balance = $budget->bdgtotal - $actTotal;
-
-        $budget->save();
-      }
+      // Update budget actuals dengan function baru
+      $this->updateBudgetHierarchy($billing);
 
       $billing->updateStatus(BillingStatus::COMPLETED, Auth::id(), $remarks);
       DB::commit();
@@ -285,6 +250,72 @@ class BillingActivitiesController extends Controller
     } catch (AuthorizationException $e) {
       DB::rollBack();
       return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
+    }
+  }
+
+  /**
+   * Update budget hierarchy dari sub budget hingga main budget
+   * Function ini akan update actual budget dan recalculate total berdasarkan relation
+   */
+  private function updateBudgetHierarchy(Billing $billing)
+  {
+    try {
+      $month = $billing->paid_at ? $billing->paid_at->format('n') : now()->month;
+      
+      // Dapatkan semua detail billing yang approved
+      $approvedDetails = $billing->details()->where('approve', 1)->get();
+      
+      // Group by budget_id untuk mengelakkan duplicate
+      $budgetData = [];
+      foreach ($approvedDetails as $detail) {
+        if (!$detail->budget_id) continue;
+        
+        $budgetId = $detail->budget_id;
+        $amount = $detail->price * $detail->quantity;
+        
+        if (!isset($budgetData[$budgetId])) {
+          $budgetData[$budgetId] = 0;
+        }
+        $budgetData[$budgetId] += $amount;
+      }
+
+      // Update setiap budget dan parent budget
+      foreach ($budgetData as $budgetId => $amount) {
+        $this->updateBudgetAndParents($budgetId, $amount, $month);
+      }
+      
+    } catch (Exception $e) {
+      Log::error('Error updating budget hierarchy: ' . $e->getMessage());
+      throw $e;
+    }
+  }
+
+  /**
+   * Update budget dan semua parent budget secara recursive
+   */
+  private function updateBudgetAndParents($budgetId, $amount, $month)
+  {
+    $budget = Budget::find($budgetId);
+    if (!$budget) return;
+
+    // Update actual untuk bulan tersebut
+    $monthField = 'act' . $month;
+    $currentActual = $budget->$monthField ?? 0;
+    $budget->$monthField = $currentActual + $amount;
+
+    // Recalculate acttotal untuk budget ini
+    $actTotal = 0;
+    for ($i = 1; $i <= 12; $i++) {
+      $actField = 'act' . $i;
+      $actTotal += ($budget->$actField ?? 0);
+    }
+    $budget->acttotal = $actTotal;
+    $budget->balance = ($budget->bdgtotal ?? 0) - $actTotal;
+    $budget->save();
+
+    // Update parent budget jika ada
+    if ($budget->parent_id) {
+      $this->updateBudgetAndParents($budget->parent_id, $amount, $month);
     }
   }
 

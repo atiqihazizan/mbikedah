@@ -132,6 +132,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/{id}/budget-allocation', [BudgetController::class, 'updateBudgetAllocation']);
     Route::put('/{id}/actual-spending', [BudgetController::class, 'updateActualSpending']);
     Route::put('/{id}/structure', [BudgetController::class, 'updateBudgetStructure']);
+    
+    // Maintenance Routes
+    Route::post('/maintenance/update-all-parents-cumulative', [BudgetController::class, 'updateAllParentBudgetsCumulative']);
   });
 
   /*

@@ -94,6 +94,9 @@ class BudgetController extends Controller
 
 			DB::commit();
 
+			// Update parent budget cumulative totals automatically
+			$this->updateParentBudgetCumulative($budget->id);
+
 			// Clear all budget-related cache
 			$this->clearAllBudgetCache();
 
@@ -199,6 +202,9 @@ class BudgetController extends Controller
 			}
 
 			DB::commit();
+
+			// Update parent budget cumulative totals automatically
+			$this->updateParentBudgetCumulative($id);
 
 			// Clear all budget-related cache
 			$this->clearAllBudgetCache();
@@ -399,6 +405,9 @@ class BudgetController extends Controller
 
 			DB::commit();
 
+			// Update parent budget cumulative totals automatically
+			$this->updateParentBudgetCumulative($id);
+
 			// Clear cache
 			$this->clearAllBudgetCache();
 
@@ -479,6 +488,9 @@ class BudgetController extends Controller
 
 			DB::commit();
 
+			// Update parent budget cumulative totals automatically
+			$this->updateParentBudgetCumulative($id);
+
 			// Clear cache
 			$this->clearAllBudgetCache();
 
@@ -551,6 +563,9 @@ class BudgetController extends Controller
 
 			DB::commit();
 
+			// Update parent budget cumulative totals automatically
+			$this->updateParentBudgetCumulative($id);
+
 			// Clear all budget-related cache
 			$this->clearAllBudgetCache();
 
@@ -606,6 +621,9 @@ class BudgetController extends Controller
 			$budget->save();
 
 			DB::commit();
+
+			// Update parent budget cumulative totals automatically
+			$this->updateParentBudgetCumulative($id);
 
 			// Clear cache
 			$this->clearAllBudgetCache();
@@ -663,6 +681,11 @@ class BudgetController extends Controller
 
 			DB::commit();
 
+			// Update parent budget cumulative totals after deletion
+			if ($budget->parent_id) {
+				$this->updateParentBudgetCumulative($budget->parent_id);
+			}
+
 			// Clear cache
 			$this->clearAllBudgetCache();
 
@@ -719,21 +742,21 @@ class BudgetController extends Controller
 			} else if ($year === $currentYear) {
 				// Current year - get from main budgets table
 				$budgets = Budget::with(['department', 'parent', 'children'])
-					->where('yearly', $year)
-					->orderBy('type')
-					->orderBy('level')
-					->orderBy('sort_order')
-					->orderBy('code')
+					// ->where('yearly', $year)
+					->orderBy('type', 'asc')
+					->orderBy('code', 'asc')
+					->orderBy('level', 'asc')
+					->orderBy('sort_order', 'asc')
 					->get();
-			} else if ($year >= 2023 && $year < $currentYear) {
+			} else if ($year > 2023 && $year < $currentYear) {
 				// Archive year - check if archive table exists
 				if (Schema::hasTable($archiveTable)) {
 					$budgets = DB::table($archiveTable)
 						->where('yearly', $year)
-						->orderBy('type')
-						->orderBy('level')
-						->orderBy('sort_order')
-						->orderBy('code')
+						->orderBy('type', 'asc')
+						->orderBy('code', 'asc')
+						->orderBy('level', 'asc')
+						->orderBy('sort_order', 'asc')
 						->get();
 				} else {
 					// Archive table doesn't exist for this year
@@ -1819,6 +1842,247 @@ class BudgetController extends Controller
 			"budget{$year1}" => '0.00',    // Will be updated later (e.g., budget2024)
 			"budget{$currentYear}" => $item->bdgtotal  // Current year (e.g., budget2025)
 		];
+	}
+
+	/**
+	 * Update parent budget cumulative totals from children
+	 * This method automatically sums all children budgets and updates parent
+	 */
+	private function updateParentBudgetCumulative($childBudgetId)
+	{
+		try {
+			$childBudget = Budget::find($childBudgetId);
+			
+			if (!$childBudget || !$childBudget->parent_id) {
+				return; // No parent to update
+			}
+			
+			$parent = Budget::find($childBudget->parent_id);
+			if (!$parent) {
+				return; // Parent not found
+			}
+			
+			// Get all children of this parent
+			$children = Budget::where('parent_id', $parent->id)->get();
+			
+			if ($children->isEmpty()) {
+				return; // No children found
+			}
+			
+			// Calculate cumulative totals from all children for each month
+			$cumulativeBudget = [
+				'bdg1' => 0, 'bdg2' => 0, 'bdg3' => 0, 'bdg4' => 0,
+				'bdg5' => 0, 'bdg6' => 0, 'bdg7' => 0, 'bdg8' => 0,
+				'bdg9' => 0, 'bdg10' => 0, 'bdg11' => 0, 'bdg12' => 0
+			];
+			
+			$cumulativeActual = [
+				'act1' => 0, 'act2' => 0, 'act3' => 0, 'act4' => 0,
+				'act5' => 0, 'act6' => 0, 'act7' => 0, 'act8' => 0,
+				'act9' => 0, 'act10' => 0, 'act11' => 0, 'act12' => 0
+			];
+			
+			// Sum all children budgets and actuals
+			foreach ($children as $child) {
+				for ($i = 1; $i <= 12; $i++) {
+					$bdgField = 'bdg' . $i;
+					$actField = 'act' . $i;
+					
+					$cumulativeBudget[$bdgField] += (float) ($child->$bdgField ?? 0);
+					$cumulativeActual[$actField] += (float) ($child->$actField ?? 0);
+				}
+			}
+			
+			// Update parent budget fields
+			foreach ($cumulativeBudget as $field => $value) {
+				$parent->$field = $value;
+			}
+			
+			// Update parent actual fields
+			foreach ($cumulativeActual as $field => $value) {
+				$parent->$field = $value;
+			}
+			
+			// Calculate totals - ensure bdgtotal = bdg1 + bdg2 + ... + bdg12
+			$parent->bdgtotal = array_sum($cumulativeBudget);
+			$parent->acttotal = array_sum($cumulativeActual);
+			$parent->balance = $parent->bdgtotal - $parent->acttotal;
+			
+			// Verify bdgtotal matches sum of monthly budgets
+			$calculatedTotal = 0;
+			for ($i = 1; $i <= 12; $i++) {
+				$field = 'bdg' . $i;
+				$calculatedTotal += (float) ($parent->$field ?? 0);
+			}
+			
+			// Ensure consistency
+			if (abs($parent->bdgtotal - $calculatedTotal) > 0.01) {
+				$parent->bdgtotal = $calculatedTotal;
+				$parent->balance = $parent->bdgtotal - $parent->acttotal;
+			}
+			
+			// Update budget_months and budget_type based on children
+			$budgetMonths = [];
+			foreach ($cumulativeBudget as $field => $value) {
+				$monthNumber = (int) substr($field, 3);
+				if ($value > 0) {
+					$budgetMonths[] = $monthNumber;
+				}
+			}
+			$parent->budget_months = $budgetMonths;
+			$parent->budget_month_count = count($budgetMonths);
+			
+			// Determine budget_type
+			if ($parent->budget_month_count === 0) {
+				$parent->budget_type = 'yearly';
+			} elseif ($parent->budget_month_count === 12) {
+				$parent->budget_type = 'monthly';
+			} elseif ($parent->budget_month_count === 1) {
+				$parent->budget_type = 'yearly';
+			} elseif (in_array($parent->budget_month_count, [3, 6, 9])) {
+				$parent->budget_type = 'quarterly';
+			} else {
+				$parent->budget_type = 'monthly';
+			}
+			
+			$parent->save();
+			
+			Log::info('Parent budget cumulative updated', [
+				'parent_id' => $parent->id,
+				'parent_code' => $parent->code,
+				'children_count' => $children->count(),
+				'new_bdgtotal' => $parent->bdgtotal,
+				'new_acttotal' => $parent->acttotal
+			]);
+			
+			// Recursively update grandparent if exists
+			if ($parent->parent_id) {
+				$this->updateParentBudgetCumulative($parent->id);
+			}
+			
+		} catch (\Exception $e) {
+			Log::error('Error updating parent budget cumulative: ' . $e->getMessage(), [
+				'child_budget_id' => $childBudgetId,
+				'parent_id' => $childBudget?->parent_id ?? 'unknown'
+			]);
+		}
+	}
+
+	/**
+	 * Update all parent budgets cumulative totals manually (for maintenance)
+	 * This method can be called to recalculate all parent budgets
+	 */
+	public function updateAllParentBudgetsCumulative()
+	{
+		try {
+			DB::beginTransaction();
+			
+			// Get all budgets that have children
+			$parentBudgets = Budget::where('child_count', '>', 0)->get();
+			$updatedCount = 0;
+			
+			foreach ($parentBudgets as $parent) {
+				// Get all children of this parent
+				$children = Budget::where('parent_id', $parent->id)->get();
+				
+				if ($children->isEmpty()) {
+					continue;
+				}
+				
+				// Calculate cumulative totals from all children for each month
+				$cumulativeBudget = [
+					'bdg1' => 0, 'bdg2' => 0, 'bdg3' => 0, 'bdg4' => 0,
+					'bdg5' => 0, 'bdg6' => 0, 'bdg7' => 0, 'bdg8' => 0,
+					'bdg9' => 0, 'bdg10' => 0, 'bdg11' => 0, 'bdg12' => 0
+				];
+				
+				$cumulativeActual = [
+					'act1' => 0, 'act2' => 0, 'act3' => 0, 'act4' => 0,
+					'act5' => 0, 'act6' => 0, 'act7' => 0, 'act8' => 0,
+					'act9' => 0, 'act10' => 0, 'act11' => 0, 'act12' => 0
+				];
+				
+				// Sum all children budgets and actuals
+				foreach ($children as $child) {
+					for ($i = 1; $i <= 12; $i++) {
+						$bdgField = 'bdg' . $i;
+						$actField = 'act' . $i;
+						
+						$cumulativeBudget[$bdgField] += (float) ($child->$bdgField ?? 0);
+						$cumulativeActual[$actField] += (float) ($child->$actField ?? 0);
+					}
+				}
+				
+				// Update parent budget fields
+				foreach ($cumulativeBudget as $field => $value) {
+					$parent->$field = $value;
+				}
+				
+				// Update parent actual fields
+				foreach ($cumulativeActual as $field => $value) {
+					$parent->$field = $value;
+				}
+				
+				// Calculate totals - ensure bdgtotal = bdg1 + bdg2 + ... + bdg12
+				$parent->bdgtotal = array_sum($cumulativeBudget);
+				$parent->acttotal = array_sum($cumulativeActual);
+				$parent->balance = $parent->bdgtotal - $parent->acttotal;
+				
+				// Update budget_months and budget_type based on children
+				$budgetMonths = [];
+				foreach ($cumulativeBudget as $field => $value) {
+					$monthNumber = (int) substr($field, 3);
+					if ($value > 0) {
+						$budgetMonths[] = $monthNumber;
+					}
+				}
+				$parent->budget_months = $budgetMonths;
+				$parent->budget_month_count = count($budgetMonths);
+				
+				// Determine budget_type
+				if ($parent->budget_month_count === 0) {
+					$parent->budget_type = 'yearly';
+				} elseif ($parent->budget_month_count === 12) {
+					$parent->budget_type = 'monthly';
+				} elseif ($parent->budget_month_count === 1) {
+					$parent->budget_type = 'yearly';
+				} elseif (in_array($parent->budget_month_count, [3, 6, 9])) {
+					$parent->budget_type = 'quarterly';
+				} else {
+					$parent->budget_type = 'monthly';
+				}
+				
+				$parent->save();
+				$updatedCount++;
+			}
+			
+			DB::commit();
+			
+			// Clear cache
+			$this->clearAllBudgetCache();
+			
+			Log::info('All parent budgets cumulative updated', [
+				'updated_count' => $updatedCount,
+				'total_parents' => $parentBudgets->count()
+			]);
+			
+			return response()->json([
+				'success' => true,
+				'message' => 'Semua parent budget berjaya dikemaskini secara cumulative',
+				'updated_count' => $updatedCount,
+				'total_parents' => $parentBudgets->count()
+			]);
+			
+		} catch (\Exception $e) {
+			DB::rollBack();
+			Log::error('Error updating all parent budgets cumulative: ' . $e->getMessage());
+			
+			return response()->json([
+				'success' => false,
+				'message' => 'Ralat mengemaskini parent budgets',
+				'error' => $e->getMessage()
+			], 500);
+		}
 	}
 
 }

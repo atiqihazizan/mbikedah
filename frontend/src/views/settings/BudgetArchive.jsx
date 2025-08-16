@@ -54,9 +54,29 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
     {
       key: 'name',
       label: 'Nama',
-      render: (value) => (
-        <span className="font-medium">{value}</span>
-      )
+      render: (value, item) => {
+        // Calculate indent based on level (0 = root, 1 = child, 2 = grandchild, etc.)
+        const indentLevel = item.level || 0;
+        const indentSpaces = indentLevel * 20; // 20px per level
+        
+        return (
+          <div className="flex items-center">
+            {/* Indent spacing */}
+            <div className="flex items-center" style={{ marginLeft: `${indentSpaces}px` }}>
+              {indentLevel > 0 && (
+                <div className="flex items-center mr-2">
+                  <div className={`w-2 h-2 border-l border-b ${
+                    isDark ? 'border-gray-500' : 'border-gray-400'
+                  } mr-2`}></div>
+                </div>
+              )}
+            </div>
+            
+            {/* Budget name */}
+            <span className="font-medium">{value}</span>
+          </div>
+        );
+      }
     },
     {
       key: 'type',
@@ -82,34 +102,47 @@ export default function BudgetArchive({ isDark, onUnsavedChanges }) {
         </span>
       )
     },
-    {
-      key: 'acttotal',
-      label: 'Nilai Sebenar (RM)',
-      textAlign: 'right',
-      render: (value) => (
-        <span className="font-mono">
-          {formatUtils.formatCurrency(value || 0, false)}
-        </span>
-      )
-    },
+    // {
+    //   key: 'acttotal',
+    //   label: 'Nilai Sebenar (RM)',
+    //   textAlign: 'right',
+    //   render: (value) => (
+    //     <span className="font-mono">
+    //       {formatUtils.formatCurrency(value || 0, false)}
+    //     </span>
+    //   )
+    // },
     {
       key: 'actions',
       label: 'Tindakan',
       textAlign: 'center',
-      render: (value, item) => (
-        <div className="flex items-center justify-center">
-          <TButton
-            variant="outline"
-            color="blue"
-            size="sm"
-            onClick={() => handleAllocationBudget(item)}
-            title={`Edit allocation untuk ${item.name}`}
-          >
-            <FaMoneyBillWave className="w-4 h-4 mr-1" />
-            Agihan
-          </TButton>
-        </div>
-      )
+      render: (value, item) => {
+        // Only show actions if child_count == 0 (single budget items)
+        if (item.child_count !== 0) {
+          return (
+            <div className="flex items-center justify-center">
+              <span className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                Parent Budget
+              </span>
+            </div>
+          );
+        }
+        
+        return (
+          <div className="flex items-center justify-center">
+            <TButton
+              variant="outline"
+              color="blue"
+              size="sm"
+              onClick={() => handleAllocationBudget(item)}
+              title={`Edit allocation untuk ${item.name}`}
+            >
+              <FaMoneyBillWave className="w-4 h-4 mr-1" />
+              Agihan
+            </TButton>
+          </div>
+        );
+      }
     }
   ];
 
