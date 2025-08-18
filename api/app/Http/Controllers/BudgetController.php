@@ -1479,7 +1479,7 @@ class BudgetController extends Controller
 						'id' => $root->id,
 						'code' => $root->code,
 						'description' => $root->name,
-						'monthly' => $rootMonthly,
+						'monthly' => 0, //$rootMonthly,
 						'department' => $root->department?->name ?? 'N/A',
 						'level' => $root->level,
 						'children' => []
@@ -1525,7 +1525,7 @@ class BudgetController extends Controller
 						'id' => $root->id,
 						'code' => $root->code,
 						'description' => $root->name,
-						'monthly' => $rootMonthly,
+						'monthly' => 0, //$rootMonthly,
 						'department' => $root->department?->name ?? 'N/A',
 						'level' => $root->level,
 						'children' => []

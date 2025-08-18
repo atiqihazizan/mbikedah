@@ -394,12 +394,14 @@ function IncomeExpenditureStatement() {
                 ))}
               </tr>
 
-              {/* Empty spacer row */}
+              {/*
+
+              {/* Empty spacer row * /}
               <tr>
                 <td colSpan={14} className="py-2"></td>
               </tr>
 
-              {/* LEBIHAN /(KURANGAN) */}
+              {/* LEBIHAN /(KURANGAN)
               <tr className="bg-blue-200 font-bold print:bg-blue-200">
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
                   LEBIHAN /(KURANGAN)
@@ -411,7 +413,7 @@ function IncomeExpenditureStatement() {
                 ))}
               </tr>
 
-              {/* BAKI AWAL */}
+              {/* BAKI AWAL * /}
               <tr className="bg-white print:bg-white font-medium">
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
                   BAKI AWAL
@@ -425,7 +427,7 @@ function IncomeExpenditureStatement() {
                 ))}
               </tr>
 
-              {/* SIMPANAN TETAP */}
+              {/* SIMPANAN TETAP * /}
               <tr className="bg-purple-100 print:bg-purple-100 font-medium">
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
                   SIMPANAN TETAP
@@ -439,7 +441,7 @@ function IncomeExpenditureStatement() {
                 ))}
               </tr>
 
-              {/* TABUNGAN KHAS */}
+              {/* TABUNGAN KHAS * /}
               <tr className="bg-yellow-100 print:bg-yellow-100 font-medium">
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
                   TABUNGAN KHAS
@@ -453,7 +455,7 @@ function IncomeExpenditureStatement() {
                 ))}
               </tr>
 
-              {/* LEBIHAN /(KURANGAN) SELEPAS TABUNGAN & SIMPANAN TETAP */}
+              {/* LEBIHAN /(KURANGAN) SELEPAS TABUNGAN & SIMPANAN TETAP * /}
               <tr className="bg-blue-200 font-bold print:bg-blue-200">
                 <td colSpan="2" className="border border-gray-400 px-2 py-1 text-xs text-center">
                   LEBIHAN /(KURANGAN) SELEPAS TABUNGAN & SIMPANAN TETAP
@@ -463,37 +465,12 @@ function IncomeExpenditureStatement() {
                     {formatCurrency(summaryData?.runningBalance?.monthly?.[month] || 0)}
                   </td>
                 ))}
-              </tr>
+              </tr> */}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Debug Information - Only visible in development */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="p-4 border-t print:hidden">
-          <details className="text-xs text-gray-600">
-            <summary className="cursor-pointer font-medium">Debug Information</summary>
-            <div className="mt-2 space-y-2">
-              <div>
-                <strong>Statement Data:</strong> {statementData ? 'Loaded' : 'Not loaded'}
-              </div>
-              <div>
-                <strong>Income Items:</strong> {incomeData?.operatingRevenue?.length || 0} items
-              </div>
-              <div>
-                <strong>Expenditure Items:</strong> {expenditureData?.nonCurrentAssets?.length || 0} items
-              </div>
-              <div>
-                <strong>Summary Data:</strong> {summaryData ? 'Available' : 'Not available'}
-              </div>
-              <div>
-                <strong>Data Source:</strong> {dataSource || 'Unknown'}
-              </div>
-            </div>
-          </details>
-        </div>
-      )}
     </div>
   );
 }
