@@ -42,6 +42,7 @@ const BudgetAllocationDialog = ({
   const [isLoading, setIsLoading] = useState(false);
   const [originalData, setOriginalData] = useState({});
   const [isInitialized, setIsInitialized] = useState(false);
+  const [monthlyInputMode, setMonthlyInputMode] = useState(false);
 
   // Month names for display
   const monthNames = [
@@ -118,9 +119,18 @@ const BudgetAllocationDialog = ({
     return amount <= 0 || isAmountTooSmall();
   };
 
+  // Calculate total from monthly inputs
+  const calculateTotalFromMonthly = () => {
+    let total = 0;
+    for (let i = 1; i <= 12; i++) {
+      total += parseFloat(formData[`bdg${i}`] || 0);
+    }
+    return total;
+  };
+
   // Update monthly budget fields when total amount or selected months change
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || monthlyInputMode) return;
     
     const amount = getTotalAmount();
     
@@ -136,12 +146,17 @@ const BudgetAllocationDialog = ({
     if (amount > 0 && formData.selectedMonths.length > 0 && !areMonthsDisabled()) {
       const monthlyAmount = calculateMonthlyBudget();
       
-      // Check if update is needed
-      for (let i = 1; i <= 12; i++) {
-        const expectedValue = formData.selectedMonths.includes(i) ? monthlyAmount : 0;
-        if (currentMonthlyData[`bdg${i}`] !== expectedValue) {
+              // Check if update is needed - only update months that were originally 0
+        for (let i = 1; i <= 12; i++) {
+          const originalValue = parseFloat(originalData[`bdg${i}`] || 0);
+          const expectedValue = formData.selectedMonths.includes(i) ? monthlyAmount : 0;
+          
+          // If original value was 0, use calculated value; otherwise preserve original
+          const finalValue = originalValue > 0 ? originalValue : expectedValue;
+        
+        if (currentMonthlyData[`bdg${i}`] !== finalValue) {
           shouldUpdate = true;
-          newFormData[`bdg${i}`] = expectedValue;
+          newFormData[`bdg${i}`] = finalValue;
         }
       }
     } else if (amount > 0 && formData.selectedMonths.length === 0) {
@@ -171,7 +186,7 @@ const BudgetAllocationDialog = ({
     if (shouldUpdate) {
       setFormData(newFormData);
     }
-  }, [formData.totalAmount, formData.selectedMonths.length, isInitialized]);
+  }, [formData.totalAmount, formData.selectedMonths.length, isInitialized, monthlyInputMode, originalData]);
 
   // ===== FORM INITIALIZATION =====
   useEffect(() => {
@@ -179,6 +194,7 @@ const BudgetAllocationDialog = ({
       // Initialize with existing budget data
       const existingData = {
         totalAmount: selectedBudget.bdgtotal || 0,
+        acttotal: selectedBudget.acttotal || 0,
         selectedMonths: [],
         bdg1: selectedBudget.bdg1 || 0,
         bdg2: selectedBudget.bdg2 || 0,
@@ -207,6 +223,10 @@ const BudgetAllocationDialog = ({
       setOriginalData({ ...existingData });
       setErrors({});
       setIsInitialized(true);
+      
+      // Check if we should enable monthly input mode (if there are existing monthly values)
+      const hasExistingMonthlyValues = monthsWithBudget.length > 0;
+      setMonthlyInputMode(hasExistingMonthlyValues);
     } else if (isOpen) {
       // Reset form for new budget
       const resetData = {
@@ -220,6 +240,7 @@ const BudgetAllocationDialog = ({
       setOriginalData({ ...resetData });
       setErrors({});
       setIsInitialized(true);
+      setMonthlyInputMode(false);
     } else {
       setIsInitialized(false);
     }
@@ -254,6 +275,8 @@ const BudgetAllocationDialog = ({
     
     if (field === 'totalAmount') {
       processedValue = parseFloat(value) || 0;
+    } else if (field.startsWith('bdg')) {
+      processedValue = parseFloat(value) || 0;
     }
     
     setFormData(prev => ({
@@ -283,6 +306,29 @@ const BudgetAllocationDialog = ({
     });
   };
 
+  const handleMonthlyInputToggle = () => {
+    setMonthlyInputMode(!monthlyInputMode);
+    
+    if (!monthlyInputMode) {
+      // Switching to manual input mode - preserve current values
+      // No need to change anything
+    } else {
+      // Switching back to auto mode - recalculate based on total and selected months
+      const amount = getTotalAmount();
+      if (amount > 0 && formData.selectedMonths.length > 0) {
+        const monthlyAmount = calculateMonthlyBudget();
+        const newFormData = { ...formData };
+        
+        for (let i = 1; i <= 12; i++) {
+          const originalValue = parseFloat(originalData[`bdg${i}`] || 0);
+          newFormData[`bdg${i}`] = formData.selectedMonths.includes(i) ? monthlyAmount : 0;
+        }
+        
+        setFormData(newFormData);
+      }
+    }
+  };
+
   const handleClose = () => {
     onClose();
   };
@@ -293,6 +339,14 @@ const BudgetAllocationDialog = ({
 
     if (getTotalAmount() <= 0) {
       newErrors.totalAmount = 'Jumlah bajet mesti lebih daripada 0';
+    }
+
+    // Validate monthly inputs if in manual mode
+    if (monthlyInputMode) {
+      const monthlyTotal = calculateTotalFromMonthly();
+      if (Math.abs(monthlyTotal - getTotalAmount()) > 0.01) {
+        newErrors.monthlyTotal = `Jumlah bulanan (RM ${monthlyTotal.toFixed(2)}) tidak sama dengan jumlah bajet (RM ${getTotalAmount().toFixed(2)})`;
+      }
     }
 
     setErrors(newErrors);
@@ -431,94 +485,183 @@ const BudgetAllocationDialog = ({
             </div>
           </div>
 
-          {/* Month Selection Section */}
+          {/* Monthly Input Mode Toggle */}
           <div className="space-y-4">
-            <h3 className={`text-lg font-semibold flex items-center text-gray-800`}>
-              <FaLayerGroup className="w-4 h-4 mr-2" />
-              Pilih Bulan
-            </h3>
-            
-            <div className="grid grid-cols-6 md:grid-cols-6 gap-3">
-              {monthNames.map((monthName, index) => {
-                const monthNumber = index + 1;
-                const isSelected = formData.selectedMonths.includes(monthNumber);
-                const monthlyAmount = isSelected ? calculateMonthlyBudget() : 0;
-                const isDisabled = areMonthsDisabled();
-                
-                return (
-                  <div key={monthNumber} className="flex flex-col ">
-                    <label className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
-                      isDisabled 
-                        ? 'border-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
-                        : isSelected 
-                        ? 'border-blue-500 bg-blue-50 cursor-pointer'
-                        : 'border-gray-300 hover:border-gray-400 cursor-pointer'
-                    }`}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleMonthToggle(monthNumber)}
-                        disabled={isDisabled}
-                        className="sr-only"
-                      />
-                      <div className={`w-4 h-4 rounded border-2 ${
-                        isDisabled
-                          ? 'border-gray-400 bg-gray-400'
-                          : isSelected 
-                          ? 'bg-blue-500 border-blue-500' 
-                          : 'border-gray-300'
-                      } flex items-center justify-center`}>
-                        {isSelected && !isDisabled && (
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className={`text-sm font-medium ${
-                        isDisabled
-                          ? 'text-gray-400'
-                          : isSelected 
-                          ? 'text-blue-700'
-                          : 'text-gray-700'
-                      }`}>
-                        {monthName}
-                      </span>
-                    </label>
-                    {isSelected && !isDisabled && (
-                      <div className={`mt-2 text-xs text-center text-blue-600`}>
-                        RM {monthlyAmount.toFixed(2)}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="flex items-center justify-between">
+              <h3 className={`text-lg font-semibold flex items-center text-gray-800`}>
+                <FaLayerGroup className="w-4 h-4 mr-2" />
+                Agihan Bulanan
+              </h3>
+              
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-600">Mod Input:</span>
+                <button
+                  type="button"
+                  onClick={handleMonthlyInputToggle}
+                  className={`px-3 py-1 text-sm rounded-lg border transition-colors ${
+                    monthlyInputMode
+                      ? 'bg-blue-100 border-blue-300 text-blue-700'
+                      : 'bg-gray-100 border-gray-300 text-gray-700'
+                  }`}
+                >
+                  {monthlyInputMode ? 'Manual' : 'Auto'}
+                </button>
+              </div>
             </div>
             
-            {areMonthsDisabled() && (
-              <p className={`mt-2 text-sm text-center text-gray-500`}>
-                {formData.totalAmount <= 0 
-                  ? 'Masukkan jumlah bajet untuk memilih bulan'
-                  : formData.totalAmount < 1.00
-                  ? 'Jumlah bajet terlalu kecil (minimum RM 1.00) untuk agihan bulanan'
-                  : 'Jumlah bajet terlalu kecil untuk agihan bulanan yang praktikal (minimum RM 6.00 untuk 12 bulan)'
-                }
-              </p>
+            {monthlyInputMode ? (
+              // Manual Monthly Input Mode
+              <div className="space-y-4">
+                <div className="grid grid-cols-6 md:grid-cols-6 gap-3">
+                  {monthNames.map((monthName, index) => {
+                                         const monthNumber = index + 1;
+                     const originalValue = parseFloat(originalData[`bdg${monthNumber}`] || 0);
+                     const hasOriginalValue = originalValue > 0;
+                     
+                     return (
+                       <div key={monthNumber} className="flex flex-col">
+                         <label className={`block text-sm font-medium mb-2 text-gray-700`}>
+                           {monthName}
+                           {hasOriginalValue && (
+                             <span className="ml-1 text-xs text-blue-600">(Asal: RM {originalValue.toFixed(2)})</span>
+                           )}
+                         </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData[`bdg${monthNumber}`] || ''}
+                          onChange={(e) => handleInputChange(`bdg${monthNumber}`, e.target.value)}
+                          className={`w-full px-2 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white border-gray-300 text-gray-900 placeholder-gray-500 ${
+                            hasOriginalValue ? 'border-blue-300 bg-blue-50' : ''
+                          }`}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {errors.monthlyTotal && (
+                  <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                    <p className="text-sm text-red-700">{errors.monthlyTotal}</p>
+                  </div>
+                )}
+                
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <p className="text-sm text-blue-700">
+                    <strong>Nota:</strong> Anda boleh mengubahsuai nilai bulanan secara manual. 
+                    Nilai asal yang sedia ada akan dipelihara. Pastikan jumlah bulanan sama dengan jumlah bajet.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              // Auto Monthly Selection Mode
+              <div className="space-y-4">
+                <div className="grid grid-cols-6 md:grid-cols-6 gap-3">
+                  {monthNames.map((monthName, index) => {
+                                         const monthNumber = index + 1;
+                     const isSelected = formData.selectedMonths.includes(monthNumber);
+                     const monthlyAmount = isSelected ? calculateMonthlyBudget() : 0;
+                     const isDisabled = areMonthsDisabled();
+                     const originalValue = parseFloat(originalData[`bdg${monthNumber}`] || 0);
+                     const hasOriginalValue = originalValue > 0;
+                    
+                    return (
+                      <div key={monthNumber} className="flex flex-col">
+                        <label className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-colors ${
+                          isDisabled 
+                            ? 'border-gray-400 bg-gray-100 cursor-not-allowed opacity-50'
+                            : isSelected 
+                            ? 'border-blue-500 bg-blue-50 cursor-pointer'
+                            : 'border-gray-300 hover:border-gray-400 cursor-pointer'
+                        }`}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleMonthToggle(monthNumber)}
+                            disabled={isDisabled}
+                            className="sr-only"
+                          />
+                          <div className={`w-4 h-4 rounded border-2 ${
+                            isDisabled
+                              ? 'border-gray-400 bg-gray-400'
+                              : isSelected 
+                              ? 'bg-blue-500 border-blue-500' 
+                              : 'border-gray-300'
+                          } flex items-center justify-center`}>
+                            {isSelected && !isDisabled && (
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className={`text-sm font-medium ${
+                            isDisabled
+                              ? 'text-gray-400'
+                              : isSelected 
+                              ? 'text-blue-700'
+                              : 'text-gray-700'
+                          }`}>
+                            {monthName}
+                          </span>
+                        </label>
+                        {isSelected && !isDisabled && (
+                          <div className={`mt-2 text-xs text-center ${
+                            hasOriginalValue ? 'text-blue-600' : 'text-green-600'
+                          }`}>
+                            {hasOriginalValue ? (
+                              <span>RM {originalValue.toFixed(2)} (Asal)</span>
+                            ) : (
+                              <span>RM {monthlyAmount.toFixed(2)}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {areMonthsDisabled() && (
+                  <p className={`mt-2 text-sm text-center text-gray-500`}>
+                    {formData.totalAmount <= 0 
+                      ? 'Masukkan jumlah bajet untuk memilih bulan'
+                      : formData.totalAmount < 1.00
+                      ? 'Jumlah bajet terlalu kecil (minimum RM 1.00) untuk agihan bulanan'
+                      : 'Jumlah bajet terlalu kecil untuk agihan bulanan yang praktikal (minimum RM 6.00 untuk 12 bulan)'
+                    }
+                  </p>
+                )}
+                
+                <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                                     <p className="text-sm text-green-700">
+                     <strong>Nota:</strong> 
+                     {parseFloat(originalData.bdg1 || 0) > 0 || parseFloat(originalData.bdg2 || 0) > 0 || parseFloat(originalData.bdg3 || 0) > 0 || 
+                      parseFloat(originalData.bdg4 || 0) > 0 || parseFloat(originalData.bdg5 || 0) > 0 || parseFloat(originalData.bdg6 || 0) > 0 ||
+                      parseFloat(originalData.bdg7 || 0) > 0 || parseFloat(originalData.bdg8 || 0) > 0 || parseFloat(originalData.bdg9 || 0) > 0 || 
+                      parseFloat(originalData.bdg10 || 0) > 0 || parseFloat(originalData.bdg11 || 0) > 0 || parseFloat(originalData.bdg12 || 0) > 0
+                       ? 'Nilai bulanan asal akan dipelihara. Bulan yang dipilih akan menggunakan nilai asal jika ada, atau nilai baharu jika asalnya 0.'
+                       : 'Pilih bulan untuk agihan bajet bulanan secara automatik.'
+                     }
+                   </p>
+                </div>
+              </div>
             )}
           </div>
 
           {/* Summary Section */}
           {getTotalAmount() > 0 && (
             <div className={`p-4 rounded-lg ${
-              formData.selectedMonths.length > 0
+              formData.selectedMonths.length > 0 || monthlyInputMode
                 ? 'bg-blue-50 border border-blue-200'
                 : 'bg-yellow-50 border border-yellow-200'
             }`}>
               <h4 className={`font-semibold mb-2 ${
-                formData.selectedMonths.length > 0
+                formData.selectedMonths.length > 0 || monthlyInputMode
                   ? 'text-blue-700'
                   : 'text-yellow-700'
               }`}>
-                {formData.selectedMonths.length > 0 ? 'Ringkasan Agihan' : 'Status Bajet'}
+                {monthlyInputMode || formData.selectedMonths.length > 0 ? 'Ringkasan Agihan' : 'Status Bajet'}
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
@@ -534,28 +677,47 @@ const BudgetAllocationDialog = ({
                   </div>
                 </div>
                 <div>
-                  <span className="text-gray-600">Bulan Dipilih:</span>
+                  <span className="text-gray-600">Mod Input:</span>
                   <div className="font-semibold text-gray-900">
-                    {formData.selectedMonths.length > 0 ? `${formData.selectedMonths.length} bulan` : 'Tiada bulan dipilih'}
+                    {monthlyInputMode ? 'Manual' : 'Auto'}
                   </div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Bajet Sebulan:</span>
-                  <div className="font-semibold text-gray-900">
-                    {formData.selectedMonths.length > 0 ? `RM ${(calculateMonthlyBudget() || 0).toFixed(2)}` : 'RM 0.00'}
+                {monthlyInputMode ? (
+                  <div>
+                    <span className="text-gray-600">Jumlah Bulanan:</span>
+                    <div className="font-semibold text-gray-900">
+                      RM {calculateTotalFromMonthly().toFixed(2)}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <span className="text-gray-600">Bulan Dipilih:</span>
+                    <div className="font-semibold text-gray-900">
+                      {formData.selectedMonths.length > 0 ? `${formData.selectedMonths.length} bulan` : 'Tiada bulan dipilih'}
+                    </div>
+                  </div>
+                )}
+                {!monthlyInputMode && formData.selectedMonths.length > 0 && (
+                  <div>
+                    <span className="text-gray-600">Bajet Sebulan:</span>
+                    <div className="font-semibold text-gray-900">
+                      RM {(calculateMonthlyBudget() || 0).toFixed(2)}
+                    </div>
+                  </div>
+                )}
                 <div className="md:col-span-2">
                   <span className="text-gray-600">Bulan:</span>
                   <div className="font-semibold text-gray-900">
-                    {formData.selectedMonths.length > 0 
+                    {monthlyInputMode 
+                      ? 'Input manual untuk semua bulan'
+                      : formData.selectedMonths.length > 0 
                       ? formData.selectedMonths.map(m => monthNames[m-1].substring(0, 3)).join(', ')
                       : 'Tiada agihan bulanan'
                     }
                   </div>
                 </div>
               </div>
-              {formData.selectedMonths.length === 0 && (
+              {!monthlyInputMode && formData.selectedMonths.length === 0 && (
                 <div className={`mt-3 p-3 rounded bg-yellow-100 border border-yellow-300`}>
                   <p className="text-sm text-yellow-800">
                     <strong>Nota:</strong> 
