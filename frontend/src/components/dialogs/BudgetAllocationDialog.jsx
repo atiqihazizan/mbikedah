@@ -128,7 +128,7 @@ const BudgetAllocationDialog = ({
     return total;
   };
 
-  // Update monthly budget fields when total amount or selected months change
+  // Update monthly budget fields when total amount or selected months change (Auto mode)
   useEffect(() => {
     if (!isInitialized || monthlyInputMode) return;
     
@@ -187,6 +187,21 @@ const BudgetAllocationDialog = ({
       setFormData(newFormData);
     }
   }, [formData.totalAmount, formData.selectedMonths.length, isInitialized, monthlyInputMode, originalData]);
+
+  // Update total amount when monthly inputs change (Manual mode)
+  useEffect(() => {
+    if (!isInitialized || !monthlyInputMode) return;
+    
+    const monthlyTotal = calculateTotalFromMonthly();
+    if (Math.abs(monthlyTotal - getTotalAmount()) > 0.01) {
+      setFormData(prev => ({
+        ...prev,
+        totalAmount: monthlyTotal
+      }));
+    }
+  }, [formData.bdg1, formData.bdg2, formData.bdg3, formData.bdg4, formData.bdg5, formData.bdg6, 
+      formData.bdg7, formData.bdg8, formData.bdg9, formData.bdg10, formData.bdg11, formData.bdg12, 
+      isInitialized, monthlyInputMode]);
 
   // ===== FORM INITIALIZATION =====
   useEffect(() => {
@@ -310,8 +325,12 @@ const BudgetAllocationDialog = ({
     setMonthlyInputMode(!monthlyInputMode);
     
     if (!monthlyInputMode) {
-      // Switching to manual input mode - preserve current values
-      // No need to change anything
+      // Switching to manual input mode - calculate total from monthly inputs
+      const monthlyTotal = calculateTotalFromMonthly();
+      setFormData(prev => ({
+        ...prev,
+        totalAmount: monthlyTotal
+      }));
     } else {
       // Switching back to auto mode - recalculate based on total and selected months
       const amount = getTotalAmount();
@@ -344,8 +363,8 @@ const BudgetAllocationDialog = ({
     // Validate monthly inputs if in manual mode
     if (monthlyInputMode) {
       const monthlyTotal = calculateTotalFromMonthly();
-      if (Math.abs(monthlyTotal - getTotalAmount()) > 0.01) {
-        newErrors.monthlyTotal = `Jumlah bulanan (RM ${monthlyTotal.toFixed(2)}) tidak sama dengan jumlah bajet (RM ${getTotalAmount().toFixed(2)})`;
+      if (monthlyTotal <= 0) {
+        newErrors.monthlyTotal = 'Sekurang-kurangnya satu bulan mesti mempunyai nilai bajet';
       }
     }
 
@@ -450,6 +469,9 @@ const BudgetAllocationDialog = ({
               <div className="md:col-span-1">
                 <label className={`block text-sm font-medium mb-2 text-gray-700`}>
                   Jumlah Bajet (RM) <span className="text-red-500">*</span>
+                  {monthlyInputMode && (
+                    <span className="ml-2 text-xs text-blue-600 font-normal">(Dikira secara automatik)</span>
+                  )}
                 </label>
                 <input
                   type="number"
@@ -457,11 +479,21 @@ const BudgetAllocationDialog = ({
                   min="0"
                   value={formData.totalAmount || ''}
                   onChange={(e) => handleInputChange('totalAmount', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white border-gray-300 text-gray-900 placeholder-gray-500 ${errors.totalAmount ? 'border-red-500' : ''}`}
-                  placeholder="Masukkan jumlah bajet"
+                  disabled={monthlyInputMode}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    monthlyInputMode 
+                      ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } placeholder-gray-500 ${errors.totalAmount ? 'border-red-500' : ''}`}
+                  placeholder={monthlyInputMode ? "Dikira secara automatik" : "Masukkan jumlah bajet"}
                 />
                 {errors.totalAmount && (
                   <p className="mt-1 text-sm text-red-500">{errors.totalAmount}</p>
+                )}
+                {monthlyInputMode && (
+                  <p className="mt-1 text-sm text-blue-600">
+                    Jumlah bajet akan dikira secara automatik berdasarkan input bulanan di bawah
+                  </p>
                 )}
               </div>
               
@@ -549,10 +581,18 @@ const BudgetAllocationDialog = ({
                 )}
                 
                 <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                  <p className="text-sm text-blue-700">
-                    <strong>Nota:</strong> Anda boleh mengubahsuai nilai bulanan secara manual. 
-                    Nilai asal yang sedia ada akan dipelihara. Pastikan jumlah bulanan sama dengan jumlah bajet.
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-blue-700">
+                      <strong>Nota:</strong> Anda boleh mengubahsuai nilai bulanan secara manual. 
+                      Nilai asal yang sedia ada akan dipelihara. Jumlah bajet akan dikira secara automatik berdasarkan input bulanan.
+                    </p>
+                    <div className="text-right">
+                      <p className="text-xs text-blue-600">Jumlah Terkini:</p>
+                      <p className="text-lg font-bold text-blue-700">
+                        RM {calculateTotalFromMonthly().toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (
