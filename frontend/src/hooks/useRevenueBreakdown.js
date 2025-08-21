@@ -6,27 +6,27 @@ const useRevenueBreakdown = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchRevenueData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchRevenueData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const response = await apiClient.get('/budgets/reports/revenue-breakdown');
-        if (response.success && response.data) {
-          setRevenueDataState(response.data);
-        } else {
-          throw new Error('Failed to load revenue breakdown data');
-        }
-
-      } catch (err) {
-        console.error('Error loading revenue breakdown data:', err);
-        setError(err.message || 'Ralat memuatkan data pecahan hasil');
-      } finally {
-        setLoading(false);
+      const response = await apiClient.get('/budgets/reports/revenue-breakdown');
+      if (response.success && response.data) {
+        setRevenueDataState(response.data);
+      } else {
+        throw new Error('Failed to load revenue breakdown data');
       }
-    };
 
+    } catch (err) {
+      console.error('Error loading revenue breakdown data:', err);
+      setError(err.message || 'Ralat memuatkan data pecahan hasil');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchRevenueData();
   }, []);
 
@@ -47,66 +47,69 @@ const useRevenueBreakdown = () => {
     };
   }, []);
 
-  // Calculate revenue totals
+  // Calculate revenue totals from new API structure
   const revenueTotal = useMemo(() => {
-    if (!revenueDataState) return null;
-    
-    const pendapatanHasilTotal = getCategoryTotal(revenueDataState.pendapatanHasil);
-    const pendapatanLainLainTotal = getCategoryTotal(revenueDataState.pendapatanLainLain);
-    const pendapatanSumberDanaTotal = getCategoryTotal(revenueDataState.pendapatanSumberDana);
-    const pendapatanLuarJangkaTotal = getCategoryTotal(revenueDataState.pendapatanLuarJangka);
+    if (!revenueDataState?.categorySections) return null;
     
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     const grandTotal = { total: 0 };
     
-    months.forEach(month => {
-      grandTotal[month] = (pendapatanHasilTotal[month] || 0) + (pendapatanLainLainTotal[month] || 0) + 
-                         (pendapatanSumberDanaTotal[month] || 0) + (pendapatanLuarJangkaTotal[month] || 0);
-      grandTotal.total += grandTotal[month];
+    // Initialize totals for each category
+    const categoryTotals = {};
+    
+    revenueDataState.categorySections.forEach(section => {
+      const categoryName = section.title;
+      categoryTotals[categoryName] = getCategoryTotal(section.data);
+      
+      months.forEach(month => {
+        grandTotal[month] = (grandTotal[month] || 0) + (categoryTotals[categoryName][month] || 0);
+      });
+      grandTotal.total += categoryTotals[categoryName].total;
     });
     
     return {
-      pendapatanHasil: pendapatanHasilTotal,
-      pendapatanLainLain: pendapatanLainLainTotal,
-      pendapatanSumberDana: pendapatanSumberDanaTotal,
-      pendapatanLuarJangka: pendapatanLuarJangkaTotal,
+      ...categoryTotals,
       grand: grandTotal
     };
   }, [revenueDataState, getCategoryTotal]);
 
-  // Calculate budget totals
+  // Calculate budget totals from new API structure
   const budgetTotal = useMemo(() => {
-    if (!revenueDataState) return null;
+    if (!revenueDataState?.categorySections) return null;
     
-    const pendapatanHasilBudget = revenueDataState.pendapatanHasil?.budget2025 || 0;
-    const pendapatanLainLainBudget = revenueDataState.pendapatanLainLain?.budget2025 || 0;
-    const pendapatanSumberDanaBudget = revenueDataState.pendapatanSumberDana?.budget2025 || 0;
-    const pendapatanLuarJangkaBudget = revenueDataState.pendapatanLuarJangka?.budget2025 || 0;
+    const categoryTotals = {};
+    let grandTotal = 0;
+    
+    revenueDataState.categorySections.forEach(section => {
+      const categoryName = section.title;
+      const budget = section.data.budget2025 || 0;
+      categoryTotals[categoryName] = budget;
+      grandTotal += budget;
+    });
     
     return {
-      pendapatanHasil: pendapatanHasilBudget,
-      pendapatanLainLain: pendapatanLainLainBudget,
-      pendapatanSumberDana: pendapatanSumberDanaBudget,
-      pendapatanLuarJangka: pendapatanLuarJangkaBudget,
-      grand: pendapatanHasilBudget + pendapatanLainLainBudget + pendapatanSumberDanaBudget + pendapatanLuarJangkaBudget
+      ...categoryTotals,
+      grand: grandTotal
     };
   }, [revenueDataState]);
 
-  // Calculate actual totals
+  // Calculate actual totals from new API structure
   const actualTotal = useMemo(() => {
-    if (!revenueDataState) return null;
+    if (!revenueDataState?.categorySections) return null;
     
-    const pendapatanHasilActual = revenueDataState.pendapatanHasil?.actual2024 || 0;
-    const pendapatanLainLainActual = revenueDataState.pendapatanLainLain?.actual2024 || 0;
-    const pendapatanSumberDanaActual = revenueDataState.pendapatanSumberDana?.actual2024 || 0;
-    const pendapatanLuarJangkaActual = revenueDataState.pendapatanLuarJangka?.actual2024 || 0;
+    const categoryTotals = {};
+    let grandTotal = 0;
+    
+    revenueDataState.categorySections.forEach(section => {
+      const categoryName = section.title;
+      const actual = section.data.actual2024 || 0;
+      categoryTotals[categoryName] = actual;
+      grandTotal += actual;
+    });
     
     return {
-      pendapatanHasil: pendapatanHasilActual,
-      pendapatanLainLain: pendapatanLainLainActual,
-      pendapatanSumberDana: pendapatanSumberDanaActual,
-      pendapatanLuarJangka: pendapatanLuarJangkaActual,
-      grand: pendapatanHasilActual + pendapatanLainLainActual + pendapatanSumberDanaActual + pendapatanLuarJangkaActual
+      ...categoryTotals,
+      grand: grandTotal
     };
   }, [revenueDataState]);
 
@@ -119,62 +122,26 @@ const useRevenueBreakdown = () => {
     }).format(Math.abs(amount));
   };
 
-  const renderCategorySection = (title, data, subCategories = [], bgColor = 'bg-gray-200') => {
-    if (!data) return null;
-    
-    return {
-      title,
-      bgColor,
-      data: {
-        code: data.code,
-        description: data.description,
-        actual2024: data.actual2024,
-        budget2024: data.budget2024,
-        budget2025: data.budget2025,
-        monthly: data.monthly || {}
-      },
-      subCategories: subCategories.map(sub => ({
-        code: sub.code,
-        description: sub.description,
-        actual2024: sub.actual2024,
-        budget2024: sub.budget2024,
-        budget2025: sub.budget2025,
-        monthly: sub.monthly || {},
-        details: sub.details || []
-      }))
-    };
-  };
-
-  // Build category sections
+  // Build category sections from new API structure
   const categorySections = useMemo(() => {
-    if (!revenueDataState) return [];
+    if (!revenueDataState?.categorySections) {
+      return [];
+    }
     
-    return [
-      renderCategorySection(
-        "PENDAPATAN HASIL", 
-        revenueDataState.pendapatanHasil, 
-        revenueDataState.pendapatanHasil?.subCategories || [],
-        "bg-green-200"
-      ),
-      renderCategorySection(
-        "PENDAPATAN LAIN-LAIN (BUKAN HASIL)", 
-        revenueDataState.pendapatanLainLain, 
-        revenueDataState.pendapatanLainLain?.subCategories || [],
-        "bg-blue-200"
-      ),
-      renderCategorySection(
-        "PENDAPATAN SUMBER DANA", 
-        revenueDataState.pendapatanSumberDana, 
-        revenueDataState.pendapatanSumberDana?.subCategories || [],
-        "bg-yellow-200"
-      ),
-      renderCategorySection(
-        "PENDAPATAN LUAR JANGKA", 
-        revenueDataState.pendapatanLuarJangka, 
-        revenueDataState.pendapatanLuarJangka?.subCategories || [],
-        "bg-purple-200"
-      )
-    ].filter(Boolean);
+    // Map the API response directly to the expected format
+    return revenueDataState.categorySections.map(section => ({
+      title: section.title,
+      bgColor: section.bgColor,
+      data: {
+        code: section.data.code,
+        description: section.data.description,
+        actual2024: section.data.actual2024,
+        budget2024: section.data.budget2024,
+        budget2025: section.data.budget2025,
+        monthly: section.data.monthly || {}
+      },
+      subCategories: section.subCategories || []
+    }));
   }, [revenueDataState]);
 
   return {
@@ -190,6 +157,8 @@ const useRevenueBreakdown = () => {
       setLoading(true);
       setError(null);
       setRevenueDataState(null);
+      // Call the fetch function again
+      fetchRevenueData();
     }
   };
 };

@@ -6,27 +6,29 @@ const useExpenseBreakdown = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchExpenseData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchExpenseData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const response = await apiClient.get('/budgets/reports/expense-breakdown');
-        if (response.success && response.data) {
-          setExpenseDataState(response.data);
-        } else {
-          throw new Error('Failed to load expense breakdown data');
-        }
-
-      } catch (err) {
-        console.error('Error loading expense breakdown data:', err);
-        setError(err.message || 'Ralat memuatkan data pecahan perbelanjaan');
-      } finally {
-        setLoading(false);
+      const response = await apiClient.get('/budgets/reports/expense-breakdown');
+      console.log(response);
+      if (response.success && response.data) {
+        setExpenseDataState(response.data);
+      } else {
+        console.error('Response validation failed:', { success: response.success, hasData: !!response.data });
+        throw new Error('Failed to load expense breakdown data');
       }
-    };
 
+    } catch (err) {
+      console.error('Error loading expense breakdown data:', err);
+      setError(err.message || 'Ralat memuatkan data pecahan perbelanjaan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchExpenseData();
   }, []);
 
@@ -49,64 +51,66 @@ const useExpenseBreakdown = () => {
 
   // Calculate expense totals
   const expenseTotal = useMemo(() => {
-    if (!expenseDataState) return null;
-    
-    const perkhidmatanAmTotal = getCategoryTotal(expenseDataState.perkhidmatanAm);
-    const perkhidmatanKhasTotal = getCategoryTotal(expenseDataState.perkhidmatanKhas);
-    const perkhidmatanLainTotal = getCategoryTotal(expenseDataState.perkhidmatanLain);
-    const perkhidmatanKewanganTotal = getCategoryTotal(expenseDataState.perkhidmatanKewangan);
+    if (!expenseDataState?.categorySections) return null;
     
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     const grandTotal = { total: 0 };
+    const categoryTotals = {};
     
-    months.forEach(month => {
-      grandTotal[month] = (perkhidmatanAmTotal[month] || 0) + (perkhidmatanKhasTotal[month] || 0) + 
-                         (perkhidmatanLainTotal[month] || 0) + (perkhidmatanKewanganTotal[month] || 0);
-      grandTotal.total += grandTotal[month];
+    expenseDataState.categorySections.forEach((section, index) => {
+      const categoryName = section.title || `category_${index}`;
+      const categoryTotal = getCategoryTotal(section.data);
+      categoryTotals[categoryName] = categoryTotal;
+      
+      months.forEach(month => {
+        grandTotal[month] = (grandTotal[month] || 0) + (categoryTotal[month] || 0);
+      });
+      grandTotal.total += categoryTotal.total;
     });
     
     return {
-      perkhidmatanAm: perkhidmatanAmTotal,
-      perkhidmatanKhas: perkhidmatanKhasTotal,
-      perkhidmatanLain: perkhidmatanLainTotal,
-      perkhidmatanKewangan: perkhidmatanKewanganTotal,
+      ...categoryTotals,
       grand: grandTotal
     };
   }, [expenseDataState, getCategoryTotal]);
 
   // Calculate budget totals
   const budgetTotal = useMemo(() => {
-    if (!expenseDataState) return null;
+    if (!expenseDataState?.categorySections) return null;
     
-    const perkhidmatanAmBudget = expenseDataState.perkhidmatanAm?.budget2025 || 0;
-    const perkhidmatanKhasBudget = expenseDataState.perkhidmatanKhas?.budget2025 || 0;
-    const perkhidmatanLainBudget = expenseDataState.perkhidmatanLain?.budget2025 || 0;
-    const perkhidmatanKewanganBudget = expenseDataState.perkhidmatanKewangan?.budget2025 || 0;
+    const categoryBudgets = {};
+    let grandTotal = 0;
+    
+    expenseDataState.categorySections.forEach((section, index) => {
+      const categoryName = section.title || `category_${index}`;
+      const categoryBudget = section.data?.budget2025 || 0;
+      categoryBudgets[categoryName] = categoryBudget;
+      grandTotal += categoryBudget;
+    });
     
     return {
-      perkhidmatanAm: perkhidmatanAmBudget,
-      perkhidmatanKhas: perkhidmatanKhasBudget,
-      perkhidmatanLain: perkhidmatanLainBudget,
-      perkhidmatanKewangan: perkhidmatanKewanganBudget,
-      grand: perkhidmatanAmBudget + perkhidmatanKhasBudget + perkhidmatanLainBudget + perkhidmatanKewanganBudget
+      ...categoryBudgets,
+      grand: grandTotal
     };
   }, [expenseDataState]);
 
   // Calculate actual totals
   const actualTotal = useMemo(() => {
-    if (!expenseDataState) return null;
+    if (!expenseDataState?.categorySections) return null;
     
-    const perkhidmatanAmActual = expenseDataState.perkhidmatanAm?.actual2024 || 0;
-    const perkhidmatanKhasActual = expenseDataState.perkhidmatanKhas?.actual2024 || 0;
-    const perkhidmatanLainActual = expenseDataState.perkhidmatanLain?.actual2024 || 0;
-    const perkhidmatanKewanganActual = expenseDataState.perkhidmatanKewangan?.actual2024 || 0;
+    const categoryActuals = {};
+    let grandTotal = 0;
+    
+    expenseDataState.categorySections.forEach((section, index) => {
+      const categoryName = section.title || `category_${index}`;
+      const categoryActual = section.data?.actual2024 || 0;
+      categoryActuals[categoryName] = categoryActual;
+      grandTotal += categoryActual;
+    });
     
     return {
-      perkhidmatanAm: perkhidmatanAmActual,
-      perkhidmatanKhas: perkhidmatanKhasActual,
-      perkhidmatanLain: perkhidmatanLainActual,
-      perkhidmatanKewangan: perkhidmatanKewanganActual,
-      grand: perkhidmatanAmActual + perkhidmatanKhasActual + perkhidmatanLainActual + perkhidmatanKewanganActual
+      ...categoryActuals,
+      grand: grandTotal
     };
   }, [expenseDataState]);
 
@@ -122,6 +126,21 @@ const useExpenseBreakdown = () => {
   const renderCategorySection = (title, data, subCategories = [], bgColor = 'bg-gray-200') => {
     if (!data) return null;
     
+    // Recursive function to preserve nested structure
+    const processSubCategories = (subs) => {
+      if (!subs || subs.length === 0) return [];
+      
+      return subs.map(sub => ({
+        code: sub.code,
+        description: sub.description,
+        actual2024: sub.actual2024,
+        budget2024: sub.budget2024,
+        budget2025: sub.budget2025,
+        monthly: sub.monthly || {},
+        subCategories: processSubCategories(sub.subCategories || [])
+      }));
+    };
+    
     return {
       title,
       bgColor,
@@ -133,48 +152,36 @@ const useExpenseBreakdown = () => {
         budget2025: data.budget2025,
         monthly: data.monthly || {}
       },
-      subCategories: subCategories.map(sub => ({
-        code: sub.code,
-        description: sub.description,
-        actual2024: sub.actual2024,
-        budget2024: sub.budget2024,
-        budget2025: sub.budget2025,
-        monthly: sub.monthly || {},
-        details: sub.details || []
-      }))
+      subCategories: processSubCategories(subCategories)
     };
   };
 
   // Build category sections
   const categorySections = useMemo(() => {
-    if (!expenseDataState) return [];
+    if (!expenseDataState?.categorySections) return [];
     
-    return [
-      renderCategorySection(
-        "PERKHIDMATAN AM", 
-        expenseDataState.perkhidmatanAm, 
-        expenseDataState.perkhidmatanAm?.subCategories || [],
-        "bg-red-200"
-      ),
-      renderCategorySection(
-        "PERKHIDMATAN KHAS", 
-        expenseDataState.perkhidmatanKhas, 
-        expenseDataState.perkhidmatanKhas?.subCategories || [],
-        "bg-blue-200"
-      ),
-      renderCategorySection(
-        "PERKHIDMATAN LAIN", 
-        expenseDataState.perkhidmatanLain, 
-        expenseDataState.perkhidmatanLain?.subCategories || [],
-        "bg-yellow-200"
-      ),
-      renderCategorySection(
-        "PERKHIDMATAN KEWANGAN", 
-        expenseDataState.perkhidmatanKewangan, 
-        expenseDataState.perkhidmatanKewangan?.subCategories || [],
-        "bg-purple-200"
-      )
-    ].filter(Boolean);
+    const sections = expenseDataState.categorySections.map((section, index) => {
+      const bgColors = ['bg-red-200', 'bg-blue-200', 'bg-yellow-200', 'bg-purple-200', 'bg-green-200', 'bg-indigo-200'];
+      const bgColor = bgColors[index % bgColors.length];
+      
+      const processedSection = renderCategorySection(
+        section.title || `Category ${index + 1}`,
+        section.data,
+        section.subCategories || [],
+        section.bgColor || bgColor
+      );
+      
+      // Debug logging
+      console.log(`Section ${index}: ${processedSection.title}`, {
+        subCategoriesCount: processedSection.subCategories?.length || 0,
+        hasNestedSubs: processedSection.subCategories?.some(sub => sub.subCategories?.length > 0) || false
+      });
+      
+      return processedSection;
+    });
+    
+    console.log('Final categorySections:', sections);
+    return sections;
   }, [expenseDataState]);
 
   return {
@@ -190,6 +197,8 @@ const useExpenseBreakdown = () => {
       setLoading(true);
       setError(null);
       setExpenseDataState(null);
+      // Actually fetch new data
+      fetchExpenseData();
     }
   };
 };

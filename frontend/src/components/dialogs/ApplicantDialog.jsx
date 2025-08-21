@@ -150,9 +150,9 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
       setLocalLoading(true);
       
       try {
-        const {data:budgetResponse} = await apiClient.get("/budgets?pagination_no=100"); // Get more budgets for selection
+        const {data:budgetResponse} = await apiClient.get(`/budgets/bydepartment/${currentUser?.department_id}`); // Get budgets by department
         if (budgetResponse.success) {
-          setBudgets(budgetResponse.data.data || []);
+          setBudgets(budgetResponse.data || []);
         } else {
           // Fallback for old API format
           setBudgets(budgetResponse.data || budgetResponse || []);

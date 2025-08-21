@@ -800,6 +800,69 @@ class BudgetController extends Controller
 
 
 	/**
+	 * Get budgets by department ID
+	 */
+	public function getByDepartment($departmentId)
+	{
+		try {
+			// Validate department ID
+			if (!is_numeric($departmentId) || $departmentId < 1) {
+				return response()->json([
+					'success' => false,
+					'message' => 'ID Jabatan tidak sah',
+					'error' => 'Invalid department ID parameter'
+				], 400);
+			}
+
+			$departmentId = (int) $departmentId;
+
+					// Get budgets for the specified department (only select specific fields)
+		// Filter: type = 1 (Revenue) or 2 (Expenditure), child_count = 0, and bdgtotal > 0
+		$budgets = Budget::select(['id', 'code', 'name', 'bdgtotal'])
+			// ->where('department_id', $departmentId)
+			->whereIn('type', [1, 2])  // type = 1 (Revenue) or 2 (Expenditure)
+			->where('child_count', 0)  // no children (leaf nodes)
+			->where('bdgtotal', '>', 0)  // budget total must be greater than 0
+			->orderBy('type', 'asc')
+			->orderBy('code', 'asc')
+			->orderBy('level', 'asc')
+			->orderBy('sort_order', 'asc')
+			->get();
+
+			// Check if department exists and has budgets
+			if ($budgets->isEmpty()) {
+				return response()->json([
+					'success' => true,
+					'data' => [],
+					'department_id' => $departmentId,
+					'message' => 'Tiada budget ditemui untuk jabatan ini',
+					'count' => 0
+				]);
+			}
+
+			return response()->json([
+				'success' => true,
+				'data' => $budgets,
+				'department_id' => $departmentId,
+				'count' => $budgets->count()
+			]);
+
+		} catch (\Exception $e) {
+			Log::error('Error getting budget by department: ' . $e->getMessage(), [
+				'department_id' => $departmentId,
+				'file' => __FILE__,
+				'line' => __LINE__
+			]);
+			
+			return response()->json([
+				'success' => false,
+				'message' => 'Ralat mendapatkan budget jabatan',
+				'error' => $e->getMessage()
+			], 500);
+		}
+	}
+
+	/**
 	 * Archive current year's budgets into a year-suffixed table
 	 * and optionally create budgets for a new year (archive)
 	 */
@@ -1232,24 +1295,51 @@ class BudgetController extends Controller
 	public function getExpenseBreakdownData()
 	{
 		try {
-			$data = Cache::remember('expense_breakdown_data', now()->addMinutes(self::CACHE_TTL), function () {
-				// Get hierarchical expense data (type 2 = Kredit) - only level 0, 1, 2
+			// Clear existing cache first to ensure fresh data
+			Cache::forget('expense_breakdown_data_v2');
+			
+			$data = Cache::remember('expense_breakdown_data_v2', now()->addMinutes(self::CACHE_TTL), function () {
+				// Get hierarchical expense data (type 2 = Kredit) - show all levels for type 2
 				$expenses = Budget::where('type', 2)
-					->whereIn('level', [0, 1, 2, 3, 4])
 					->with(['department', 'parent', 'children'])
 					->orderBy('level')
 					->orderBy('sort_order')
 					->orderBy('code')
 					->get();
+				
+
 
 				// Build hierarchical structure
 				$categories = [];
 				$rootCategories = $expenses->where('level', 0);
 
 				foreach ($rootCategories as $root) {
+					// $category = [
+					// 	'title' => $root->name,
+					// 	'bgColor' => $root->type == 0 ? 'bg-green-200' : 'bg-red-200',
+					// 	'data' => [
+					// 		'code' => $root->code,
+					// 		'description' => $root->name,
+					// 		'actual2024' => $root->acttotal,
+					// 		'budget2024' => $root->bdgtotal,
+					// 		'budget2025' => $root->bdgtotal,
+					// 		'monthly' => [
+					// 			'jan' => $root->act1, 'feb' => $root->act2, 'mar' => $root->act3,
+					// 			'apr' => $root->act4, 'may' => $root->act5, 'jun' => $root->act6,
+					// 			'jul' => $root->act7, 'aug' => $root->act8, 'sep' => $root->act9,
+					// 			'oct' => $root->act10, 'nov' => $root->act11, 'dec' => $root->act12
+					// 		]
+					// 	],
+					// 	'subCategories' => []
+					// ];
+
+					// Build complete hierarchical structure recursively for all levels
+					// $category['subCategories'] = $this->buildHierarchicalStructureForExpenses($expenses, $root->id, 1);
+					// $categories[] = $category;
+
 					$category = [
 						'title' => $root->name,
-						'bgColor' => 'bg-red-200',
+						'bgColor' => $root->type == 0 ? 'bg-green-200' : 'bg-red-200',
 						'data' => [
 							'code' => $root->code,
 							'description' => $root->name,
@@ -1257,54 +1347,24 @@ class BudgetController extends Controller
 							'budget2024' => $root->bdgtotal,
 							'budget2025' => $root->bdgtotal,
 							'monthly' => [
-								'jan' => $root->act1, 'feb' => $root->act2, 'mar' => $root->act3,
-								'apr' => $root->act4, 'may' => $root->act5, 'jun' => $root->act6,
-								'jul' => $root->act7, 'aug' => $root->act8, 'sep' => $root->act9,
-								'oct' => $root->act10, 'nov' => $root->act11, 'dec' => $root->act12
+								'jan' => $root->bdg1 ?: ($root->bdgtotal / 12),
+								'feb' => $root->bdg2 ?: ($root->bdgtotal / 12),
+								'mar' => $root->bdg3 ?: ($root->bdgtotal / 12),
+								'apr' => $root->bdg4 ?: ($root->bdgtotal / 12),
+								'may' => $root->bdg5 ?: ($root->bdgtotal / 12),
+								'jun' => $root->bdg6 ?: ($root->bdgtotal / 12),
+								'jul' => $root->bdg7 ?: ($root->bdgtotal / 12),
+								'aug' => $root->bdg8 ?: ($root->bdgtotal / 12),
+								'sep' => $root->bdg9 ?: ($root->bdgtotal / 12),
+								'oct' => $root->bdg10 ?: ($root->bdgtotal / 12),
+								'nov' => $root->bdg11 ?: ($root->bdgtotal / 12),
+								'dec' => $root->bdg12 ?: ($root->bdgtotal / 12)
 							]
 						],
 						'subCategories' => []
 					];
 
-					// Get subcategories (level 1)
-					$subCategories = $expenses->where('parent_id', $root->id)->where('level', 1);
-					foreach ($subCategories as $sub) {
-						$subCategory = [
-							'code' => $sub->code,
-							'description' => $sub->name,
-							'actual2024' => $sub->acttotal,
-							'budget2024' => $sub->bdgtotal,
-							'budget2025' => $sub->bdgtotal,
-							'monthly' => [
-								'jan' => $sub->act1, 'feb' => $sub->act2, 'mar' => $sub->act3,
-								'apr' => $sub->act4, 'may' => $sub->act5, 'jun' => $sub->act6,
-								'jul' => $sub->act7, 'aug' => $sub->act8, 'sep' => $sub->act9,
-								'oct' => $sub->act10, 'nov' => $sub->act11, 'dec' => $sub->act12
-							],
-							'details' => []
-						];
-
-						// Get details (level 2)
-						$details = $expenses->where('parent_id', $sub->id)->where('level', 2);
-						foreach ($details as $detail) {
-							$subCategory['details'][] = [
-								'code' => $detail->code,
-								'description' => $detail->name,
-								'actual2024' => $detail->acttotal,
-								'budget2024' => $detail->bdgtotal,
-								'budget2025' => $detail->bdgtotal,
-								'monthly' => [
-									'jan' => $detail->act1, 'feb' => $detail->act2, 'mar' => $detail->act3,
-									'apr' => $detail->act4, 'may' => $detail->act5, 'jun' => $detail->act6,
-									'jul' => $detail->act7, 'aug' => $detail->act8, 'sep' => $detail->act9,
-									'oct' => $detail->act10, 'nov' => $detail->act11, 'dec' => $detail->act12
-								]
-							];
-						}
-
-						$category['subCategories'][] = $subCategory;
-					}
-
+					$category['subCategories'] = $this->buildHierarchicalStructure($expenses, $root->id, 1);
 					$categories[] = $category;
 				}
 
@@ -1321,7 +1381,7 @@ class BudgetController extends Controller
 			return response()->json([
 				'success' => true,
 				'data' => $data,
-				'source' => Cache::has('expense_breakdown_data') ? 'cache' : 'database'
+				'source' => Cache::has('expense_breakdown_data_v2') ? 'cache' : 'database'
 			]);
 		} catch (\Exception $e) {
 			Log::error('Error getting expense breakdown data: ' . $e->getMessage());
@@ -1339,15 +1399,21 @@ class BudgetController extends Controller
 	public function getRevenueBreakdownData()
 	{
 		try {
+			// Clear existing cache first to ensure fresh data
+			Cache::forget('revenue_breakdown_data');
+			
 			$data = Cache::remember('revenue_breakdown_data', now()->addMinutes(self::CACHE_TTL), function () {
-				// Get hierarchical revenue data (type 0 = Operasi, type 1 = Debit) - only level 0, 1, 2
-				$revenues = Budget::whereIn('type', [0, 1])
-					->whereIn('level', [0, 1, 2, 3, 4])
+				// Get hierarchical revenue data (type 1 = Debit/Revenue only) - show all levels for type 1
+				$revenues = Budget::where('type', 1)
 					->with(['department', 'parent', 'children'])
 					->orderBy('level')
 					->orderBy('sort_order')
 					->orderBy('code')
 					->get();
+
+
+
+
 
 				// Build hierarchical structure
 				$categories = [];
@@ -1364,61 +1430,32 @@ class BudgetController extends Controller
 							'budget2024' => $root->bdgtotal,
 							'budget2025' => $root->bdgtotal,
 							'monthly' => [
-								'jan' => $root->act1, 'feb' => $root->act2, 'mar' => $root->act3,
-								'apr' => $root->act4, 'may' => $root->act5, 'jun' => $root->act6,
-								'jul' => $root->act7, 'aug' => $root->act8, 'sep' => $root->act9,
-								'oct' => $root->act10, 'nov' => $root->act11, 'dec' => $root->act12
+								'jan' => $root->bdg1 ?: ($root->bdgtotal / 12),
+								'feb' => $root->bdg2 ?: ($root->bdgtotal / 12),
+								'mar' => $root->bdg3 ?: ($root->bdgtotal / 12),
+								'apr' => $root->bdg4 ?: ($root->bdgtotal / 12),
+								'may' => $root->bdg5 ?: ($root->bdgtotal / 12),
+								'jun' => $root->bdg6 ?: ($root->bdgtotal / 12),
+								'jul' => $root->bdg7 ?: ($root->bdgtotal / 12),
+								'aug' => $root->bdg8 ?: ($root->bdgtotal / 12),
+								'sep' => $root->bdg9 ?: ($root->bdgtotal / 12),
+								'oct' => $root->bdg10 ?: ($root->bdgtotal / 12),
+								'nov' => $root->bdg11 ?: ($root->bdgtotal / 12),
+								'dec' => $root->bdg12 ?: ($root->bdgtotal / 12)
 							]
 						],
 						'subCategories' => []
 					];
 
-					// Get subcategories (level 1)
-					$subCategories = $revenues->where('parent_id', $root->id)->where('level', 1);
-					foreach ($subCategories as $sub) {
-						$subCategory = [
-							'code' => $sub->code,
-							'description' => $sub->name,
-							'actual2024' => $sub->acttotal,
-							'budget2024' => $sub->bdgtotal,
-							'budget2025' => $sub->bdgtotal,
-							'monthly' => [
-								'jan' => $sub->act1, 'feb' => $sub->act2, 'mar' => $sub->act3,
-								'apr' => $sub->act4, 'may' => $sub->act5, 'jun' => $sub->act6,
-								'jul' => $sub->act7, 'aug' => $sub->act8, 'sep' => $sub->act9,
-								'oct' => $sub->act10, 'nov' => $sub->act11, 'dec' => $sub->act12
-							],
-							'details' => []
-						];
-
-						// Get details (level 2)
-						$details = $revenues->where('parent_id', $sub->id)->where('level', 2);
-						foreach ($details as $detail) {
-							$subCategory['details'][] = [
-								'code' => $detail->code,
-								'description' => $detail->name,
-								'actual2024' => $detail->acttotal,
-								'budget2024' => $detail->bdgtotal,
-								'budget2025' => $detail->bdgtotal,
-								'monthly' => [
-									'jan' => $detail->act1, 'feb' => $detail->act2, 'mar' => $detail->act3,
-									'apr' => $detail->act4, 'may' => $detail->act5, 'jun' => $detail->act6,
-									'jul' => $detail->act7, 'aug' => $detail->act8, 'sep' => $detail->act9,
-									'oct' => $detail->act10, 'nov' => $detail->act11, 'dec' => $detail->act12
-								]
-							];
-						}
-
-						$category['subCategories'][] = $subCategory;
-					}
-
+					// Build complete hierarchical structure recursively for all levels
+					$category['subCategories'] = $this->buildHierarchicalStructure($revenues, $root->id, 1);
 					$categories[] = $category;
 				}
 
 				return [
 					'categorySections' => $categories,
 					'config' => [
-						'organization' => 'MAJLIS BANDARAYA ALOR SETAR',
+						'organization' => '',
 						'year' => date('Y'),
 						'generated_at' => now()->toDateTimeString()
 					]
@@ -1438,6 +1475,106 @@ class BudgetController extends Controller
 				'error' => $e->getMessage()
 			], 500);
 		}
+	}
+
+	/**
+	 * Build hierarchical structure recursively for all levels (for revenue)
+	 */
+	private function buildHierarchicalStructure($revenues, $parentId, $currentLevel)
+	{
+		$children = $revenues->where('parent_id', $parentId)->where('level', $currentLevel);
+		$result = [];
+
+
+
+		foreach ($children as $child) {
+			$childData = [
+				'code' => $child->code,
+				'description' => $child->name,
+				'actual2024' => $child->acttotal,
+				'budget2024' => $child->bdgtotal,
+				'budget2025' => $child->bdgtotal,
+				'monthly' => [
+					'jan' => $child->bdg1 ?: ($child->bdgtotal / 12),
+					'feb' => $child->bdg2 ?: ($child->bdgtotal / 12),
+					'mar' => $child->bdg3 ?: ($child->bdgtotal / 12),
+					'apr' => $child->bdg4 ?: ($child->bdgtotal / 12),
+					'may' => $child->bdg5 ?: ($child->bdgtotal / 12),
+					'jun' => $child->bdg6 ?: ($child->bdgtotal / 12),
+					'jul' => $child->bdg7 ?: ($child->bdgtotal / 12),
+					'aug' => $child->bdg8 ?: ($child->bdgtotal / 12),
+					'sep' => $child->bdg9 ?: ($child->bdgtotal / 12),
+					'oct' => $child->bdg10 ?: ($child->bdgtotal / 12),
+					'nov' => $child->bdg11 ?: ($child->bdgtotal / 12),
+					'dec' => $child->bdg12 ?: ($child->bdgtotal / 12)
+				]
+			];
+
+			// Check if this child has more children at any higher level
+			$hasMoreChildren = $revenues->where('parent_id', $child->id)->where('level', '>', $currentLevel)->count() > 0;
+
+			if ($hasMoreChildren) {
+				// Find the next available level
+				$nextLevel = $revenues->where('parent_id', $child->id)->min('level');
+				if ($nextLevel && $nextLevel > $currentLevel) {
+					// Recursively build next level
+					$childData['subCategories'] = $this->buildHierarchicalStructure($revenues, $child->id, $nextLevel);
+				} else {
+					$childData['subCategories'] = [];
+				}
+			} else {
+				$childData['subCategories'] = [];
+			}
+
+			$result[] = $childData;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Build hierarchical structure recursively for all levels (for expenses)
+	 */
+	private function buildHierarchicalStructureForExpenses($expenses, $parentId, $currentLevel)
+	{
+		$children = $expenses->where('parent_id', $parentId)->where('level', $currentLevel);
+		$result = [];
+
+		foreach ($children as $child) {
+			$childData = [
+				'code' => $child->code,
+				'description' => $child->name,
+				'actual2024' => $child->acttotal,
+				'budget2024' => $child->bdgtotal,
+				'budget2025' => $child->bdgtotal,
+				'monthly' => [
+					'jan' => $child->act1, 'feb' => $child->act2, 'mar' => $child->act3,
+					'apr' => $child->act4, 'may' => $child->act5, 'jun' => $child->act6,
+					'jul' => $child->act7, 'aug' => $child->act8, 'sep' => $child->act9,
+					'oct' => $child->act10, 'nov' => $child->act11, 'dec' => $child->act12
+				]
+			];
+
+			// Check if this child has more children at any higher level
+			$hasMoreChildren = $expenses->where('parent_id', $child->id)->where('level', '>', $currentLevel)->count() > 0;
+
+			if ($hasMoreChildren) {
+				// Find the next available level
+				$nextLevel = $expenses->where('parent_id', $child->id)->min('level');
+				if ($nextLevel && $nextLevel > $currentLevel) {
+					// Recursively build next level
+					$childData['subCategories'] = $this->buildHierarchicalStructureForExpenses($expenses, $child->id, $nextLevel);
+				} else {
+					$childData['subCategories'] = [];
+				}
+			} else {
+				$childData['subCategories'] = [];
+			}
+
+			$result[] = $childData;
+		}
+
+		return $result;
 	}
 
 	/**

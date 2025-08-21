@@ -74,7 +74,8 @@ const BudgetAllocationDialog = ({
   const getTotalAmount = () => {
     const amount = formData.totalAmount;
     if (amount === null || amount === undefined || amount === '') return 0;
-    return parseFloat(amount) || 0;
+    const parsed = parseFloat(amount);
+    return isNaN(parsed) ? 0 : parsed;
   };
 
   const canSave = () => {
@@ -101,12 +102,12 @@ const BudgetAllocationDialog = ({
   const isAmountTooSmall = () => {
     const amount = getTotalAmount();
     // If amount is less than RM 1.00, it's too small to divide
-    if (amount < 12000) {
+    if (amount < 1) {
       return true;
     }
     
     // If amount is less than RM 0.50 per month for 12 months, it's too small
-    if (amount < 6000) {
+    if (amount < 6) {
       return true;
     }
     
@@ -123,7 +124,8 @@ const BudgetAllocationDialog = ({
   const calculateTotalFromMonthly = () => {
     let total = 0;
     for (let i = 1; i <= 12; i++) {
-      total += parseFloat(formData[`bdg${i}`] || 0);
+      const value = parseFloat(formData[`bdg${i}`] || 0);
+      total += isNaN(value) ? 0 : value;
     }
     return total;
   };
@@ -146,13 +148,13 @@ const BudgetAllocationDialog = ({
     if (amount > 0 && formData.selectedMonths.length > 0 && !areMonthsDisabled()) {
       const monthlyAmount = calculateMonthlyBudget();
       
-              // Check if update is needed - only update months that were originally 0
-        for (let i = 1; i <= 12; i++) {
-          const originalValue = parseFloat(originalData[`bdg${i}`] || 0);
-          const expectedValue = formData.selectedMonths.includes(i) ? monthlyAmount : 0;
-          
-          // If original value was 0, use calculated value; otherwise preserve original
-          const finalValue = originalValue > 0 ? originalValue : expectedValue;
+      // Check if update is needed - only update months that were originally 0
+      for (let i = 1; i <= 12; i++) {
+        const originalValue = parseFloat(originalData[`bdg${i}`] || 0);
+        const expectedValue = formData.selectedMonths.includes(i) ? monthlyAmount : 0;
+        
+        // If original value was 0, use calculated value; otherwise preserve original
+        const finalValue = originalValue > 0 ? originalValue : expectedValue;
         
         if (currentMonthlyData[`bdg${i}`] !== finalValue) {
           shouldUpdate = true;
@@ -182,7 +184,7 @@ const BudgetAllocationDialog = ({
       }
     }
     
-    // Only update if necessary
+    // Only update if necessary and prevent infinite loops
     if (shouldUpdate) {
       setFormData(newFormData);
     }
@@ -289,9 +291,11 @@ const BudgetAllocationDialog = ({
     let processedValue = value;
     
     if (field === 'totalAmount') {
-      processedValue = parseFloat(value) || 0;
+      const parsed = parseFloat(value);
+      processedValue = isNaN(parsed) ? 0 : parsed;
     } else if (field.startsWith('bdg')) {
-      processedValue = parseFloat(value) || 0;
+      const parsed = parseFloat(value);
+      processedValue = isNaN(parsed) ? 0 : parsed;
     }
     
     setFormData(prev => ({
@@ -380,22 +384,22 @@ const BudgetAllocationDialog = ({
 
     setIsLoading(true);
     try {
-      // Prepare data for API call
+      // Prepare data for API call - ensure all values are valid numbers
       const submitData = {
-        bdg1: formData.bdg1,
-        bdg2: formData.bdg2,
-        bdg3: formData.bdg3,
-        bdg4: formData.bdg4,
-        bdg5: formData.bdg5,
-        bdg6: formData.bdg6,
-        bdg7: formData.bdg7,
-        bdg8: formData.bdg8,
-        bdg9: formData.bdg9,
-        bdg10: formData.bdg10,
-        bdg11: formData.bdg11,
-        bdg12: formData.bdg12,
+        bdg1: parseFloat(formData.bdg1) || 0,
+        bdg2: parseFloat(formData.bdg2) || 0,
+        bdg3: parseFloat(formData.bdg3) || 0,
+        bdg4: parseFloat(formData.bdg4) || 0,
+        bdg5: parseFloat(formData.bdg5) || 0,
+        bdg6: parseFloat(formData.bdg6) || 0,
+        bdg7: parseFloat(formData.bdg7) || 0,
+        bdg8: parseFloat(formData.bdg8) || 0,
+        bdg9: parseFloat(formData.bdg9) || 0,
+        bdg10: parseFloat(formData.bdg10) || 0,
+        bdg11: parseFloat(formData.bdg11) || 0,
+        bdg12: parseFloat(formData.bdg12) || 0,
         bdgtotal: getTotalAmount(), // Use helper function
-        acttotal: formData.acttotal || 0, // Add actual total
+        acttotal: parseFloat(formData.acttotal) || 0, // Add actual total
         year: selectedYear
       };
 
@@ -405,7 +409,6 @@ const BudgetAllocationDialog = ({
       }
 
       const response = await apiClient.put(`/budgets/${selectedBudget.id}/budget-allocation`, submitData);
-      console.log(response);
       toast.success('Agihan bajet bulanan berjaya dikemaskini');
       
       // Call onSuccess callback if provided
@@ -475,7 +478,7 @@ const BudgetAllocationDialog = ({
                 </label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="any"
                   min="0"
                   value={formData.totalAmount || ''}
                   onChange={(e) => handleInputChange('totalAmount', e.target.value)}
@@ -503,7 +506,7 @@ const BudgetAllocationDialog = ({
                 </label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="any"
                   min="0"
                   value={formData.acttotal || 0}
                   onChange={(e) => handleInputChange('acttotal', e.target.value)}
@@ -560,7 +563,7 @@ const BudgetAllocationDialog = ({
                          </label>
                         <input
                           type="number"
-                          step="0.01"
+                          step="any"
                           min="0"
                           value={formData[`bdg${monthNumber}`] || ''}
                           onChange={(e) => handleInputChange(`bdg${monthNumber}`, e.target.value)}
@@ -586,12 +589,12 @@ const BudgetAllocationDialog = ({
                       <strong>Nota:</strong> Anda boleh mengubahsuai nilai bulanan secara manual. 
                       Nilai asal yang sedia ada akan dipelihara. Jumlah bajet akan dikira secara automatik berdasarkan input bulanan.
                     </p>
-                    <div className="text-right">
-                      <p className="text-xs text-blue-600">Jumlah Terkini:</p>
-                      <p className="text-lg font-bold text-blue-700">
-                        RM {calculateTotalFromMonthly().toFixed(2)}
-                      </p>
-                    </div>
+                                    <div className="text-right">
+                  <p className="text-xs text-blue-600">Jumlah Terkini:</p>
+                  <p className="text-lg font-bold text-blue-700">
+                    RM {(calculateTotalFromMonthly() || 0).toFixed(2)}
+                  </p>
+                </div>
                   </div>
                 </div>
               </div>
@@ -651,9 +654,9 @@ const BudgetAllocationDialog = ({
                             hasOriginalValue ? 'text-blue-600' : 'text-green-600'
                           }`}>
                             {hasOriginalValue ? (
-                              <span>RM {originalValue.toFixed(2)} (Asal)</span>
+                              <span>RM {(originalValue || 0).toFixed(2)} (Asal)</span>
                             ) : (
-                              <span>RM {monthlyAmount.toFixed(2)}</span>
+                              <span>RM {(monthlyAmount || 0).toFixed(2)}</span>
                             )}
                           </div>
                         )}

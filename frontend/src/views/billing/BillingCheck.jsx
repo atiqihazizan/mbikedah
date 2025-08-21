@@ -27,16 +27,18 @@ export default function BillingCheck() {
 
   const fetchAllData = useCallback(async () => {
     try {
+      const departmentId = currentUser?.department_id;
       const [billingRes, budgetsRes, banksRes] = await Promise.all([
         apiClient.post(`/status-validation/validate`,{billing_id: idBilling, status: 3, action:'process'}),
-        apiClient.get("/budgets?pagination_no=100"), // Get more budgets for selection
+        // apiClient.get("/budgets?pagination_no=100"), // Get more budgets for selection
+        apiClient.get(`/budgets/bydepartment/${departmentId}`), // Get budgets by department
         apiClient.get("/banks")
       ]);
       setBilling(billingRes.data);
       
-      // Handle new pagination response format
+      // Handle budget response format
       if (budgetsRes.data.success) {
-        setBudgets(budgetsRes.data.data.data || []);
+        setBudgets(budgetsRes.data.data || []);
       } else {
         // Fallback for old API format
         setBudgets(budgetsRes.data.data || budgetsRes.data || []);

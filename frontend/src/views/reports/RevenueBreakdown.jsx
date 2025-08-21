@@ -35,17 +35,17 @@ function RevenueBreakdown() {
     paperSize: 'a4',
     includeStyles: true,
     showHeader: false,
-    showFooter: true,
-    footerText: 'Dicetak pada: ' + new Date().toLocaleDateString('ms-MY', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }),
+    showFooter: false,
+    // footerText: 'Dicetak pada: ' + new Date().toLocaleDateString('ms-MY', {
+    //   year: 'numeric',
+    //   month: 'long',
+    //   day: 'numeric'
+    // }),
     margins: {
       top: 0.3,
-      right: 0.3,
-      bottom: 0.3,
-      left: 0.3
+      right: 0.2,
+      bottom: 0.2,
+      left: 0.1
     },
     customPrintStyles: `
       .statement-table {
@@ -54,13 +54,18 @@ function RevenueBreakdown() {
       }
       
       table {
-        font-size: 0.6rem !important;
+        font-size: 0.4rem !important;
         line-height: 0.8rem !important;
       }
       
       th, td {
+        font-size: 0.5rem !important;
         padding: 0.1rem 0.2rem !important;
         border: 1px solid #333 !important;
+      }
+
+      td:nth-child(2) {
+        font-size: 0.4rem !important;
       }
       
       .print\\:bg-green-400 {
@@ -98,6 +103,47 @@ function RevenueBreakdown() {
   const isLoading = userLoading || loading;
   const hasError = userError || error;
 
+  // Recursive function to render subcategories at any level
+  const renderSubCategories = (subCategories, level = 1) => {
+    if (!subCategories || subCategories.length === 0) return null;
+
+    return subCategories.map((subCategory, subIndex) => {
+      const hasChildren = subCategory.subCategories && subCategory.subCategories.length > 0;
+      const fontWeight = hasChildren ? 'font-bold' : 'font-normal';
+      
+      return (
+        <React.Fragment key={`level-${level}-sub-${subIndex}`}>
+          <tr className="hover:bg-gray-50 print:hover:bg-transparent">
+            {/* <td className={`border border-gray-400 px-2 py-1 text-xs ${fontWeight}`} style={{ paddingLeft: `${level * 8 + 8}px` }}> */}
+            <td className={`border border-gray-400 px-2 py-1 text-xs ${fontWeight} text-center`}>
+              {subCategory.code}
+            </td>
+            <td className={`border border-gray-400 px-2 py-1 text-xs ${fontWeight}`} style={{ paddingLeft: `${level * 8 + 8}px` }}>
+              {subCategory.description}
+            </td>
+            <td className={`border border-gray-400 px-1 py-1 text-right text-[8pt] ${fontWeight}`}>
+              {formatCurrency(subCategory.actual2024)}
+            </td>
+            <td className={`border border-gray-400 px-1 py-1 text-right text-[8pt] ${fontWeight}`}>
+              {formatCurrency(subCategory.budget2024)}
+            </td>
+            <td className={`border border-gray-400 px-1 py-1 text-right text-[8pt] ${fontWeight}`}>
+              {formatCurrency(subCategory.budget2025)}
+            </td>
+            {months.map(month => (
+              <td key={month} className={`border border-gray-400 px-1 py-1 text-right text-[8pt] ${fontWeight}`}>
+                {formatCurrency(subCategory.monthly?.[month])}
+              </td>
+            ))}
+          </tr>
+
+          {/* Recursively render next level if subcategories exist */}
+          {hasChildren && renderSubCategories(subCategory.subCategories, level + 1)}
+        </React.Fragment>
+      );
+    });
+  };
+
   // Handle print function
   const handlePrint = () => {
     printElement('.revenue-breakdown-container');
@@ -111,6 +157,7 @@ function RevenueBreakdown() {
             <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
             <span className="text-gray-600">Memuat data...</span>
           </div>
+
         </div>
       </div>
     );
@@ -166,9 +213,9 @@ function RevenueBreakdown() {
         <h1 className="text-sm font-bold uppercase">
           BUTIRAN ANGGARAN PENERIMAAN HASIL BAGI TAHUN {new Date().getFullYear()}
         </h1>
-        {revenueData?.config?.organization && (
+        {/* {revenueData?.config?.organization && (
           <p className="text-xs mt-1">{revenueData.config.organization}</p>
-        )}
+        )} */}
       </div>
 
       {/* Main Table */}
@@ -179,7 +226,7 @@ function RevenueBreakdown() {
             {/* Table Header */}
             <thead>
               <tr className="bg-gray-600 text-white">
-                <th className="border border-gray-400 px-2 py-1 text-center font-bold">
+                <th className="border border-gray-400 px-2 py-1 text-center font-bold w-24">
                   KOD AKAUN
                 </th>
                 <th className="border border-gray-400 px-2 py-1 text-center font-bold">
@@ -209,81 +256,30 @@ function RevenueBreakdown() {
                 <React.Fragment key={section.title}>
                   {/* Main Category */}
                   <tr className={section.bgColor}>
-                    <td className="border border-gray-400 px-2 py-1 text-xs font-medium">
+                    <td className="border border-gray-400 px-2 py-1 text-xs font-bold text-center">
                       {section.data.code}
                     </td>
-                    <td className="border border-gray-400 px-2 py-1 text-xs font-medium">
+                    <td className="border border-gray-400 px-2 py-1 text-[8pt] font-bold">
                       {section.data.description}
                     </td>
-                    <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    <td className="border border-gray-400 px-1 py-1 text-right text-[8pt] font-bold">
                       {formatCurrency(section.data.actual2024)}
                     </td>
-                    <td className="border border-gray-400 px-1 py-1 text-right text-xs">
+                    <td className="border border-gray-400 px-1 py-1 text-right text-[8pt] font-bold">
                       {formatCurrency(section.data.budget2024)}
                     </td>
-                    <td className="border border-gray-400 px-1 py-1 text-right text-xs font-bold">
+                    <td className="border border-gray-400 px-1 py-1 text-right text-[8pt] font-bold">
                       {formatCurrency(section.data.budget2025)}
                     </td>
                     {months.map(month => (
-                      <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
+                      <td key={month} className="border border-gray-400 px-1 py-1 text-right text-[8pt] font-bold">
                         {formatCurrency(section.data.monthly?.[month])}
                       </td>
                     ))}
                   </tr>
 
-                  {/* Sub Categories */}
-                  {section.subCategories.map((subCategory, subIndex) => (
-                    <React.Fragment key={`${section.title}-sub-${subIndex}`}>
-                      <tr className="hover:bg-gray-50 print:hover:bg-transparent">
-                        <td className="border border-gray-400 px-2 py-1 text-xs">
-                          {subCategory.code}
-                        </td>
-                        <td className="border border-gray-400 px-2 py-1 text-xs">
-                          {subCategory.description}
-                        </td>
-                        <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                          {formatCurrency(subCategory.actual2024)}
-                        </td>
-                        <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                          {formatCurrency(subCategory.budget2024)}
-                        </td>
-                        <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                          {formatCurrency(subCategory.budget2025)}
-                        </td>
-                        {months.map(month => (
-                          <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
-                            {formatCurrency(subCategory.monthly?.[month])}
-                          </td>
-                        ))}
-                      </tr>
-
-                      {/* Details for subcategories */}
-                      {subCategory.details?.map((detail, detailIndex) => (
-                        <tr key={`${section.title}-sub-${subIndex}-detail-${detailIndex}`} className="hover:bg-gray-50 print:hover:bg-transparent">
-                          <td className="border border-gray-400 px-2 py-1 text-xs pl-4">
-                            {detail.code}
-                          </td>
-                          <td className="border border-gray-400 px-2 py-1 text-xs pl-4">
-                            {detail.description}
-                          </td>
-                          <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                            {formatCurrency(detail.actual2024)}
-                          </td>
-                          <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                            {formatCurrency(detail.budget2024)}
-                          </td>
-                          <td className="border border-gray-400 px-1 py-1 text-right text-xs">
-                            {formatCurrency(detail.budget2025)}
-                          </td>
-                          {months.map(month => (
-                            <td key={month} className="border border-gray-400 px-1 py-1 text-right text-xs">
-                              -
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  ))}
+                  {/* Render all subcategories recursively */}
+                  {renderSubCategories(section.subCategories, 1)}
                 </React.Fragment>
               ))}
 
@@ -296,3 +292,4 @@ function RevenueBreakdown() {
 }
 
 export default RevenueBreakdown;
+

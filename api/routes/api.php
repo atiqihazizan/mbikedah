@@ -110,6 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::prefix('budgets')->group(function () {
     // Special routes (must come before {id} routes)
     Route::get('/year/{year}', [BudgetController::class, 'getByYear']);
+    Route::get('/bydepartment/{departmentId}', [BudgetController::class, 'getByDepartment']);
 
     // Report Data Routes (new)
     Route::get('/reports/summary', [BudgetController::class, 'getBudgetSummaryData']);
