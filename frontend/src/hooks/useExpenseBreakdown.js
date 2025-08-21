@@ -12,7 +12,6 @@ const useExpenseBreakdown = () => {
       setError(null);
 
       const response = await apiClient.get('/budgets/reports/expense-breakdown');
-      console.log(response);
       if (response.success && response.data) {
         setExpenseDataState(response.data);
       } else {
@@ -171,16 +170,9 @@ const useExpenseBreakdown = () => {
         section.bgColor || bgColor
       );
       
-      // Debug logging
-      console.log(`Section ${index}: ${processedSection.title}`, {
-        subCategoriesCount: processedSection.subCategories?.length || 0,
-        hasNestedSubs: processedSection.subCategories?.some(sub => sub.subCategories?.length > 0) || false
-      });
-      
       return processedSection;
     });
     
-    console.log('Final categorySections:', sections);
     return sections;
   }, [expenseDataState]);
 
