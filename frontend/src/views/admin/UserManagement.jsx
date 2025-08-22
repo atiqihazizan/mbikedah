@@ -261,50 +261,47 @@ const UserManagement = () => {
       key: "user",
       label: "User",
       render: (value, user) => (
-        <div className="flex items-center whitespace-nowrap">
-          <div className="flex-shrink-0 h-10 w-10">
-            <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-medium ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
-              }`}>
+        <div className="flex items-start space-x-4">
+          {/* Avatar - Lebih besar di kiri */}
+          <div className="flex-shrink-0">
+            <div className={`h-16 w-16 rounded-full flex items-center justify-center text-lg font-bold ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>
               {user.name?.charAt(0)?.toUpperCase() || 'U'}
             </div>
           </div>
-          <div className="ml-4">
-            <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          
+          {/* Maklumat pengguna - Di sebelah kanan avatar */}
+          <div className="flex-1 min-w-0 space-y-2">
+            {/* Nama - Baris Pertama */}
+            <div className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {user.name || 'N/A'}
             </div>
-            <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              {user.username || 'N/A'} • {user.email || 'N/A'}
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "department",
-      label: "Department",
-      render: (value, user) => (
-        <div className="whitespace-nowrap">
-          <span className={`inline-flex text-xs font-semibold rounded-full ${isDark ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-800'
-            }`}>
-            {user.department || 'No Department'}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "abilities",
-      label: "Abilities",
-      render: (value, user) => (
-        <div className="whitespace-nowrap">
-          <div className="flex flex-wrap gap-1">
-            {user.abilities?.map((ability, index) => (
-              <span
-                key={index}
-                className={`px-2 py-1 inline-flex text-xs font-semibold rounded-full ${getAbilityBadgeColor(ability)}`}
-              >
-                {getAbilityName(ability) || ability}
+            
+            {/* Username • Email • Department - Baris Kedua */}
+            <div className="text-sm">
+              <span className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                {user.username || 'N/A'}
               </span>
-            )) || 'No abilities'}
+              <span className={`mx-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>•</span>
+              <span className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                {user.email || 'N/A'}
+              </span>
+              <span className={`mx-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>•</span>
+              <span className={`inline-flex text-xs font-medium rounded-full px-2 py-1 ${isDark ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
+                {user.department || 'No Department'}
+              </span>
+            </div>
+            
+            {/* Abilities - Baris Ketiga */}
+            <div className="flex flex-wrap gap-1">
+              {user.abilities?.map((ability, index) => (
+                <span
+                  key={index}
+                  className={`px-2 py-1 inline-flex text-xs font-semibold rounded-full ${getAbilityBadgeColor(ability)}`}
+                >
+                  {getAbilityName(ability) || ability}
+                </span>
+              )) || 'No abilities'}
+            </div>
           </div>
         </div>
       ),
@@ -317,30 +314,30 @@ const UserManagement = () => {
 
         return (
           <div className="whitespace-nowrap">
-          <button
-            onClick={() => handleToggleStatus(user)}
-            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-              user.is_active
-                ? 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-200 hover:border-green-300'
-                : 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-200 hover:border-red-300'
-            }`}
-            title={user.is_active ? 'Click to deactivate' : 'Click to activate'}
-          >
-            {/* Status Icon */}
-            {user.is_active ? (
-              <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            )}
-            
-            {/* Status Text */}
-            {user.is_active ? 'Active' : 'Inactive'}
-          </button>
-        </div>
+            <button
+              onClick={() => handleToggleStatus(user)}
+              className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                user.is_active
+                  ? 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-200 hover:border-green-300'
+                  : 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-200 hover:border-red-300'
+              }`}
+              title={user.is_active ? 'Click to deactivate' : 'Click to activate'}
+            >
+              {/* Status Icon */}
+              {user.is_active ? (
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              )}
+              
+              {/* Status Text */}
+              {user.is_active ? 'Active' : 'Inactive'}
+            </button>
+          </div>
         );
       },
     },
@@ -352,19 +349,17 @@ const UserManagement = () => {
 
         return (
           <div className="whitespace-nowrap text-sm font-medium">
-            <div className="flex space-x-2">
+            <div className="flex flex-col space-y-2">
               <button
                 onClick={() => handleEditUser(user)}
-                className={`text-blue-600 hover:text-blue-900 ${isDark ? 'hover:text-blue-400' : 'hover:text-blue-900'
-                  }`}
+                className={`px-3 py-2 text-blue-600 hover:text-blue-900 border border-blue-200 hover:border-blue-300 rounded-lg transition-colors ${isDark ? 'hover:text-blue-400' : 'hover:text-blue-900'}`}
                 title="Edit User"
               >
                 Edit
               </button>
               <button
                 onClick={() => handleDeleteUser(user.id)}
-                className={`text-red-600 hover:text-red-900 ${isDark ? 'hover:text-red-400' : 'hover:text-red-900'
-                  }`}
+                className={`px-3 py-2 text-red-600 hover:text-red-900 border border-red-200 hover:border-red-300 rounded-lg transition-colors ${isDark ? 'hover:text-red-400' : 'hover:text-red-900'}`}
                 title="Delete User"
                 disabled={!user.is_active || isCurrentUser}
               >

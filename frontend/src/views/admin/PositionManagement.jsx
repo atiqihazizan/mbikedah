@@ -173,6 +173,7 @@ const PositionManagement = () => {
           </div>
         </div>
       ),
+      // className: "w-64" // Fixed width for position name
     },
     {
       key: "description",
@@ -184,6 +185,7 @@ const PositionManagement = () => {
           </span>
         </div>
       ),
+      // className: "w-80" // Fixed width for description
     },
     {
       key: "status",
@@ -192,7 +194,7 @@ const PositionManagement = () => {
         <div className="whitespace-nowrap">
           <button
             onClick={() => handleToggleStatus(position)}
-            className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
               position.is_active
                 ? 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-200 hover:border-green-300'
                 : 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-200 hover:border-red-300'
@@ -201,11 +203,11 @@ const PositionManagement = () => {
           >
             {/* Status Icon */}
             {position.is_active ? (
-              <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             ) : (
-              <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             )}
@@ -215,27 +217,24 @@ const PositionManagement = () => {
           </button>
         </div>
       ),
+      thClassName: "w-20" // Smaller fixed width for status
     },
     {
       key: "actions",
       label: "Actions",
       render: (value, position) => (
         <div className="whitespace-nowrap text-sm font-medium">
-          <div className="flex space-x-2">
+          <div className="flex space-x-1">
             <button
               onClick={() => handleEditPosition(position)}
-              className={`text-blue-600 hover:text-blue-900 ${
-                isDark ? 'hover:text-blue-400' : 'hover:text-blue-900'
-              }`}
+              className={`px-2 py-1 text-blue-600 hover:text-blue-900 border border-blue-200 hover:border-blue-300 rounded transition-colors text-xs ${isDark ? 'hover:text-blue-400' : 'hover:text-blue-900'}`}
               title="Edit Position"
             >
               Edit
             </button>
             <button
               onClick={() => handleDeletePosition(position.id)}
-              className={`text-red-600 hover:text-red-900 ${
-                isDark ? 'hover:text-red-400' : 'hover:text-red-900'
-              }`}
+              className={`px-2 py-1 text-red-600 hover:text-red-900 border border-red-200 hover:border-red-300 rounded transition-colors text-xs ${isDark ? 'hover:text-red-400' : 'hover:text-red-900'}`}
               title="Delete Position"
               disabled={!position.is_active}
             >
@@ -244,6 +243,7 @@ const PositionManagement = () => {
           </div>
         </div>
       ),
+      thClassName: "w-28 text-center" // Smaller fixed width for actions
     },
   ];
 
