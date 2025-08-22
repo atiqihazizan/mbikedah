@@ -270,6 +270,7 @@ class BillingDashboardController extends Controller
           'total_amount' => $billing->total_amount,
           'status' => BillingStatus::getStatusName($billing->status_id),
           'status_id' => $billing->status_id,
+          'issued_at' => $billing->issued_at->format('d/m/Y'),
           'created_at' => $billing->created_at->format('d/m/Y'),
           'can_edit' => in_array($billing->status_id, [BillingStatus::DRAFT, BillingStatus::RETURNED]),
           'status_class' => HelperController::getStatusColorClass($billing->status_id)

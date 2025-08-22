@@ -292,9 +292,9 @@ export const useBillingTableApplicant = (dashboardData, refetch) => {
       cellClassName: 'text-sm text-gray-900 font-medium'
     },
     {
-      key: 'created_at',
+      key: 'issued_at',
       label: 'Tarikh',
-      type: 'date',
+      // type: 'date',
       cellClassName: 'text-sm text-gray-500'
     }
   ];
