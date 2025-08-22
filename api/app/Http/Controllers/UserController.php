@@ -183,7 +183,7 @@ class UserController extends Controller
 			'phone' => $request->phone,
 			'password' => Hash::make($request->password),
 			'department_id' => $request->department_id,
-			'abilities' => json_encode($request->abilities)
+			'abilities' => $request->abilities
 		]);
 
 		$user->load('department');
@@ -257,14 +257,13 @@ class UserController extends Controller
 			'email' => $request->email,
 			'phone' => $request->phone,
 			'department_id' => $request->department_id,
-			'abilities' => $request->abilities,
 			'is_active' => $request->is_active
 		];
 
 		// Admin-only fields
 		if ($isAdmin && !$isOwnerUpdate) {
 			$updateData['department_id'] = $request->department_id;
-			$updateData['abilities'] = json_encode($request->abilities);
+			$updateData['abilities'] = $request->abilities;
 			
 			// Admin can update is_active status
 			if ($request->has('is_active')) {
@@ -309,7 +308,7 @@ class UserController extends Controller
 		]);
 
 		$user->update([
-			'abilities' => json_encode($request->abilities)
+			'abilities' => $request->abilities
 		]);
 
 		$abilities_name = $this->getAbilitiesConfig();
@@ -376,16 +375,16 @@ class UserController extends Controller
 	public function getUsersFinanceApproval()
 	{
 		// Only admin can access this
-		if (!Auth::user()->isAdmin()) {
-			return response()->json([
-				'success' => false,
-				'message' => 'Tidak dibenarkan untuk mengakses senarai pengesah kewangan'
-			], 403);
-		}
+		// if (!Auth::user()->isAdmin()) {
+		// 	return response()->json([
+		// 		'success' => false,
+		// 		'message' => 'Tidak dibenarkan untuk mengakses senarai pengesah kewangan'
+		// 	], 403);
+		// }
 
 		// Get users yang ada abilities Finance Approver (6)
-		$users = User::with('department')
-			->whereRaw('JSON_CONTAINS(abilities, ?)', [json_encode(UserAbilities::FINANCE_APPROVER)])
+		// $users = User::with('department')
+		$users = User::whereRaw('JSON_CONTAINS(abilities, ?)', [json_encode(UserAbilities::FINANCE_APPROVER)])
 			->get();
 
 		$abilities_name = UserAbilities::getAbilitiesName();
