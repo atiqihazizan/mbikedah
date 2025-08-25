@@ -54,7 +54,7 @@ class AuthController extends Controller
       'password' => 'required|string'
     ]);
 
-    $user = User::where('username', $request->username)->first();
+    $user = User::whereRaw('BINARY username = ?', [$request->username])->first();
 
     if (!$user || !Hash::check($request->password, $user->password)) {
       throw ValidationException::withMessages([

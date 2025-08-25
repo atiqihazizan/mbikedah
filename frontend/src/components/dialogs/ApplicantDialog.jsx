@@ -92,7 +92,7 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
       
       toast.success(selectedRecipient ? 'Penerima berjaya dikemaskini' : 'Penerima baru berjaya ditambah');
       
-      // await fetchRecipients();
+      await fetchRecipients();
       // setShowRecipientDialog(false);
       
     } catch (error) {

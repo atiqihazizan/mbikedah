@@ -169,7 +169,8 @@ class BillingDashboardController extends Controller
       ->limit(20)
       ->get()
       ->map(function ($billing) {
-        $days = $billing->created_at->diffInDays(now());
+        // $days = $billing->created_at->diffInDays(now());
+        $days = $billing->issued_at->diffInDays(now());
         return [
           'id' => $billing->id,
           'running_no' => $billing->running_no,
@@ -311,8 +312,8 @@ class BillingDashboardController extends Controller
   private function getDepartmentMonthlyStats($departmentId)
   {
     return Billing::where('department_id', $departmentId)
-      ->whereMonth('created_at', now()->month)
-      ->whereYear('created_at', now()->year)
+      ->whereMonth('hod_approved_at', now()->month)
+      ->whereYear('hod_approved_at', now()->year)
       ->count();
   }
 

@@ -98,7 +98,7 @@ export default function ApplicantDetailsRows({ FormC, data, def, idx = false, se
         <td className="pl-4 py-3 align-top">
           <FormC.textarea 
             field="description" 
-            rows={1} 
+            rows={4} 
             value={detail?.description || ''}
             option={{ disabled }} 
             onChange={(e) => inputChange(e, "description")}

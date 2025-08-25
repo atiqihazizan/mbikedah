@@ -15,7 +15,7 @@ class BillingRecipientController extends Controller
     public function index()
     {
         $recipients = Cache::tags(['penerima'])->remember('senarai_penerima', now()->addMinutes(30), function () {
-            return BillingRecipient::with('billings')->get();
+            return BillingRecipient::with('billings')->orderBy('name')->get();
         });
         return response()->json(['data' => $recipients]);
     }

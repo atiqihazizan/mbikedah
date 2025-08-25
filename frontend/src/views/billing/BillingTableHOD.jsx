@@ -101,10 +101,10 @@ function BillingTableHOD() {
       cellClassName: 'text-right'
     },
     {
-      key: 'created_at',
+      key: 'issued_at',
       label: 'Tarikh',
       render: (item) => (
-        <span className="text-gray-600 text-sm">{item.created_at}</span>
+        <span className="text-gray-600 text-sm">{item.issued_at}</span>
       )
     },
     {
