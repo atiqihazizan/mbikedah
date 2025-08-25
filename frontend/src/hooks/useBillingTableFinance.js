@@ -16,8 +16,29 @@ export const useBillingTableFinance = (dashboardData, refetch) => {
   const financeData = dashboardData?.finance || {};
   const stats = financeData.summary || {};
   const allBillings = financeData.needing_attention || [];
+  const permissions = financeData.permissions || {};
 
   // ==================== HELPER FUNCTIONS ====================
+
+  /**
+   * Check if user can act on billing based on status and permissions
+   */
+  const canActOnStatus = (statusId) => {
+    switch(statusId) {
+      case 3: return permissions.can_review || false;    // FINANCE_REVIEW
+      case 4: return permissions.can_verify || false;    // FINANCE_VERIFY  
+      case 5: return permissions.can_approve || false;   // FINANCE_APPROVAL
+      case 6: return permissions.can_pay || false;       // PROCESSING_PAYMENT
+      default: return false;
+    }
+  };
+
+  /**
+   * Check if action button should be shown for a billing item
+   */
+  const shouldShowActionButton = (item) => {
+    return canActOnStatus(item.status_id);
+  };
 
   const getFilteredBillings = () => {
     if (activeTab === 'all') return allBillings;
@@ -402,6 +423,7 @@ export const useBillingTableFinance = (dashboardData, refetch) => {
     allBillings,
     filteredBillings,
     statistics,
+    permissions,
     
     // Configuration objects
     cardConfigurations,
@@ -423,6 +445,10 @@ export const useBillingTableFinance = (dashboardData, refetch) => {
     formatPrintCount,
     isBillingUrgent,
     isBillingCritical,
+    
+    // Permission functions
+    canActOnStatus,
+    shouldShowActionButton,
     
     // Event handlers
     handleTabClick,

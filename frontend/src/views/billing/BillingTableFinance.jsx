@@ -32,6 +32,7 @@ function BillingTableFinance() {
     
     // Data values
     filteredBillings,
+    permissions,
     
     // Configuration objects
     cardConfigurations,
@@ -43,6 +44,8 @@ function BillingTableFinance() {
     getActionIcon,
     getActionTitle,
     getActionColor,
+    shouldShowActionButton,
+    canActOnStatus,
     
     // Event handlers
     handleTabClick,
@@ -211,8 +214,19 @@ function BillingTableFinance() {
     setIsPrintLoading(false);
   }, [refetch]);
 
-  // Actions renderer untuk UnifiedBillingTable
+  // Actions renderer untuk UnifiedBillingTable dengan permission checking
   const financeRenderActions = (item) => {
+    // Check if user has permission to act on this billing
+    if (!shouldShowActionButton(item)) {
+      return (
+        <div className="flex items-center justify-center">
+          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
+            Tiada akses
+          </span>
+        </div>
+      );
+    }
+
     const actionIcon = getActionIcon(item.status_id);
     const ActionIconComponent = actionIcon?.component;
     
