@@ -20,9 +20,9 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("MBI_TOKEN");
-    if (token) {
-      const _token = token.split("|")[1];
-      config.headers.Authorization = `Bearer ${_token}`;
+    if (token && token !== "undefined" && token !== "null" && token.trim() !== "") {
+      // Laravel Sanctum returns plain text token, no need to split
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },

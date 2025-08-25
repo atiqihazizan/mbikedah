@@ -32,8 +32,7 @@ export const ContextProvider = ({ children }) => {
     if (token && token !== "undefined" && token !== "null" && token.trim() !== "") {
       localStorage.setItem("MBI_TOKEN", token);
       _setUserToken(token);
-      // Set axios default header
-      apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      // Axios interceptor will handle the Authorization header automatically
     } else {
       localStorage.removeItem("MBI_TOKEN");
       _setUserToken("");
@@ -48,18 +47,8 @@ export const ContextProvider = ({ children }) => {
   const logout = async (ev) => {
     if (ev) ev.preventDefault();
     
-    // Immediately clear user data and token to prevent access denied
-    setCurrentUser(null);
-    setUserToken("");
-    localStorage.removeItem("MBI_TOKEN");
-    
-    // Clear axios default headers
-    if (apiClient.defaults.headers.common["Authorization"]) {
-      delete apiClient.defaults.headers.common["Authorization"];
-    }
-    
     try {
-      // Only try API call if token exists and is valid
+      // Make API call BEFORE clearing token to avoid 401 error
       if (userToken && userToken !== "undefined" && userToken !== "null" && userToken.trim() !== "") {
         await apiClient.post("/auth/logout");
       }
@@ -67,6 +56,16 @@ export const ContextProvider = ({ children }) => {
       console.error("Ralat semasa log keluar. Sila cuba sebentar lagi.");
       // Continue with logout even if API fails
     } finally {
+      // Clear user data and token after API call (or if it fails)
+      setCurrentUser(null);
+      setUserToken("");
+      localStorage.removeItem("MBI_TOKEN");
+      
+      // Clear axios default headers
+      if (apiClient.defaults.headers.common["Authorization"]) {
+        delete apiClient.defaults.headers.common["Authorization"];
+      }
+      
       setIsLoading(false);
       // Force redirect to login immediately
       if (window.location.pathname !== "/login") {
@@ -92,7 +91,7 @@ export const ContextProvider = ({ children }) => {
       try {
         setIsLoading(true); // Start loading
         requestInProgress.current = true;
-        apiClient.defaults.headers.common["Authorization"] = `Bearer ${userToken}`;
+        // Axios interceptor will handle the Authorization header automatically
         const response = await apiClient.get("/auth/me");
         const { success, user } = response.data || response;
         

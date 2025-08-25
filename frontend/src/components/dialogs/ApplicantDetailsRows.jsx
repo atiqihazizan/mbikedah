@@ -76,7 +76,10 @@ export default function ApplicantDetailsRows({ FormC, data, def, idx = false, se
                 };
                 setDetail(newData);
                 onUpdate(newData);
-              }
+              },
+              // Disable option untuk budget dengan total = 0
+              // Function ini akan return true untuk budget yang perlu di-disable
+              disabledOptions: (budget) => parseFloat(budget.bdgtotal || 0) === 0
             }}
           />
           {error?.[`details.${idx}.budget_id`] && (

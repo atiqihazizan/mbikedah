@@ -85,15 +85,15 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
 
   const handleSaveRecipient = async (recipientData) => {
     try {
-      const url = selectedRecipient ? `/billing-recipients/${selectedRecipient.id}` : '/billing-recipients';
-      const method = selectedRecipient ? 'put' : 'post';
+      // const url = selectedRecipient ? `/billing-recipients/${selectedRecipient.id}` : '/billing-recipients';
+      // const method = selectedRecipient ? 'put' : 'post';
 
-      await apiClient[method](url, recipientData);
+      // await apiClient[method](url, recipientData);
       
       toast.success(selectedRecipient ? 'Penerima berjaya dikemaskini' : 'Penerima baru berjaya ditambah');
       
-      await fetchRecipients();
-      setShowRecipientDialog(false);
+      // await fetchRecipients();
+      // setShowRecipientDialog(false);
       
     } catch (error) {
       console.error('Ralat semasa simpan penerima:', error);
@@ -150,7 +150,7 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
       setLocalLoading(true);
       
       try {
-        const {data:budgetResponse} = await apiClient.get(`/budgets/bydepartment/${currentUser?.department_id}`); // Get budgets by department
+        const {data:budgetResponse} = await apiClient.get(`/budgets/application/${currentUser?.department_id}`); // Get budgets by department
         if (budgetResponse.success) {
           setBudgets(budgetResponse.data || []);
         } else {

@@ -11,7 +11,11 @@ export default function TSelect({
 	maxLength = 30, // Panjang maksimum label sebelum dipotong
 	placeholder = "Pilih",
 	onChange,
+	disabledOptions, // Function untuk menentukan option mana yang perlu di-disable
+	// Contoh: disabledOptions: (item) => item.total === 0
 }) {
+	// Destructure option untuk memisahkan disabledOptions dari props yang akan di-pass ke DOM
+	const { disabledOptions: _, ...domProps } = option || {};
 	// Pastikan list adalah array
 	const safeList = Array.isArray(list) ? list : [];
 	
@@ -65,7 +69,7 @@ export default function TSelect({
 				className={`select ${option?.disabled ? 'bg-gray-100 cursor-not-allowed' : ''} ${className || ''}`}
 				onChange={onChange || handleChange} 
 				value={data?.[field] || ''}
-				{...option}
+				{...domProps}
 			>
 				<option value="">{placeholder}</option>
 				{safeList.map((item, index) => {
@@ -73,8 +77,16 @@ export default function TSelect({
 					const value = item?.[oKey];
 					const label = generateLabel(item);
 					
+					// Check if this option should be disabled
+					const isDisabled = disabledOptions ? disabledOptions(item) : false;
+					
 					return (
-						<option key={index} value={value}>
+						<option 
+							key={index} 
+							value={value} 
+							disabled={isDisabled}
+							className={isDisabled ? 'text-gray-400 bg-gray-100' : ''}
+						>
 							{label}
 						</option>
 					);

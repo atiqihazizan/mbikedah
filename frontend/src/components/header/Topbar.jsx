@@ -2,6 +2,7 @@ import RoleBadgesSection from "./RoleBadgesSection";
 import ToolbarBadgesSection from "./ToolbarBadgesSection";
 import UserDropdown from "./UserDropdown";
 import UserInfo from "./UserInfo";
+import { USER_ABILITIES } from "../../utils/constants";
 
 const Topbar = ({
   userDisplayInfo, 
@@ -62,11 +63,18 @@ const Topbar = ({
             isDark={isDark}
           />
           
-          {/* Role Badges */}
-          <ToolbarBadgesSection
-            userRoles={userRoles}
-            isLoading={isLoading}
-          />
+          {/* Toolbar Badges - Hanya untuk Finance Users */}
+          {userRoles.some(role => [
+            USER_ABILITIES.FINANCE_CHECKER,
+            USER_ABILITIES.FINANCE_VERIFIER,
+            USER_ABILITIES.FINANCE_APPROVER,
+            USER_ABILITIES.PAYMENT_MAKER
+          ].includes(role)) && (
+            <ToolbarBadgesSection
+              userRoles={userRoles}
+              isLoading={isLoading}
+            />
+          )}
 
         </div>
       </div>

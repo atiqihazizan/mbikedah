@@ -21,15 +21,11 @@ export default function RecipientDialog({ show, onClose, onSaved, recipient = nu
       setRecipientData(recipient);
     }
     setError(null);
-  }, [recipient]);
+  }, [show,recipient]);
 
   const validateForm = () => {
     if (!recipientData.name?.trim()) {
       setError("Nama Syarikat/Individu diperlukan");
-      return false;
-    }
-    if (!recipientData.addr?.trim()) {
-      setError("Alamat diperlukan");
       return false;
     }
     return true;
@@ -55,9 +51,9 @@ export default function RecipientDialog({ show, onClose, onSaved, recipient = nu
         ...acc,
         [key]: typeof recipientData[key] === 'string' ? recipientData[key].trim() : recipientData[key]
       }), {});
-
-      await apiClient[method](url, trimmedData);
       
+      const response = await apiClient[method](url, trimmedData);
+      console.log(response);
       const message = recipient 
         ? 'Penerima berjaya dikemaskini'
         : 'Penerima baru berjaya ditambah';
@@ -111,7 +107,6 @@ export default function RecipientDialog({ show, onClose, onSaved, recipient = nu
               <FormC.LText 
                 field="name" 
                 text="Nama Syarikat/Individu" 
-                required={true}
                 option={{ disabled: loading }}
               />
               <FormC.LText 
@@ -126,16 +121,15 @@ export default function RecipientDialog({ show, onClose, onSaved, recipient = nu
               />
               <FormC.LText 
                 field="addr" 
-                text="Alamat" 
-                required={true}
+                text="Alamat"
                 option={{ disabled: loading }}
               />
               
-                <FormC.LText 
-                  field="tel" 
-                  text="No. Telefon"
-                  option={{ disabled: loading }}
-                />
+              <FormC.LText 
+                field="tel" 
+                text="No. Telefon"
+                option={{ disabled: loading }}
+              />
                 <FormC.LText 
                   field="hp" 
                   text="No. HP"

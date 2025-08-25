@@ -42,9 +42,9 @@ class BillingRecipientRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'Nama penerima bil diperlukan',
-            'name.string' => 'Nama penerima bil mestilah dalam bentuk teks',
-            'name.max' => 'Nama penerima bil tidak boleh melebihi 255 aksara',
+            'name.required' => 'Nama penerima diperlukan',
+            'name.string' => 'Nama penerima mestilah dalam bentuk teks',
+            'name.max' => 'Nama penerima tidak boleh melebihi 255 aksara',
             'short.string' => 'Nama ringkas mestilah dalam bentuk teks',
             'short.max' => 'Nama ringkas tidak boleh melebihi 50 aksara',
             'attn.string' => 'Perhatian kepada mestilah dalam bentuk teks',

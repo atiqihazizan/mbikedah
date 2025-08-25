@@ -4,6 +4,24 @@ import TSelect from "./Core/TSelect";
 
 export const FormContext = createContext();
 
+/*
+ * FormContext Component - Component untuk form handling
+ * 
+ * SELECT COMPONENTS dengan DISABLE OPTION:
+ * 
+ * 1. FormC.select - Select tanpa label
+ *    Contoh: <FormC.select field="budget_id" listArr={budgets} option={{ disabledOptions: (item) => item.total === 0 }} />
+ * 
+ * 2. FormC.LSelect - Select dengan label
+ *    Contoh: <FormC.LSelect text="Pilih Bajet" field="budget_id" listArr={budgets} option={{ disabledOptions: (item) => item.total === 0 }} />
+ * 
+ * OPTION PROPERTIES:
+ * - disabledOptions: Function untuk disable option tertentu
+ * - disabled: Boolean untuk disable seluruh select component
+ * - placeholder: String untuk placeholder text
+ * - onChange: Function untuk handle change event
+ */
+
 function FormC({ children, setValue, data, error, disabled }) {
 	return (
 		<FormContext.Provider value={{ setValue, data, error, disabled }}>
@@ -193,6 +211,10 @@ function FTextArea({ field, value, holder = "", rows = 4, option, css, onChange 
 }
 
 function FSelect({ field, keyval, listArr, option, css }) {
+	// Component select tanpa label
+	// option.disabledOptions: Function untuk disable option tertentu
+	// Contoh: option={{ disabledOptions: (item) => item.total === 0 }}
+	// option.disabled: Boolean untuk disable seluruh select component
 	const { setValue, data, error, disabled } = useContext(FormContext);
 	return (
 		<TSelect
@@ -206,15 +228,20 @@ function FSelect({ field, keyval, listArr, option, css }) {
       maxLength={null}
       placeholder={option?.placeholder || "Pilih"}
 			option={{ ...option, disabled: option?.disabled || disabled }}
+			disabledOptions={option?.disabledOptions} // Function untuk disable option tertentu
 		/>
 	);
 }
 
-function CSelect({ text, field, keyval, listArr, css }) {
+function CSelect({ text, field, keyval, listArr, css, option }) {
+	// Component select dengan label
+	// option.disabledOptions: Function untuk disable option tertentu
+	// Contoh: option={{ disabledOptions: (item) => item.total === 0 }}
+	// option.disabled: Boolean untuk disable seluruh select component
 	return (
 		<div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
 			<FLabel text={text} />
-			<FSelect field={field} keyval={keyval} listArr={listArr} css={css} />
+			<FSelect field={field} keyval={keyval} listArr={listArr} css={css} option={option} />
 		</div>
 	);
 }

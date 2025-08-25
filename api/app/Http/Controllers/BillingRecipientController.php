@@ -14,7 +14,7 @@ class BillingRecipientController extends Controller
      */
     public function index()
     {
-        $recipients = Cache::tags(['penerima_bil'])->remember('senarai_penerima_bil', now()->addMinutes(30), function () {
+        $recipients = Cache::tags(['penerima'])->remember('senarai_penerima', now()->addMinutes(30), function () {
             return BillingRecipient::with('billings')->get();
         });
         return response()->json(['data' => $recipients]);
@@ -26,7 +26,7 @@ class BillingRecipientController extends Controller
     public function store(BillingRecipientRequest $request)
     {
         $recipient = BillingRecipient::create($request->validated());
-        Cache::tags(['penerima_bil'])->forget('senarai_penerima_bil');
+        Cache::tags(['penerima'])->forget('senarai_penerima');
         return response()->json(['data' => $recipient], 201);
     }
 
@@ -56,7 +56,7 @@ class BillingRecipientController extends Controller
         }
 
         $recipient->update($request->validated());
-        Cache::tags(['penerima_bil'])->forget('senarai_penerima_bil');
+        Cache::tags(['penerima'])->forget('senarai_penerima');
         return response()->json(['data' => $recipient]);
     }
 
@@ -72,7 +72,7 @@ class BillingRecipientController extends Controller
         }
 
         $recipient->delete();
-        Cache::tags(['penerima_bil'])->forget('senarai_penerima_bil');
+        Cache::tags(['penerima'])->forget('senarai_penerima');
         return response()->json(['message' => 'Billing recipient berjaya dipadam']);
     }
 }

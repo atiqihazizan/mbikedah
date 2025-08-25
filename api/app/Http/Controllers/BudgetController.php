@@ -822,7 +822,66 @@ class BudgetController extends Controller
 			// ->where('department_id', $departmentId)
 			->whereIn('type', [1, 2])  // type = 1 (Revenue) or 2 (Expenditure)
 			->where('child_count', 0)  // no children (leaf nodes)
-			->where('bdgtotal', '>', 0)  // budget total must be greater than 0
+			// ->where('bdgtotal', '>', 0)  // budget total must be greater than 0
+			->orderBy('type', 'asc')
+			->orderBy('code', 'asc')
+			->orderBy('level', 'asc')
+			->orderBy('sort_order', 'asc')
+			->get();
+
+			// Check if department exists and has budgets
+			if ($budgets->isEmpty()) {
+				return response()->json([
+					'success' => true,
+					'data' => [],
+					'department_id' => $departmentId,
+					'message' => 'Tiada budget ditemui untuk jabatan ini',
+					'count' => 0
+				]);
+			}
+
+			return response()->json([
+				'success' => true,
+				'data' => $budgets,
+				'department_id' => $departmentId,
+				'count' => $budgets->count()
+			]);
+
+		} catch (\Exception $e) {
+			Log::error('Error getting budget by department: ' . $e->getMessage(), [
+				'department_id' => $departmentId,
+				'file' => __FILE__,
+				'line' => __LINE__
+			]);
+			
+			return response()->json([
+				'success' => false,
+				'message' => 'Ralat mendapatkan budget jabatan',
+				'error' => $e->getMessage()
+			], 500);
+		}
+	}
+	public function getForApplicant($departmentId)
+	{
+		try {
+			// Validate department ID
+			if (!is_numeric($departmentId) || $departmentId < 1) {
+				return response()->json([
+					'success' => false,
+					'message' => 'ID Jabatan tidak sah',
+					'error' => 'Invalid department ID parameter'
+				], 400);
+			}
+
+			$departmentId = (int) $departmentId;
+
+					// Get budgets for the specified department (only select specific fields)
+		// Filter: type = 1 (Revenue) or 2 (Expenditure), child_count = 0, and bdgtotal > 0
+		$budgets = Budget::select(['id', 'code', 'name', 'bdgtotal'])
+			// ->where('department_id', $departmentId)
+			->whereIn('type', [2])  // type = 1 (Revenue) or 2 (Expenditure)
+			->where('child_count', 0)  // no children (leaf nodes)
+			// ->where('bdgtotal', '>', 0)  // budget total must be greater than 0
 			->orderBy('type', 'asc')
 			->orderBy('code', 'asc')
 			->orderBy('level', 'asc')
