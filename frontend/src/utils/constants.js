@@ -35,14 +35,23 @@ export const USER_ABILITIES_COLORS = {
 };
 
 // Menu permissions mapping (sync with API ABILITIES_MENU)
+// NOW USED in frontend - dynamic menu filtering based on user abilities
 export const ABILITIES_MENU = {
   1: ['all'], // Admin boleh akses semua menu
   2: ['dashboard.view', 'billing.create', 'billing.incomplete', 'billing.archive'], // Pemohon
   3: ['dashboard.view', 'billing.hod'], // Ketua Jabatan
   4: ['dashboard.view', 'billing.finance'], // Penyemak Kewangan
-  5: ['dashboard.view', 'billing.finance'], // Pengesah Kewangan
-  6: ['dashboard.view', 'billing.finance'], // Pelulus Kewangan
+  5: ['dashboard.view', 'billing.finance', 'report.budget.summary', 'report.income.statement', 'report.revenue.breakdown', 'report.expense.breakdown', 'report.detail'], // Pengesah Kewangan - UPDATED: Added report access
+  6: ['dashboard.view', 'billing.finance', 'report.budget.summary', 'report.income.statement', 'report.revenue.breakdown', 'report.expense.breakdown', 'report.detail', 'settings.view', 'settings.bank', 'settings.code', 'settings.budget'], // Pelulus Kewangan - UPDATED: Added report + settings access
   7: ['dashboard.view', 'billing.finance']  // Pembayar
+
+  // OLD CODE (for reference):
+  // 2: ['dashboard.view', 'billing.create', 'billing.incomplete', 'billing.archive'], // Pemohon
+  // 3: ['dashboard.view', 'billing.hod'], // Ketua Jabatan
+  // 4: ['dashboard.view', 'billing.finance'], // Penyemak Kewangan
+  // 5: ['dashboard.view', 'billing.finance'], // Pengesah Kewangan
+  // 6: ['dashboard.view', 'billing.finance'], // Pelulus Kewangan
+  // 7: ['dashboard.view', 'billing.finance']  // Pembayar
 };
 
 // User Abilities Helper Functions
@@ -54,6 +63,7 @@ export const getAbilityColor = (abilityId) => {
   return USER_ABILITIES_COLORS[abilityId] || 'bg-gray-100 text-gray-800';
 };
 
+// NOW USED in frontend - dynamic permission checking
 export const hasPermission = (userAbilities, permission) => {
   if (!userAbilities || !Array.isArray(userAbilities)) return false;
   
@@ -374,10 +384,10 @@ export default {
   USER_ABILITIES,
   USER_ABILITIES_NAMES,
   USER_ABILITIES_COLORS,
-  ABILITIES_MENU,
+  ABILITIES_MENU, // Now active - used for dynamic permissions
   getAbilityName,
   getAbilityColor,
-  hasPermission,
+  hasPermission, // Now active - used for permission checking
   API_ENDPOINTS,
   ROLE_TYPES,
   ROLE_COLORS,

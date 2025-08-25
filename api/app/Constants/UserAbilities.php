@@ -21,12 +21,20 @@ class UserAbilities
     3 => ['dashboard.view', 'billing.hod'],
     // Penyemak Kewangan
     4 => ['dashboard.view', 'billing.finance'],
-    // Pengesah Kewangan
-    5 => ['dashboard.view', 'billing.finance'],
-    // Pelulus Kewangan
-    6 => ['dashboard.view', 'billing.finance'],
+    // Pengesah Kewangan - UPDATED: Added report access
+    5 => ['dashboard.view', 'billing.finance', 'report.budget.summary', 'report.income.statement', 'report.revenue.breakdown', 'report.expense.breakdown', 'report.detail'],
+    // Pelulus Kewangan - UPDATED: Added report + settings access
+    6 => ['dashboard.view', 'billing.finance', 'report.budget.summary', 'report.income.statement', 'report.revenue.breakdown', 'report.expense.breakdown', 'report.detail', 'settings.view', 'settings.bank', 'settings.code', 'settings.budget'],
     // Pembayar
     7 => ['dashboard.view', 'billing.finance'],
+
+    // OLD CODE (for reference):
+    // 2 => ['dashboard.view', 'billing.create', 'billing.incomplete', 'billing.archive'], // Pemohon
+    // 3 => ['dashboard.view', 'billing.hod'], // Ketua Jabatan  
+    // 4 => ['dashboard.view', 'billing.finance'], // Penyemak Kewangan
+    // 5 => ['dashboard.view', 'billing.finance'], // Pengesah Kewangan
+    // 6 => ['dashboard.view', 'billing.finance'], // Pelulus Kewangan
+    // 7 => ['dashboard.view', 'billing.finance'], // Pembayar
   ];
 
   public static function getAbilitiesName()

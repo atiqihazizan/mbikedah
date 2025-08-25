@@ -2,7 +2,7 @@ import RoleBadgesSection from "./RoleBadgesSection";
 import ToolbarBadgesSection from "./ToolbarBadgesSection";
 import UserDropdown from "./UserDropdown";
 import UserInfo from "./UserInfo";
-import { USER_ABILITIES } from "../../utils/constants";
+import { usePermissions } from "../../hooks/usePermissions";
 
 const Topbar = ({
   userDisplayInfo, 
@@ -20,7 +20,11 @@ const Topbar = ({
   theme,
   onToggleTheme,
   isDark
-}) => (
+}) => {
+  // Use dynamic permissions instead of hardcoded role checking
+  const { canAccessReports } = usePermissions();
+  
+  return (
   <header className={`fixed top-0 left-0 right-0 z-50 ${
     isDark 
       ? 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 border-gray-600' 
@@ -63,13 +67,8 @@ const Topbar = ({
             isDark={isDark}
           />
           
-          {/* Toolbar Badges - Hanya untuk Finance Users */}
-          {userRoles.some(role => [
-            USER_ABILITIES.FINANCE_CHECKER,
-            USER_ABILITIES.FINANCE_VERIFIER,
-            USER_ABILITIES.FINANCE_APPROVER,
-            USER_ABILITIES.PAYMENT_MAKER
-          ].includes(role)) && (
+          {/* Toolbar Badges - Dynamic based on report permissions */}
+          {canAccessReports && (
             <ToolbarBadgesSection
               userRoles={userRoles}
               isLoading={isLoading}
@@ -80,6 +79,7 @@ const Topbar = ({
       </div>
     </div>
   </header>
-);
+  );
+};
 
 export default Topbar;

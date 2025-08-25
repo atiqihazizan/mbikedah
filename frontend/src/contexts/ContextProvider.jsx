@@ -44,6 +44,11 @@ export const ContextProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Logout function - handles user logout process
+   * FIXED: Removed window.location.href redirect to prevent page reload
+   * Now uses single-source redirect via ProtectedRoute for smoother UX
+   */
   const logout = async (ev) => {
     if (ev) ev.preventDefault();
     
@@ -57,31 +62,37 @@ export const ContextProvider = ({ children }) => {
       // Continue with logout even if API fails
     } finally {
       // Clear user data and token after API call (or if it fails)
-      setCurrentUser(null);
-      setUserToken("");
-      localStorage.removeItem("MBI_TOKEN");
+      setCurrentUser(null);  // Triggers ProtectedRoute to redirect
+      setUserToken("");      // Clear token from state
+      localStorage.removeItem("MBI_TOKEN");  // Clear token from storage
       
-      // Clear axios default headers
+      // Clear axios default headers to prevent stale auth
       if (apiClient.defaults.headers.common["Authorization"]) {
         delete apiClient.defaults.headers.common["Authorization"];
       }
       
       setIsLoading(false);
-      // Force redirect to login immediately
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+      
+      // REMOVED: window.location.href = "/login" 
+      // WHY: Caused multiple competing redirects and page reload
+      // NOW: ProtectedRoute handles redirect via React Router <Navigate replace />
+      // BENEFIT: Smooth SPA navigation without page refresh
     }
   };
 
+  /**
+   * useEffect: Monitor token changes and handle authentication state
+   * FIXED: Removed window.location.href redirect to prevent page reload
+   */
   useEffect(() => {
     // Periksa token tidak sah dan redirect jika perlu
     if (!userToken || userToken === "undefined" || userToken === "null" || userToken.trim() === "") {
-      setCurrentUser(null);
-      setIsLoading(false); // Stop loading when no token
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+      setCurrentUser(null);  // Clear user state
+      setIsLoading(false);   // Stop loading when no token
+      
+      // REMOVED: window.location.href = "/login"
+      // WHY: Created race conditions with logout() and caused page reload
+      // NOW: ProtectedRoute detects !currentUser and redirects via React Router
       return;
     }
 
@@ -119,16 +130,20 @@ export const ContextProvider = ({ children }) => {
     getMaklumatPengguna();
   }, [userToken]);
 
-  // useEffect tambahan untuk mengendalikan pengesahan token pada pemasangan
+  /**
+   * useEffect: Handle initial authentication check on component mount
+   * FIXED: Removed window.location.href redirect to prevent page reload
+   */
   useEffect(() => {
     const token = localStorage.getItem("MBI_TOKEN");
     if (!token || token === "undefined" || token === "null" || token.trim() === "") {
       setCurrentUser(null);
       setUserToken("");
       setIsLoading(false); // Stop loading if no token on mount
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+      
+      // REMOVED: window.location.href = "/login"
+      // WHY: Could conflict with other redirects during app initialization
+      // NOW: ProtectedRoute handles all authentication redirects consistently
     }
   }, []);
 

@@ -19,12 +19,18 @@ export default function ApplicantDetailsRows({ FormC, data, def, idx = false, se
   }
 
   function currChange(e, field) {
-    const val = parseFloat(e.target.value) || 0;
+    const rawValue = e.target.value;
     const newdata = { ...detail };
-    newdata[field] = val;
+    
+    // Store raw value to preserve dots while typing
+    newdata[field] = rawValue;
+    
+    // Parse for calculation only
+    const val = parseFloat(rawValue) || 0;
     const qty = field === 'quantity' ? val : (parseFloat(newdata.quantity) || 0);
     const price = field === 'price' ? val : (parseFloat(newdata.price) || 0);
     newdata.total = (qty * price).toFixed(2);
+    
     setDetail(newdata);
     onUpdate(newdata);
   }
@@ -116,6 +122,7 @@ export default function ApplicantDetailsRows({ FormC, data, def, idx = false, se
           <FormC.number 
             value={detail?.quantity || '0'} 
             css="text-center" 
+            // onChange={(e) => inputChange(e, "quantity")}   
             onChange={(e) => currChange(e, "quantity")} 
             option={{disabled, onFocus: onFocus}} 
           />

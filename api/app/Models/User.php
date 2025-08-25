@@ -3,6 +3,7 @@
 
 namespace App\Models;
 
+use App\Constants\UserAbilities;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -180,20 +181,21 @@ class User extends Authenticatable
 			return true;
 		}
 
-		// Define basic menu access based on abilities
-		$menuAccess = [
-			2 => ['billing.create', 'billing.view', 'profile'],  // Applicant
-			3 => ['billing.approve', 'billing.view', 'profile'],  // HOD
-			4 => ['billing.check', 'billing.view', 'profile'],  // Finance Checker
-			5 => ['billing.verify', 'billing.view', 'profile'],  // Finance Verifier
-			6 => ['billing.approve', 'billing.view', 'profile'],  // Finance Approver
-			7 => ['billing.payment', 'billing.view', 'profile'],  // Payment Maker
-		];
+		// Using UserAbilities::ABILITIES_MENU constant instead of hardcoded array
+		// OLD CODE (for reference):
+		// $menuAccess = [
+		//     2 => ['billing.create', 'billing.view', 'profile'],  // Applicant
+		//     3 => ['billing.approve', 'billing.view', 'profile'],  // HOD
+		//     4 => ['billing.check', 'billing.view', 'profile'],  // Finance Checker
+		//     5 => ['billing.verify', 'billing.view', 'profile'],  // Finance Verifier
+		//     6 => ['billing.approve', 'billing.view', 'profile'],  // Finance Approver
+		//     7 => ['billing.payment', 'billing.view', 'profile'],  // Payment Maker
+		// ];
 
 		// Get allowed menus for user's abilities
 		$allowedMenus = [];
 		foreach ($this->abilities ?? [] as $ability) {
-			$menus = $menuAccess[$ability] ?? [];
+			$menus = UserAbilities::ABILITIES_MENU[$ability] ?? [];
 			$allowedMenus = array_merge($allowedMenus, $menus);
 		}
 
@@ -212,20 +214,21 @@ class User extends Authenticatable
 			return ['all'];
 		}
 
-		// Define menu access based on abilities
-		$menuAccess = [
-			2 => ['billing.create', 'billing.view', 'profile'],  // Applicant
-			3 => ['billing.approve', 'billing.view', 'profile'],  // HOD
-			4 => ['billing.check', 'billing.view', 'profile'],  // Finance Checker
-			5 => ['billing.verify', 'billing.view', 'profile'],  // Finance Verifier
-			6 => ['billing.approve', 'billing.view', 'profile'],  // Finance Approver
-			7 => ['billing.payment', 'billing.view', 'profile'],  // Payment Maker
-		];
+		// Using UserAbilities::ABILITIES_MENU constant instead of hardcoded array
+		// OLD CODE (for reference):
+		// $menuAccess = [
+		//     2 => ['billing.create', 'billing.view', 'profile'],  // Applicant
+		//     3 => ['billing.approve', 'billing.view', 'profile'],  // HOD
+		//     4 => ['billing.check', 'billing.view', 'profile'],  // Finance Checker
+		//     5 => ['billing.verify', 'billing.view', 'profile'],  // Finance Verifier
+		//     6 => ['billing.approve', 'billing.view', 'profile'],  // Finance Approver
+		//     7 => ['billing.payment', 'billing.view', 'profile'],  // Payment Maker
+		// ];
 
 		// Get allowed menus for user's abilities
 		$allowedMenus = [];
 		foreach ($this->abilities ?? [] as $ability) {
-			$menus = $menuAccess[$ability] ?? [];
+			$menus = UserAbilities::ABILITIES_MENU[$ability] ?? [];
 			$allowedMenus = array_merge($allowedMenus, $menus);
 		}
 

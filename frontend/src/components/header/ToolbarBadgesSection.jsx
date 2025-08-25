@@ -1,41 +1,9 @@
 import ReportBadgesContainer from "../reports/ReportBadgesContainer";
+import { usePermissions } from "../../hooks/usePermissions";
 
 const ToolbarBadgesSection = ({ userRoles, isLoading }) => {
-  
-  const reports = [
-    {
-      id: 'budget_summary', 
-      title: 'Ringkasan Bajet', 
-      type: 'budget_summary', 
-      status: 'Completed', 
-      priority: 'High',
-      route: '/reports/budget_summary'
-    },
-    {
-      id: 'income_statement', 
-      title: 'Penyata Hasil & Belanja', 
-      type: 'income_statement', 
-      status: 'Completed', 
-      priority: 'High',
-      route: '/reports/income_statement'
-    },
-    {
-      id: 'revenue_breakdown', 
-      title: 'Pecahan Hasil', 
-      type: 'revenue_breakdown', 
-      status: 'Completed', 
-      priority: 'Medium',
-      route: '/reports/revenue_breakdown'
-    },
-    {
-      id: 'expense_breakdown', 
-      title: 'Pecahan Belanja', 
-      type: 'expense_breakdown', 
-      status: 'Completed', 
-      priority: 'High',
-      route: '/reports/expense_breakdown'
-    }
-  ]
+  // Get dynamic reports based on user permissions
+  const { reportItems } = usePermissions();
   if (isLoading && userRoles.length === 0) {
     return (
       <div className="mb-2">
@@ -57,7 +25,7 @@ const ToolbarBadgesSection = ({ userRoles, isLoading }) => {
         variant={'default'} 
         size="md" 
         showIcons={true}
-        reports={reports}
+        reports={reportItems}
       />
     </div>
   );
