@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useStateContext } from "../../contexts/ContextProvider";
 import { formatDate } from "../../config/format";
 import TButton from "../Core/TButton";
-import TSelect from "../Core/TSelect";
+import ReactSelect from "../Core/ReactSelect";
 import TInput from "../Core/TInput";
 import TLoadingSpinner from "../Core/TLoadingSpinner";
 // import BillingPrint from "./BillingPrint";
@@ -268,7 +268,7 @@ const FinanceApprovalDialog = ({ isOpen, onClose, idBilling, onApprovalComplete,
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Nama Penyelaras <span className="text-red-500">*</span>
                     </label>
-                    <TSelect
+                    <ReactSelect
                       field="approver_name"
                       setValue={setFormData}
                       data={formData}

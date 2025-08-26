@@ -1,5 +1,5 @@
 import { formatCurrency } from '../../config/format';
-import TSelect from '../../components/Core/TSelect';
+import ReactSelect from '../../components/Core/ReactSelect';
 import TCheck from '../../components/Core/TCheck';
 
 const BillingCheckBudget = ({ billing, setBilling, budgets,processing }) => {
@@ -21,7 +21,7 @@ const BillingCheckBudget = ({ billing, setBilling, budgets,processing }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-44">Kod Bajet</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-72">Kod Bajet</th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Baki Semasa</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Kuantiti</th>
@@ -34,7 +34,7 @@ const BillingCheckBudget = ({ billing, setBilling, budgets,processing }) => {
             {billing.details?.map((item, index) => (
               <tr key={index}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <TSelect list={budgets} keyval="id,code" data={item} field="budget_id" onChange={(e) => handleBudgetChange(e, item)} placeholder="Pilih kod bajet" isDisabled={processing}/>
+                  <ReactSelect autoFitWidth list={budgets} keyval="id,code" data={item} field="budget_id" onChange={(e) => handleBudgetChange(e, item)} placeholder="Pilih kod bajet" option={{disabled: processing}}/>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{formatCurrency(getBalBudget(item.budget_id))}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.description}</td>

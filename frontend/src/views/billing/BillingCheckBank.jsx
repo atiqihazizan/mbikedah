@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import FormC from '../../components/FormContext';
 import TButton from '../../components/Core/TButton';
 import TSpinner from '../../components/Core/TSpinner';
-import TSelect from '../../components/Core/TSelect';
+import ReactSelect from '../../components/Core/ReactSelect';
 import apiClient from '../../utils/axios';
 import { useStateContext } from '../../contexts/ContextProvider';
 
@@ -139,15 +139,7 @@ const BillingCheckBank = ({billing,setBilling,banks,processing,setProcessing,onP
         <h2 className="text-lg font-medium text-gray-900 mb-4">Kaedah Bayaran</h2>
 
         <dd className="mt-1">
-        <TSelect 
-          list={paymentMethods}  
-          keyval="value,label"
-          data={billing}
-          field="payment_method"
-          setValue={setBilling}
-          placeholder="Pilih kaedah bayaran"
-          isDisabled={processing}
-        />
+        <ReactSelect autoFitWidth list={paymentMethods} keyval="value,label" data={billing} field="payment_method" setValue={setBilling} placeholder="Pilih kaedah bayaran" option={{disabled: processing}}/>
         </dd>
       </div>
       {/* Action Buttons */}
@@ -239,6 +231,7 @@ const RowTransaction = ({ banks, transactions, setTransactions, index, totalExpe
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-top">
         <div className="space-y-2">
           <FormC.select 
+            autoFitWidth
             keyval="id,bank_name" 
             listArr={banks} 
             option={{

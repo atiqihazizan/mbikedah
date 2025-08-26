@@ -50,11 +50,11 @@ const UserModal = ({
         ></div>
 
         {/* Modal panel */}
-        <div className={`inline-block align-bottom rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full ${
+        <div className={`inline-block align-bottom rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full max-h-[90vh] flex flex-col ${
           isDark ? 'bg-gray-800' : 'bg-white'
         }`}>
           {/* Header */}
-          <div className={`px-6 py-4 border-b ${
+          <div className={`px-6 py-4 border-b flex-shrink-0 ${
             isDark ? 'border-gray-700' : 'border-gray-200'
           }`}>
             <div className="flex items-center justify-between">
@@ -75,7 +75,7 @@ const UserModal = ({
           </div>
 
           {/* Form */}
-          <form onSubmit={onSubmit} className="px-6 py-4">
+          <form onSubmit={onSubmit} className="px-6 py-4 flex-1 overflow-y-auto">
             <div className="space-y-4">
               {/* Name */}
               <div>

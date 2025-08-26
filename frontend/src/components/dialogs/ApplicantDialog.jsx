@@ -1,16 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
 import { useStateContext } from "../../contexts/ContextProvider";
-import { FaPlus, FaEdit, FaTimes } from "react-icons/fa";
+import { FaTimes } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { formatCurrency } from "../../config/format";
 import Pulse from "../Core/Pulse";
-import FormC from "../FormContext";
 import TButton from "../Core/TButton";
 import RecipientDialog from "./RecipientDialog";
-import BillingHistory from "../../views/billing/BillingHistory"; // Import component baru
 import apiClient from "../../utils/axios";
-import Select from "react-select";
-import ApplicantDetailsRows from "./ApplicantDetailsRows";
+import ApplicantViewMode from "./ApplicantViewMode";
+import ApplicantEditMode from "./ApplicantEditMode";
 
 // Import TanStack Query hook
 import { useBillingForm } from '../../hooks/useBillingForm';
@@ -235,211 +233,23 @@ export default function BillingFormDialog({ show, onClose, onSaved, billingId = 
               {!loading && (
                 <>
                   {isViewMode ? (
-                    // View Mode - Read Only Display
-                    <div className="space-y-6">
-                      {/* Basic Information */}
-                      <div className="bg-gray-50 rounded-lg p-6">
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Maklumat Permohonan</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">No. Rujukan</label>
-                            <p className="text-sm text-gray-900 font-semibold">{petition.running_no || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                            <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
-                              petition.status_name === 'Semakan Kewangan' ? 'bg-blue-100 text-blue-800' :
-                              petition.status_name === 'Permohonan Dibayar' ? 'bg-green-100 text-green-800' :
-                              petition.status_name === 'Draf' ? 'bg-gray-100 text-gray-800' :
-                              petition.status_name === 'Menunggu Kelulusan' ? 'bg-yellow-100 text-yellow-800' :
-                              petition.status_name === 'Ditolak' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {petition.status_name || 'Tidak Diketahui'}
-                            </span>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Tarikh Memohon</label>
-                            <p className="text-sm text-gray-900">{petition.issued_at ? new Date(petition.issued_at).toLocaleDateString('ms-MY') : '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">No Pesanan</label>
-                            <p className="text-sm text-gray-900">{petition.no_project || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Jabatan</label>
-                            <p className="text-sm text-gray-900">{petition.department || '-'}</p>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Penerima</label>
-                            <p className="text-sm text-gray-900">{petition.recipient || '-'}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Creator Information */}
-                      {petition.creator && (
-                        <div className="bg-blue-50 rounded-lg p-6">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-4">Maklumat Pemohon</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Nama</label>
-                              <p className="text-sm text-gray-900">{petition.creator.name}</p>
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Jawatan</label>
-                              <p className="text-sm text-gray-900">{petition.creator.position || '-'}</p>
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Tarikh Cipta</label>
-                              <p className="text-sm text-gray-900">{new Date(petition.created_at).toLocaleDateString('ms-MY', { 
-                                day: 'numeric', month: 'long', year: 'numeric', 
-                                hour: '2-digit', minute: '2-digit' 
-                              })}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Details Table */}
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Butiran Permohonan</h4>
-                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                          <table className="w-full">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Kod Bajet</th>
-                                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Nama Bajet</th>
-                                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Perkara</th>
-                                <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase">Kuantiti</th>
-                                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Harga</th>
-                                <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Jumlah</th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                              {(petition?.details || []).map((detail, i) => (
-                                <tr key={i}>
-                                  <td className="px-4 py-3 text-sm text-gray-900">{detail.budget_code}</td>
-                                  <td className="px-4 py-3 text-sm text-gray-900">{detail.budget_name}</td>
-                                  <td className="px-4 py-3 text-sm text-gray-900">{detail.description}</td>
-                                  <td className="px-4 py-3 text-sm text-gray-900 text-center">{detail.quantity}</td>
-                                  <td className="px-4 py-3 text-sm text-gray-900 text-right">{formatCurrency(detail.price)}</td>
-                                  <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">{formatCurrency(detail.total)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                            <tfoot className="bg-gray-50">
-                              <tr>
-                                <td colSpan={5} className="px-4 py-3 text-right font-bold text-gray-900">Jumlah Keseluruhan</td>
-                                <td className="px-4 py-3 text-right font-bold text-green-600 text-lg">{formatCurrency(petition?.total_amount || '0.00')}</td>
-                              </tr>
-                            </tfoot>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* Enhanced History using new BillingHistory component */}
-                      {petition.history && petition.history.length > 0 && (
-                        <BillingHistory history={petition.history}currentUser={currentUser}billing={petition}compact={false}/>
-                      )}
-
-                    </div>
+                    <ApplicantViewMode 
+                      petition={petition}
+                      currentUser={currentUser}
+                    />
                   ) : (
-                    // Edit/Create Mode - Form Display
-                    <form onSubmit={onSubmit}>
-                      <FormC data={petition} setValue={setPetition} error={error} disabled={!canEdit}>
-                        <div className="grid gap-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormC.LDate 
-                              field={"issued_at"} 
-                              text={"Tarikh Memohon"} 
-                              onChange={(e) => {
-                                const newDate = e.target.value;
-                                setPetition(prev => ({...prev,issued_at: newDate,payment_due: getPaymentDueDate(newDate)}));
-                              }}
-                              option={{ disabled: !canEdit }}
-                            />
-                            <FormC.LText field={"no_project"} text={"No Pesanan"} option={{ readOnly: !canEdit }} />
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <FormC.label text="Individu/Syarikat" />
-                            <div className="flex flex-col w-full">
-                              <div className="flex flex-row gap-2.5">
-                                <Select
-                                  isDisabled={!canEdit}
-                                  value={recipients.find(rec => rec.id === parseInt(petition.recipient_id)) || null}
-                                  onChange={(selectedOption) => setPetition(prev => ({...prev, recipient_id: selectedOption ? selectedOption.id : ""}))}
-                                  options={recipients}
-                                  getOptionLabel={(option) => option.name}
-                                  getOptionValue={(option) => option.id.toString()}
-                                  placeholder="Pilih Penerima"
-                                  className="react-select-container w-full"
-                                  classNamePrefix="react-select"
-                                />
-                                {canEdit && (
-                                  <>
-                                    <TButton color="light" onClick={handleAddRecipient} className="!py-1" title="Tambah Penerima Baru">
-                                      <FaPlus className="w-4 h-4" />
-                                    </TButton>
-                                    {petition.recipient_id && (
-                                      <TButton 
-                                        color="light" 
-                                        onClick={() => {
-                                          const recipient = recipients.find(r => r.id === parseInt(petition.recipient_id));
-                                          if (recipient) handleEditRecipient(recipient);
-                                        }} 
-                                        className="p-2" 
-                                        title="Kemaskini Penerima"
-                                      >
-                                        <FaEdit className="w-4 h-4" />
-                                      </TButton>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                              {error?.recipient_id && (
-                                <span className="text-xs mt-2 text-red-600">{error.recipient_id}</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Details Table */}
-                          <div className="border border-gray-200 rounded-lg overflow-hidden">
-                            <table className="w-full">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="text-left pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Kod Bajet</th>
-                                  <th className="text-left pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Perkara</th>
-                                  <th className="text-left pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Rujukan</th>
-                                  <th className="text-center pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Kuantiti</th>
-                                  <th className="text-right pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Harga</th>
-                                  <th className="text-right pl-4 py-3 text-xs font-medium text-gray-500 uppercase">Amaunt</th>
-                                  <th className="pl-4 py-3"></th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {(petition?.details || []).map((d, i) => (
-                                  <ApplicantDetailsRows key={i} FormC={FormC} data={d} def={defaultDetail}idx={i} setChange={setPetition} budgets={budgets} error={error} dataLen={petition?.details?.length-1}/>
-                                ))}
-                              </tbody>
-                              <tfoot className="bg-gray-50">
-                                <tr>
-                                  <td colSpan={5} className="px-4 py-3 text-right font-bold text-gray-900">Jumlah</td>
-                                  <td className="px-4 py-3 text-right font-bold text-gray-900">{formatCurrency(petition?.total_amount || '0.00')}</td>
-                                  <td></td>
-                                </tr>
-                              </tfoot>
-                            </table>
-                            {error?.details && (
-                              <div className="px-4 py-2 bg-red-50 border-t border-red-200">
-                                <span className="text-xs text-red-600">{error?.details}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </FormC>
-                    </form>
+                    <ApplicantEditMode 
+                      petition={petition}
+                      setPetition={setPetition}
+                      recipients={recipients}
+                      budgets={budgets}
+                      error={error}
+                      canEdit={canEdit}
+                      defaultDetail={defaultDetail}
+                      getPaymentDueDate={getPaymentDueDate}
+                      handleAddRecipient={handleAddRecipient}
+                      handleEditRecipient={handleEditRecipient}
+                    />
                   )}
                 </>
               )}

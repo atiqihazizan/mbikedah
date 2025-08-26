@@ -19,7 +19,8 @@ class AuthController extends Controller
       'email' => 'required|string|email|unique:users',
       'password' => 'required|string|min:8',
       'dept_id' => 'nullable|exists:departments,id',
-      'ability_id' => 'required|integer|in:' . implode(',', array_values(Config::get('constants.abilities')))
+      'abilities' => 'required|array',
+      'abilities.*' => 'integer|in:1,2,3,4,5,6,7'
     ]);
 
     $user = User::create([
@@ -28,7 +29,7 @@ class AuthController extends Controller
       'email' => $request->email,
       'password' => Hash::make($request->password),
       'department_id' => $request->dept_id,
-      'ability_id' => $request->ability_id ?? Config::get('constants.abilities.user'), // Use default ability if not provided
+      'abilities' => $request->abilities ?? [2], // Default to applicant if not provided
     ]);
 
     $user->load('department');
@@ -38,8 +39,14 @@ class AuthController extends Controller
       'status' => 'success',
       'token' => $token,
       'user' => [
-        ...$user->only(['id', 'name', 'email', 'username', 'department_id', 'ability_id']),
+        'id' => $user->id,
+        'name' => $user->name,
+        'email' => $user->email,
+        'username' => $user->username,
+        'department_id' => $user->department_id,
+        'abilities' => $user->abilities,
         'department' => $user->department ? $user->department->name : null,
+        'ability' => $user->getAbilityNames()
       ],
     ], 201);
   }
@@ -72,10 +79,10 @@ class AuthController extends Controller
         'name' => $user->name,
         'username' => $user->username,
         'email' => $user->email,
-        'ability_id' => $user->ability_id,
+        'abilities' => $user->abilities,
         'department_id' => $user->department_id,
         'department' => $user->department ? $user->department->name : null,
-        'ability' => $user->ability_name
+        'ability' => $user->getAbilityNames()
       ]
     ]);
   }

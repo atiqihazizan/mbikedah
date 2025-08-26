@@ -64,28 +64,28 @@ export default function ApplicantDetailsRows({ FormC, data, def, idx = false, se
   return (
     <>
       <tr>
-        <td className="pl-4 py-3 align-top w-[200px]">
+        <td className="pl-4 py-3 align-top w-[250px]">
           <FormC.select
             field="budget_id"
             keyval="id,code,name"
-            listArr={budgets}
+            listArr={budgets || []}
+            autoFitWidth={true}
+            maxDropdownWidth={450}
+            fontSize="small"
             option={{
-              placeholder: "Pilih bajet",
-              disabled,
-              value: detail?.budget_id || '',
+              disabled: disabled,
+              placeholder: "Pilih bajet...",
               onChange: (e) => {
-                const selectedBudget = budgets.find(b => b.id === parseInt(e.target.value));
-                const newData = {
+                const budgetId = e.target.value;
+                const selectedBudget = budgets.find(b => b.id === parseInt(budgetId));
+                const enhancedData = {
                   ...detail,
-                  budget_id: e.target.value,
+                  budget_id: budgetId,
                   budget_code: selectedBudget?.code || ''
                 };
-                setDetail(newData);
-                onUpdate(newData);
-              },
-              // Disable option untuk budget dengan total = 0
-              // Function ini akan return true untuk budget yang perlu di-disable
-              // disabledOptions: (budget) => parseFloat(budget.bdgtotal || 0) === 0
+                setDetail(enhancedData);
+                onUpdate(enhancedData);
+              }
             }}
           />
           {error?.[`details.${idx}.budget_id`] && (

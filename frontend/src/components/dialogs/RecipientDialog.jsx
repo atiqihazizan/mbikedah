@@ -53,7 +53,6 @@ export default function RecipientDialog({ show, onClose, onSaved, recipient = nu
       }), {});
       
       const response = await apiClient[method](url, trimmedData);
-      console.log(response);
       const message = recipient 
         ? 'Penerima berjaya dikemaskini'
         : 'Penerima baru berjaya ditambah';
