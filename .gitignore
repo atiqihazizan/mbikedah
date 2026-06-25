@@ -114,6 +114,23 @@ api/storage/telescope/
 # Laravel Debugbar (jika digunakan)
 api/storage/debugbar/
 
+# mbiclick_pro_1 - Laravel
+mbiclick_pro_1/api/vendor/
+mbiclick_pro_1/api/node_modules/
+mbiclick_pro_1/api/storage/
+mbiclick_pro_1/api/bootstrap/cache/
+mbiclick_pro_1/api/public/storage
+mbiclick_pro_1/api/public/dist/
+mbiclick_pro_1/api/database/*.sqlite
+mbiclick_pro_1/api/database/*.sqlite-journal
+mbiclick_pro_1/api/composer.lock
+mbiclick_pro_1/api/.phpunit.result.cache
+mbiclick_pro_1/api/.env
+
+# mbiclick_pro_1 - Frontend
+mbiclick_pro_1/frontend/node_modules/
+mbiclick_pro_1/frontend/dist/
+
 # Ignored IDE files
 *.iml
 *.ipr
