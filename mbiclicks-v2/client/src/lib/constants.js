@@ -1,0 +1,5 @@
+export const ORG_NAME = 'Menteri Besar Incorporated'
+export const ORG_SHORT = 'MBI'
+export const APP_NAME = 'MBIClicks'
+export const APP_TAGLINE = 'Portal Korporat'
+export const APP_DESC = 'Platform pengurusan permohonan dalaman dan operasi korporat bagi warga Menteri Besar Incorporated.'

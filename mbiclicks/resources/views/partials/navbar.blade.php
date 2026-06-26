@@ -1,0 +1,175 @@
+<div id="kt_app_header" class="app-header">
+    <div class="app-header-primary" >
+      <div class="app-container container-xxl d-flex align-items-stretch justify-content-between">
+        <div class="d-flex flex-stack flex-grow-1 flex-lg-grow-0">
+          <div class="d-flex align-items-center me-7">
+            <button class="d-lg-none btn btn-icon btn-active-color-primary w-35px h-35px" id="kt_header_secondary_toggle">
+              <span class="svg-icon svg-icon-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M21 7H3C2.4 7 2 6.6 2 6V4C2 3.4 2.4 3 3 3H21C21.6 3 22 3.4 22 4V6C22 6.6 21.6 7 21 7Z" fill="currentColor"></path>
+                  <path opacity="0.3" d="M21 14H3C2.4 14 2 13.6 2 13V11C2 10.4 2.4 10 3 10H21C21.6 10 22 10.4 22 11V13C22 13.6 21.6 14 21 14ZM22 20V18C22
+                  17.4 21.6 17 21 17H3C2.4 17 2 17.4 2 18V20C2 20.6 2.4 21 3 21H21C21.6 21 22 20.6 22 20Z" fill="currentColor"></path>
+                </svg>
+              </span>
+            </button>
+            <a href="{{ route('home') }}" class="d-flex align-items-center"><img alt="Logo" src="{{ URL::asset('assets/media/logos/logo.svg') }}" style="width: 165px;"></a>
+          </div>
+        </div>
+        <div class="app-navbar gap-1">
+            <div class="app-navbar-item">
+                <?php
+                $url =  '#';
+                $ustp = auth()->user()->ustep;
+
+                $ky = array_search(PREPARED,$ustp);
+                if($ky !== false) unset($ustp[$ky]);
+                $ky = array_search(RETURN_CAR,$ustp);
+                if($ky !== false) unset($ustp[$ky]);
+
+                if(count($ustp) > 0) $url = route('activity.index');
+                ?>
+                <a href="{{ $url }}" class="btn btn-icon btn-color-gray-400 bg-hover-primary bg-hover-opacity-10 lh-1" id="kt_noti_activity">
+                    <i class="fa fa-thin fa-bell fs-1"></i>
+                    <div class="badge badge-circle badge-danger position-absolute translate-middle bottom-0 ms-10 mt-10 h-15px w-15px fs-9 d-none" id="badger_notiactivity"></div>
+                </a>
+            </div>
+
+            <div class="app-navbar-item" id="kt_header_user_menu_toggle">
+                <div class="btn btn-flex align-items-center bg-hover-white bg-hover-opacity-10 py-2 px-2 px-md-3" data-kt-menu-trigger="click" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
+                    <div class="d-none d-md-flex flex-column align-items-end justify-content-center me-2 me-md-4">
+                        <span class="text-white fs-8 fw-bolder lh-1 mb-2 text-gray-600" id="kt_usrname">{{ strtoupper(auth()->user()->name) }}</span>
+                        <span class="text-white fs-8 opacity-75 fw-bold lh-1 text-gray-600" id="kt_usrlevel">{{ auth()->user()->position->name }}</span>
+                    </div>
+                    <div class="symbol symbol-30px"><img src={{$master->staff[auth()->user()->staff_id]->avatar?? URL::asset("assets/media/avatars/blank.png") }} alt="Staff"/></div>
+                </div>
+                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-primary fw-bold py-4 fs-6 w-auto" data-kt-menu="true">
+                    <div class="menu-item px-5"><a href="{{route('password.form')}}" class="menu-link px-5">Ubah katalaluan</a></div>
+                </div>
+            </div>
+
+            <div class="app-navbar-item">
+                <form action="{{ route('logout') }}" method="post">
+                    @csrf
+                    <button type="submit" class="border-0 px-0 py-3 fw-bold text-gray-800 w-100 text-hover-danger" title="logout" style="background-color:transparent">
+                        <i class="fa fa-door-open fs-1"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-header-secondary app-header-mobile-drawer" data-kt-drawer="true" data-kt-drawer-name="app-header-menu"
+         data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="250px"
+         data-kt-drawer-direction="start" data-kt-drawer-toggle="#kt_header_secondary_toggle" data-kt-swapper="true"
+         data-kt-swapper-mode="append" data-kt-swapper-parent="{default: '#kt_app_body', lg: '#kt_app_header'}">
+
+      <div class="app-container container-xxl app-container-fit-mobile d-flex align-items-stretch">
+        <div class="header-menu d-flex align-items-stretch w-100">
+          <div class="menu menu-lg-rounded menu-column menu-lg-row menu-state-bg menu-state-primary menu-title-gray-700 menu-arrow-gray-400 menu-bullet-gray-400 fw-bold my-5 my-lg-0 align-items-stretch"
+               id="#kt_header_menu" data-kt-menu="true" kt-data-menu-click="1">
+
+            {!! navLink(request()->is('home') ? 'here' : '', '/home','Utama','Status Permohonan') !!}
+
+            @if(in_array(1,auth()->user()->ustep))
+            {{-- {!! navLink(request()->is('petition*')  ? 'here' : '', '/petition','Permohonan','Bayaran dan Tuntutan') !!} --}}
+            <div data-kt-menu-trigger="click" data-kt-menu-placement="bottom-start" class="menu-item menu-lg-down-accordion me-lg-1 mw-auto {{ request()->is('petition/*') ? 'here' : '' }}">
+              <span class="menu-link py-3"><span class="menu-title"><span class="menu-text">Permohonan</span><span class="menu-desc">Bayaran</span></span><span class="menu-arrow d-lg-none"></span></span>
+              <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown menu-rounded-0 py-4 min-w-150px">
+                <?php
+                  $report = [
+                      ['active'=>request()->is('petition/bayaran/*') ? 'here':'','href'=>'petition/bayaran','title'=>'Bayaran'],
+                  ];
+                  foreach ($report as $n){ echo navMenu($n); }
+              ?>
+              </div>
+            </div>
+            @endif
+
+            @if( auth()->user()->AllowVerify())
+            {!! navLink(request()->is('activity*')  ? 'here' : '', '/activity','Aktiviti','Pengesahan Permohonan') !!}
+            @endif
+
+
+            @if(auth()->user()->utype & 1)
+            <div data-kt-menu-trigger="click" data-kt-menu-placement="bottom-start" class="menu-item menu-lg-down-accordion me-lg-1 mw-auto {{ request()->is('finance*') ? 'here' : '' }}">
+                <span class="menu-link py-3"><span class="menu-title"><span class="menu-text">Laporan</span><span class="menu-desc">Bajet & Transaksi</span></span><span class="menu-arrow d-lg-none"></span></span>
+                <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown menu-rounded-0 py-4 w-auto">
+                    <?php
+                        $report = [
+                            ['active'=>request()->is('finance/summary/0/0*') ? 'here':'','href'=>route('finance.summary', ['lay'=>0,'type'=>0,'yr'=>YEAR_NOW]),'title'=>'SUM Keseluruhan'],
+                            ['active'=>request()->is('finance/summary/1/1*') ? 'here':'','href'=>route('finance.summary', ['lay'=>1,'type'=>1,'yr'=>YEAR_NOW]),'title'=>'SUM Keseluruhan Penerimaan'],
+                            ['active'=>request()->is('finance/summary/1/2*') ? 'here':'','href'=>route('finance.summary', ['lay'=>1,'type'=>2,'yr'=>YEAR_NOW]),'title'=>'SUM Keseluruhan Perbelanjaan'],
+                            ['active'=>request()->is('finance/summary/2/1*') ? 'here':'','href'=>route('finance.summary', ['lay'=>2,'type'=>1,'yr'=>YEAR_NOW]),'title'=>'SUB Keseluruhan Penerimaan'],
+                            ['active'=>request()->is('finance/summary/2/2*') ? 'here':'','href'=>route('finance.summary', ['lay'=>2,'type'=>2,'yr'=>YEAR_NOW]),'title'=>'SUB Keseluruhan Perbelanjaan'],
+                            ['active'=>request()->is('finance/graph') ? 'here':'','href'=>route('finance.graph', ['yr'=>YEAR_NOW]),'title'=>'Carta Pendapatan Dan Perbelanjaan'],
+                        ];
+                        foreach ($report as $n){ echo navMenu($n); }
+                    ?>
+                </div>
+            </div>
+            @endif
+
+            @if(auth()->user()->uability)
+              <?php
+              $conf[1] = [
+                  ['active'=>request()->is('conf/bank') ? 'here' : '','href'=>'/conf/bank','title'=>'Bank'],
+                  ['active'=>request()->is('conf/finance') ? 'here' : '','href'=>'/conf/finance','title'=>'Kod Kewangan'],
+                  ['active'=>request()->is('conf/budget') ? 'here' : '','href'=>'/conf/budget','title'=>'Bajet Kewangan'],
+              ];
+              $conf[2] = [
+                  ['active'=>request()->is('conf/staff*') ? 'here' :'','href'=>'/conf/staff','title'=>'Staff'],
+                  ['active'=>request()->is('conf/leave') ? 'here' :'','href'=>'/conf/leave','title'=>'Cuti'],
+                  ['active'=>request()->is('conf/leave/yeartoup*') ? 'here' :'','href'=>'/conf/leave/yeartoup','title'=>'kelayakan Mengikut Tahunan'],
+                  ['active'=>request()->is('conf/petitiontype*') ? 'here' : '','href'=>'/conf/petitiontype','title'=>'Cuti Mengikut Permohonan'],
+                  ['active'=>request()->is('conf/allowance*') ? 'here' : '','href'=>'/conf/allowance','title'=>'Jenis Elaun'],
+//                  ['separator'=>true],
+                  ['active'=>request()->is('asset') ? 'here' : '','href'=>'/asset','title'=>'Kenderaan Pejabat'],
+              ];
+              ?>
+              @if(auth()->user()->utype & 1)
+                  <div data-kt-menu-trigger="click" data-kt-menu-placement="bottom-start" class="menu-item menu-lg-down-accordion me-lg-1 mw-auto {{ request()->is('conf*') ? 'here' : '' }}">
+                      <span class="menu-link py-3"><span class="menu-title"><span class="menu-text">Kewangan</span><span class="menu-desc">ubahsuaian</span></span><span class="menu-arrow d-lg-none"></span></span>
+                      <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown menu-rounded-0 py-lg-4 w-lg-225px">
+                          @foreach($conf[1] as $n){!! navMenu($n) !!}@endforeach
+                      </div>
+                  </div>
+              @endif
+              @if(auth()->user()->utype & 2)
+                  <div data-kt-menu-trigger="click" data-kt-menu-placement="bottom-start" class="menu-item menu-lg-down-accordion me-lg-1 mw-auto {{ request()->is('conf*') ? 'here' : '' }}">
+                      <span class="menu-link py-3"><span class="menu-title"><span class="menu-text">Sumber Manusia</span><span class="menu-desc">ubahsuaian</span></span><span class="menu-arrow d-lg-none"></span></span>
+                      <div class="menu-sub menu-sub-lg-down-accordion menu-sub-lg-dropdown menu-rounded-0 py-lg-4 w-lg-225px">
+                          @foreach($conf[2] as $n){!! navMenu($n) !!}@endforeach
+                      </div>
+                  </div>
+              @endif
+            @endif
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<?php
+  function navMenu($n){
+      if($n['separator']??false){
+          return '<div class="separator mt-3 opacity-75"></div>';
+      } else {
+          return '
+            <div class="menu-item '.$n['active'].'">
+                <a class="menu-link py-3 pe-5" href="'. $n['href'] .'">
+                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                    <span class="menu-title">'. $n['title'] .'</span>
+                </a>
+            </div>
+          ';
+      }
+  }
+  function navLink($active,$href,$title,$desc){
+      return '<div class="menu-item mw-auto '. $active .'">
+              <a href="'. $href .'" class="menu-link py-3">
+                <span class="menu-title"><span class="menu-text">'. $title .'</span><span class="menu-desc">' . $desc .'</span></span>
+              </a>
+            </div>';
+  }
+?>

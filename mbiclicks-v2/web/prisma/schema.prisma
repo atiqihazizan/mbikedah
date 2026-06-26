@@ -1,0 +1,450 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ORGANISATION ────────────────────────────────────────────────────────────
+
+model Department {
+  id          Int          @id @default(autoincrement())
+  code        String       @unique @db.VarChar(20)
+  name        String       @db.VarChar(100)
+  parentId    Int?         @map("parent_id")
+  parent      Department?  @relation("DeptHierarchy", fields: [parentId], references: [id])
+  children    Department[] @relation("DeptHierarchy")
+  headUserId  Int?         @map("head_user_id")
+  head        User?        @relation("DeptHead", fields: [headUserId], references: [id])
+  level       Int          @default(0)
+  sortOrder   Int          @default(0) @map("sort_order")
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  users        User[]        @relation("UserDept")
+  billings     Billing[]
+  circulars    Circular[]
+  events       Event[]
+
+  @@map("departments")
+}
+
+model Position {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(20)
+  name      String   @db.VarChar(100)
+  level     Int      @default(0)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users     User[]
+
+  @@map("positions")
+}
+
+// ─── USERS & ACCESS ──────────────────────────────────────────────────────────
+
+model Role {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique @db.VarChar(50)
+  slug        String       @unique @db.VarChar(50)
+  description String?      @db.VarChar(200)
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  users       User[]
+  permissions Permission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id         Int     @id @default(autoincrement())
+  roleId     Int     @map("role_id")
+  role       Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  module     String  @db.VarChar(50)
+  canView    Boolean @default(false) @map("can_view")
+  canCreate  Boolean @default(false) @map("can_create")
+  canEdit    Boolean @default(false) @map("can_edit")
+  canApprove Boolean @default(false) @map("can_approve")
+  canDelete  Boolean @default(false) @map("can_delete")
+
+  @@unique([roleId, module])
+  @@map("permissions")
+}
+
+model User {
+  id           Int         @id @default(autoincrement())
+  staffNo      String?     @unique @map("staff_no") @db.VarChar(20)
+  name         String      @db.VarChar(100)
+  email        String      @unique @db.VarChar(100)
+  password     String      @db.VarChar(255)
+  phone        String?     @db.VarChar(20)
+  departmentId Int?        @map("department_id")
+  department   Department? @relation("UserDept", fields: [departmentId], references: [id])
+  positionId   Int?        @map("position_id")
+  position     Position?   @relation(fields: [positionId], references: [id])
+  roleId       Int?        @map("role_id")
+  role         Role?       @relation(fields: [roleId], references: [id])
+  reportsTo    Int?        @map("reports_to")
+  supervisor   User?       @relation("OrgChart", fields: [reportsTo], references: [id])
+  subordinates User[]      @relation("OrgChart")
+  isActive          Boolean     @default(true) @map("is_active")
+  canDraftCircular  Boolean     @default(false) @map("can_draft_circular")
+  lastLogin         DateTime?   @map("last_login")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  deptHeadOf         Department[]       @relation("DeptHead")
+  refreshTokens      RefreshToken[]
+  billingsCreated    Billing[]          @relation("BillingApplicant")
+  billingsPaidBy     Billing[]          @relation("BillingPaidBy")
+  billingApprovals   BillingApproval[]
+  circularsIssued    Circular[]
+  eventsCreated      Event[]
+  budgetLinesCreated BudgetLine[]       @relation("BudgetLineCreator")
+  budgetAdjusted     BudgetAdjustment[] @relation("AdjustedBy")
+  budgetApproved     BudgetAdjustment[] @relation("ApprovedBy")
+  circularReads      CircularRead[]
+  attachments        BillingAttachment[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique @db.VarChar(500)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}
+
+// ─── FINANCE MASTER ──────────────────────────────────────────────────────────
+
+model Account {
+  id          Int       @id @default(autoincrement())
+  accNo       String    @unique @map("acc_no") @db.VarChar(20)
+  name        String    @db.VarChar(200)
+  accType     AccType   @map("acc_type")
+  parentAccNo String?   @map("parent_acc_no") @db.VarChar(20)
+  level       Int       @default(0)
+  isActive    Boolean   @default(true) @map("is_active")
+  syncedAt    DateTime? @map("synced_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  budgetLines  BudgetLine[]
+  billingItems BillingItem[]
+  actualData   ActualData[]
+
+  @@map("accounts")
+}
+
+enum AccType {
+  HASIL
+  BELANJA
+}
+
+model Vendor {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique @db.VarChar(20)
+  name      String    @db.VarChar(200)
+  email     String?   @db.VarChar(100)
+  phone     String?   @db.VarChar(20)
+  address   String?   @db.Text
+  bankName  String?   @map("bank_name") @db.VarChar(100)
+  bankAcc   String?   @map("bank_acc") @db.VarChar(50)
+  isActive  Boolean   @default(true) @map("is_active")
+  syncedAt  DateTime? @map("synced_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  billings  Billing[]
+
+  @@map("vendors")
+}
+
+// ─── BUDGET ──────────────────────────────────────────────────────────────────
+
+model BudgetYear {
+  id              Int          @id @default(autoincrement())
+  year            Int          @unique
+  status          BudgetStatus @default(DRAFT)
+  adjCount        Int          @default(0) @map("adj_count")
+  adjLimit        Int          @default(2) @map("adj_limit")
+  nextBudgetMonth Int          @default(10) @map("next_budget_month")
+  activatedAt     DateTime?    @map("activated_at")
+  closedAt        DateTime?    @map("closed_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  lines       BudgetLine[]
+  adjustments BudgetAdjustment[]
+
+  @@map("budget_years")
+}
+
+enum BudgetStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+model BudgetLine {
+  id           Int         @id @default(autoincrement())
+  budgetYearId Int         @map("budget_year_id")
+  budgetYear   BudgetYear  @relation(fields: [budgetYearId], references: [id], onDelete: Cascade)
+  accNo        String      @map("acc_no") @db.VarChar(20)
+  account      Account     @relation(fields: [accNo], references: [accNo])
+  version      LineVersion @default(ORIGINAL)
+  jan          Decimal     @default(0) @db.Decimal(15, 2)
+  feb          Decimal     @default(0) @db.Decimal(15, 2)
+  mar          Decimal     @default(0) @db.Decimal(15, 2)
+  apr          Decimal     @default(0) @db.Decimal(15, 2)
+  may          Decimal     @default(0) @db.Decimal(15, 2)
+  jun          Decimal     @default(0) @db.Decimal(15, 2)
+  jul          Decimal     @default(0) @db.Decimal(15, 2)
+  aug          Decimal     @default(0) @db.Decimal(15, 2)
+  sep          Decimal     @default(0) @db.Decimal(15, 2)
+  oct          Decimal     @default(0) @db.Decimal(15, 2)
+  nov          Decimal     @default(0) @db.Decimal(15, 2)
+  dec          Decimal     @default(0) @db.Decimal(15, 2)
+  total        Decimal     @default(0) @db.Decimal(15, 2)
+  createdBy    Int         @map("created_by")
+  creator      User        @relation("BudgetLineCreator", fields: [createdBy], references: [id])
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  @@unique([budgetYearId, accNo, version])
+  @@map("budget_lines")
+}
+
+enum LineVersion {
+  ORIGINAL
+  ADJ1
+  ADJ2
+}
+
+model BudgetAdjustment {
+  id           Int        @id @default(autoincrement())
+  budgetYearId Int        @map("budget_year_id")
+  budgetYear   BudgetYear @relation(fields: [budgetYearId], references: [id], onDelete: Cascade)
+  adjNo        Int        @map("adj_no")
+  adjustedById Int        @map("adjusted_by")
+  adjustedBy   User       @relation("AdjustedBy", fields: [adjustedById], references: [id])
+  adjustedAt   DateTime   @default(now()) @map("adjusted_at")
+  approvedById Int?       @map("approved_by")
+  approvedBy   User?      @relation("ApprovedBy", fields: [approvedById], references: [id])
+  approvedAt   DateTime?  @map("approved_at")
+  remarks      String?    @db.Text
+
+  @@map("budget_adjustments")
+}
+
+// ─── ACTUAL DATA (synced from AutoCount) ─────────────────────────────────────
+
+model ActualData {
+  id       Int      @id @default(autoincrement())
+  accNo    String   @map("acc_no") @db.VarChar(20)
+  account  Account  @relation(fields: [accNo], references: [accNo])
+  year     Int
+  month    Int
+  amount   Decimal  @db.Decimal(15, 2)
+  syncedAt DateTime @map("synced_at")
+
+  @@unique([accNo, year, month])
+  @@map("actual_data")
+}
+
+model SyncLog {
+  id           Int      @id @default(autoincrement())
+  syncType     String   @map("sync_type") @db.VarChar(50)
+  status       String   @db.VarChar(20)
+  recordsCount Int      @default(0) @map("records_count")
+  errorMsg     String?  @map("error_msg") @db.Text
+  syncedAt     DateTime @default(now()) @map("synced_at")
+
+  @@map("sync_logs")
+}
+
+// ─── BILLING / PAYMENT REQUEST ───────────────────────────────────────────────
+
+model Billing {
+  id           Int           @id @default(autoincrement())
+  refNo        String        @unique @map("ref_no") @db.VarChar(30)
+  workflowType WorkflowType  @map("workflow_type")
+  applicantId  Int           @map("applicant_id")
+  applicant    User          @relation("BillingApplicant", fields: [applicantId], references: [id])
+  departmentId Int           @map("department_id")
+  department   Department    @relation(fields: [departmentId], references: [id])
+  vendorId     Int?          @map("vendor_id")
+  vendor       Vendor?       @relation(fields: [vendorId], references: [id])
+  description  String        @db.Text
+  totalAmount  Decimal       @default(0) @map("total_amount") @db.Decimal(15, 2)
+  status       BillingStatus @default(DRAFT)
+  currentStep  String?       @map("current_step") @db.VarChar(50)
+  paidAt       DateTime?     @map("paid_at")
+  paidById     Int?          @map("paid_by")
+  paidBy       User?         @relation("BillingPaidBy", fields: [paidById], references: [id])
+  paymentRef   String?       @map("payment_ref") @db.VarChar(100)
+  remarks      String?       @db.Text
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  items       BillingItem[]
+  approvals   BillingApproval[]
+  attachments BillingAttachment[]
+
+  @@index([status, departmentId])
+  @@index([applicantId])
+  @@map("billings")
+}
+
+enum WorkflowType {
+  STAFF
+  HOD
+}
+
+enum BillingStatus {
+  DRAFT
+  PENDING_HOD
+  PENDING_CEO
+  PENDING_FINANCE_CHECK
+  PENDING_FINANCE_VERIFY
+  PENDING_FINANCE_APPROVAL
+  PENDING_CEO_FINAL
+  APPROVED
+  REJECTED
+  RETURNED
+  PAID
+}
+
+model BillingItem {
+  id          Int      @id @default(autoincrement())
+  billingId   Int      @map("billing_id")
+  billing     Billing  @relation(fields: [billingId], references: [id], onDelete: Cascade)
+  description String   @db.VarChar(200)
+  accNo       String?  @map("acc_no") @db.VarChar(20)
+  account     Account? @relation(fields: [accNo], references: [accNo])
+  amount      Decimal  @db.Decimal(15, 2)
+  remarks     String?  @db.VarChar(200)
+
+  @@map("billing_items")
+}
+
+model BillingApproval {
+  id         Int            @id @default(autoincrement())
+  billingId  Int            @map("billing_id")
+  billing    Billing        @relation(fields: [billingId], references: [id], onDelete: Cascade)
+  step       String         @db.VarChar(50)
+  actorId    Int            @map("actor_id")
+  actor      User           @relation(fields: [actorId], references: [id])
+  action     ApprovalAction
+  fromStatus BillingStatus  @map("from_status")
+  toStatus   BillingStatus  @map("to_status")
+  remarks    String?        @db.Text
+  actionedAt DateTime       @default(now()) @map("actioned_at")
+
+  @@index([billingId])
+  @@map("billing_approvals")
+}
+
+enum ApprovalAction {
+  SUBMIT
+  APPROVE
+  REJECT
+  RETURN
+  VERIFY
+  PAY
+}
+
+model BillingAttachment {
+  id           Int      @id @default(autoincrement())
+  billingId    Int      @map("billing_id")
+  billing      Billing  @relation(fields: [billingId], references: [id], onDelete: Cascade)
+  filename     String   @db.VarChar(255)
+  originalName String   @map("original_name") @db.VarChar(255)
+  mimeType     String   @map("mime_type") @db.VarChar(100)
+  size         Int
+  path         String   @db.VarChar(500)
+  uploadedById Int      @map("uploaded_by")
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+
+  @@map("billing_attachments")
+}
+
+// ─── CIRCULAR / ANNOUNCEMENT ─────────────────────────────────────────────────
+
+model Circular {
+  id           Int             @id @default(autoincrement())
+  title        String          @db.VarChar(200)
+  content      String          @db.LongText
+  issuedById   Int             @map("issued_by")
+  issuedBy     User            @relation(fields: [issuedById], references: [id])
+  departmentId Int?            @map("department_id")
+  department   Department?     @relation(fields: [departmentId], references: [id])
+  audienceType AudienceType    @default(ALL) @map("audience_type")
+  status       CircularStatus  @default(DRAFT) @map("status")
+  issuedAt     DateTime        @default(now()) @map("issued_at")
+  publishedAt  DateTime?       @map("published_at")
+  archivedAt   DateTime?       @map("archived_at")
+  expiresAt    DateTime?       @map("expires_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  reads        CircularRead[]
+
+  @@index([status, audienceType])
+  @@map("circulars")
+}
+
+enum CircularStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AudienceType {
+  ALL
+  DEPARTMENT
+}
+
+model CircularRead {
+  id         Int      @id @default(autoincrement())
+  circularId Int      @map("circular_id")
+  circular   Circular @relation(fields: [circularId], references: [id], onDelete: Cascade)
+  userId     Int      @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt     DateTime @default(now()) @map("read_at")
+
+  @@unique([circularId, userId])
+  @@map("circular_reads")
+}
+
+// ─── EVENTS / CALENDAR ───────────────────────────────────────────────────────
+
+model Event {
+  id           Int         @id @default(autoincrement())
+  title        String      @db.VarChar(200)
+  description  String?     @db.Text
+  location     String?     @db.VarChar(200)
+  startAt      DateTime    @map("start_at")
+  endAt        DateTime    @map("end_at")
+  isAllDay     Boolean     @default(false) @map("is_all_day")
+  departmentId Int?        @map("department_id")
+  department   Department? @relation(fields: [departmentId], references: [id])
+  isPublic     Boolean     @default(true) @map("is_public")
+  createdById  Int         @map("created_by")
+  createdBy    User        @relation(fields: [createdById], references: [id])
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  @@index([startAt, endAt])
+  @@map("events")
+}

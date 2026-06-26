@@ -1,0 +1,38 @@
+body {background: #e6e7f1;}
+.app-header-primary {background-color: #489a81 !important;}
+/*** Login ****/
+.login.login-4 .login-signin, .login.login-4 .login-signup, .login.login-4 .login-forgot {display: none;}
+.login.login-4.login-signin-on .login-signup {display: none;}
+.login.login-4.login-signin-on .login-signin {display: block;}
+.login.login-4.login-signin-on .login-forgot {display: none;}
+.login.login-4.login-signup-on .login-signup {display: block;}
+.login.login-4.login-signup-on .login-signin {display: none;}
+.login.login-4.login-signup-on .login-forgot {display: none;}
+.login.login-4.login-forgot-on .login-signup {display: none;}
+.login.login-4.login-forgot-on .login-signin {display: none;}
+.login.login-4.login-forgot-on .login-forgot {display: block;}
+.login.login-4 .login-form {width: 100%;max-width: 450px;}
+@media (max-width: 575.98px) {  .login.login-4 .login-form {width: 100%;max-width: 100%;}  }
+/*** Login ***/
+/*** Cards ***/
+.card-header.tiles {background: url("../assets/media/bg/bg-header-2.jpg") repeat;}
+/*** Cards ***/
+
+.app-header-primary {
+    background:url('https://www.onlygfx.com/wp-content/uploads/2021/04/white-triangle-pattern-seamless-background-cover.jpg') !important;
+    background-repeat: repeat-x;
+    color: black
+}
+
+.bg-crystal {
+    background:url('https://www.onlygfx.com/wp-content/uploads/2021/04/white-triangle-pattern-seamless-background-cover.jpg') !important;
+    background-repeat: repeat-x;
+    color: gray;
+}
+.swal2-container .swal2-html-container {max-height: calc(100vh - 220px) !important;}
+span.no-show{display: none;}
+span.show-ellipsis:after{content: "...";}
+/*div.dataTables_scrollBody {height: calc(100vh - 450px);}*/
+div.dataTables_scrollBody,div.dataTables_wrapper .table-responsive {height: calc(100vh - 430px);}
+
+.table-bordered th, .table-bordered td {border-width: 0 1px !important;}

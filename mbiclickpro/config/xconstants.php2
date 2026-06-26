@@ -1,0 +1,77 @@
+<?php
+
+return [
+  'abilities' => [
+    'admin' => 1,
+    'applicant' => 2,
+    'hod' => 3,
+    'checker' => 4,
+    'verifier' => 5,
+    'approver' => 6,
+    'payment' => 7,
+  ],
+
+  'abilities_name' => [
+    1 => 'Pentadbir',
+    2 => 'Pemohon',
+    3 => 'Ketua Jabatan',
+    4 => 'Penyemak',
+    5 => 'Pengesah',
+    6 => 'Pelulus',
+    7 => 'Pembayar',
+  ],
+
+  'abilities_menu' => [
+    // Admin boleh akses semua menu
+    1 => ['all'],
+    
+    // Pemohon
+    2 => ['billing.create', 'billing.incomplete', 'billing.archive'],
+    
+    // Ketua Jabatan
+    3 => ['billing.hod'],
+    
+    // Penyemak Kewangan
+    4 => ['billing.finance'],
+    
+    // Pengesah Kewangan
+    5 => ['billing.finance'],
+    
+    // Pelulus Kewangan
+    6 => ['billing.finance'],
+    
+    // Pembayar
+    7 => ['billing.finance'],
+  ],
+
+  'payment_methods' => [
+    'cheque',
+    'online',
+    'cash'
+  ],
+
+  'ABILITIES' => [
+    1 => 'Create',
+    2 => 'View',
+    3 => 'Edit',
+    4 => 'Delete',
+    5 => 'Review',
+    6 => 'Verify',
+    7 => 'Approve',
+    8 => 'Paid',
+    9 => 'Reject',
+    10 => 'Cancel',
+  ],
+];
+
+// Status transition rules
+// {
+//     1: [2],           // Draft -> Approval HOD
+//     2: [3, 8],        // Approval HOD -> Checking Finance, Rejected
+//     3: [4],           // Checking Finance -> Approval Finance
+//     4: [5, 8],        // Verify Finance -> Verified, Rejected
+//     5: [6, 8],        // Approval Finance[6, 8],        // Approval Finance -> Approved, Rejected] -> Approved, Rejected
+//     6: [7],           // Approved -> Paid[6, 8],        // Approval Finance -> Approved, Rejected]
+//     7: [],            // Paid -> (no further transitions)[6, 8],        // Approval Finance -> Approved, Rejected]
+//     8: []             // Rejected -> (no further transitions)
+//   };

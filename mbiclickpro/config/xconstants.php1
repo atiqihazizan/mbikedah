@@ -1,0 +1,94 @@
+<?php
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | User Abilities Constants
+    |--------------------------------------------------------------------------
+    |
+    | This file contains constants for user abilities that are used throughout
+    | the application. These constants should match the UserAbilities class.
+    |
+    */
+
+    'abilities_name' => [
+        1 => 'Pentadbir',
+        2 => 'Pemohon',
+        3 => 'Ketua Jabatan',
+        4 => 'Pemeriksa Kewangan',
+        5 => 'Penyemak Kewangan',
+        6 => 'Pengesah Kewangan',
+        7 => 'Pembuat Bayaran',
+    ],
+
+    'abilities_menu' => [
+        // Admin boleh akses semua menu
+        1 => ['all'],
+        // Pemohon
+        2 => ['dashboard.view', 'billing.create', 'billing.incomplete', 'billing.archive'],
+        // Ketua Jabatan
+        3 => ['dashboard.view', 'billing.hod'],
+        // Penyemak Kewangan
+        4 => ['dashboard.view', 'billing.finance'],
+        // Pengesah Kewangan
+        5 => ['dashboard.view', 'billing.finance'],
+        // Pelulus Kewangan
+        6 => ['dashboard.view', 'billing.finance'],
+        // Pembuat Bayaran
+        7 => ['dashboard.view', 'billing.finance'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Billing Status Constants
+    |--------------------------------------------------------------------------
+    |
+    | This section contains constants for billing statuses.
+    |
+    */
+
+    'billing_status' => [
+        'draft' => 'Draft',
+        'submitted' => 'Submitted',
+        'incomplete' => 'Incomplete',
+        'pending_hod_approval' => 'Pending HOD Approval',
+        'hod_approved' => 'HOD Approved',
+        'hod_rejected' => 'HOD Rejected',
+        'pending_finance_review' => 'Pending Finance Review',
+        'pending_verification' => 'Pending Verification',
+        'pending_payment' => 'Pending Payment',
+        'paid' => 'Paid',
+        'finance_rejected' => 'Finance Rejected',
+        'completed' => 'Completed',
+        'archived' => 'Archived',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Validation Rules
+    |--------------------------------------------------------------------------
+    |
+    | This section contains common validation rules used throughout the app.
+    |
+    */
+
+    'validation' => [
+        'password' => [
+            'min_length' => 6,
+            'max_length' => 255,
+        ],
+        'phone' => [
+            'max_length' => 20,
+            'pattern' => '/^[\+]?[0-9\s\-\(\)]+$/',
+        ],
+        'name' => [
+            'max_length' => 255,
+        ],
+        'email' => [
+            'max_length' => 255,
+        ],
+        'username' => [
+            'max_length' => 255,
+        ],
+    ],
+];

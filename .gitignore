@@ -131,6 +131,9 @@ mbiclick_pro_1/api/.env
 mbiclick_pro_1/frontend/node_modules/
 mbiclick_pro_1/frontend/dist/
 
+mbiclick_pro_1 - addOn
+mbiclick_pro_1/markdown
+
 # Ignored IDE files
 *.iml
 *.ipr

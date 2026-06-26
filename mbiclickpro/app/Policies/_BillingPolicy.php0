@@ -1,0 +1,93 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\User;
+use App\Models\Billing;
+use App\Constants\UserAbilities;
+use App\Constants\BillingStatus;
+use Illuminate\Auth\Access\HandlesAuthorization;
+
+class BillingPolicy
+{
+  use HandlesAuthorization;
+
+  /**
+   * Determine whether the user can create a billing.
+   */
+  public function create(User $user): bool
+  {
+    // Allow admin and applicant to create billings
+    return $user->hasAbility([UserAbilities::ADMIN, UserAbilities::APPLICANT]);
+  }
+
+  /**
+   * Tentukan sama ada pengguna boleh menghantar billing kepada HOD.
+   */
+  public function sendToHod(User $user, Billing $billing): bool
+  {
+    // Benarkan admin dan kerani sahaja
+    if (!$user->hasAbility([UserAbilities::ADMIN, UserAbilities::APPLICANT])) {
+      return false;
+    }
+
+    // Pastikan billing dalam status draft
+    if ($billing->status_id !== BillingStatus::DRAFT) {
+      return false;
+    }
+
+    // Pastikan kerani hanya boleh hantar billing yang dia buat
+    if ($user->hasAbility(UserAbilities::APPLICANT) && $billing->created_by !== $user->id) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Tentukan sama ada pengguna boleh mengemaskini status billing.
+   * Nota: Ini tidak termasuk penghantaran kepada HOD (guna sendToHod)
+   */
+  public function process(User $user, Billing $billing, $statusId = null): bool
+  {
+    // Benarkan HOD dan pegawai kewangan sahaja
+    if( !$user->hasAbility([
+      UserAbilities::ADMIN,
+      UserAbilities::HOD,
+      UserAbilities::FINANCE_CHECKER,
+      UserAbilities::FINANCE_VERIFIER,
+      UserAbilities::FINANCE_APPROVER,
+      UserAbilities::PAYMENT_MAKER
+    ])) {
+      return true;
+    }
+
+    if ($billing->status_id === $statusId) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Tentukan sama ada pengguna boleh kemaskini billing.
+   */
+  public function update(User $user, Billing $billing): bool
+  {
+    // Benarkan admin kemaskini apa-apa billing
+    if ($user->hasAbility(UserAbilities::ADMIN)) {
+      return true;
+    }
+
+    // Benarkan pemohon kemaskini billing sendiri yang masih dalam status draft
+    if (
+      $user->hasAbility(UserAbilities::APPLICANT) &&
+      $billing->created_by === $user->id &&
+      $billing->status_id === BillingStatus::DRAFT
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+}

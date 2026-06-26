@@ -1,0 +1,119 @@
+var kt_graph = function(){
+    const STR_MTH = ['','JANUARI','FEBRUARI','MAC','APRIL','MAY','JUN','JULAI','OGOS','SEPTEMBER','OKTOBER','NOVEMBER','DISEMBER'];
+    var data = [
+        ['', 'Sebenar Pendapatan', 'Sebenar Perbelanjaan', 'Bajet Pendapatan', 'Bajet Perbelanjaan'],
+        ['JAN',1437985,1439185,3550705,2347568],
+        ['FEB',2759929,887126,4462564,3983647],
+        ['MAC',3508917,4746123,4665424,4372975],
+        ['APR',1985165,127041,6370115,6076088],
+        ['MEI',1985165,127041,6370115,6076088],
+        ['JUN',1985165,127041,6370115,6076088],
+        ['JUL',1985165,127041,6370115,6076088],
+        ['OGO',1985165,127041,6370115,6076088],
+        ['SEP',1985165,127041,6370115,6076088],
+        ['OKT',1985165,127041,6370115,6076088],
+        ['NOV',1985165,127041,6370115,6076088],
+        ['DIS',1985165,127041,6370115,6076088],
+    ]
+    var options = {
+        // title: 'CARTA PENDAPATAN DAN PERBELANJAAN SEHINGGA 15 APRIL 2023',
+        responsive: true,
+        focusTarget: 'category',
+        hAxis: {
+            // title: 'Carta Pendapatan dan Perbelanjaan Bulanan',
+            format: 'currency',
+            viewWindow: {min: [7, 30, 0], max: [17, 30, 0]},
+            textPosition: 'none',
+        },
+        vAxis: {
+            title: "JUTA '(000.00)'",
+            // textPosition: 'out'
+            marginBottom:30,
+        },
+        seriesType: "bars",
+        series: {2: {type: "line"},3: { type: "line", lineDashStyle: [10, 2]}},
+        colors: ['#008406', '#e80404','#008406', '#e80404'],
+        legend:  'none',//{ position: 'bottom', alignment: 'start' },
+        width: '100%',
+        height: 500,
+        chartArea: {
+            top: 30,
+            bottom: 10,
+            left: 175,
+            // right:'3%',
+            // leave room for y-axis labels
+            width: '100%'
+        },
+        animation: {duration: 1000, easing: 'in', startup: true}
+    };
+    function drawVisualization() {
+        var visual = google.visualization.arrayToDataTable(data);
+        let chart_div = document.getElementById('graph_sum')
+        var chart = new google.visualization.ComboChart(chart_div);
+
+
+        // Wait for the chart to finish drawing before calling the getImageURI() method.
+        google.visualization.events.addListener(chart, 'ready', function () {
+            chart_div.innerHTML = '<img src="' + chart.getImageURI() + '">';
+            // console.log(chart_div.innerHTML);
+        });
+
+        chart.draw(visual, options);
+    };
+    function init(){
+        let table = document.querySelector('.table-chart')
+        let row = [];
+        let html;
+        let color = options.colors
+        let series = options.series
+        let strdt = moment().format('DD MMM YYYY')
+        let mthnow = moment().month() + 1
+
+        // google.charts.load('current', {'packages':['corechart','table']});
+        google.charts.load('visualization','1', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(drawVisualization);
+
+        data.forEach((dc,c) => {
+            if(!row[0]) row[0] = []
+            dc.forEach( (dr,r) => {
+                if(!row[r]) row[r] = []
+                row[r][c] = dr;
+            })
+        })
+        html = row.map((r,i) => {
+            let col = r.map((c,n) => {
+                if(n == 0 && i > 0) {
+                    let typ;
+                    let bullet = 'h-10px'
+                    let style = 'background: ' + color[i - 1]
+                    if(series[i-1]) typ = series[i-1].type
+                    if(typ === 'line') bullet = 'h-2px'
+                    bullet += ' bullet bullet-line'
+                    if(series[i-1]?.lineDashStyle) {
+                        bullet = 'border-bottom-dashed bg-transparent d-inline-block';
+                        style = 'border-color:' + color[i-1]
+                    }
+                    c = `<span class="${bullet} w-20px" style="${style}"></span> ${c}`;
+                }
+                if(n == 0) return `<td class="label fw-bold">${c}</td>`;
+                if(i == 0) return `<td class="text-center fw-bold">${c}</td>`;
+                return `<td class="text-end mth">${currency(c)}</td>`;
+            }).filter((c,n) => (n <= mthnow )).join('')
+            return `<tr>${col}</tr>`
+        }).join('')
+
+        document.getElementById('datenow').innerText = strdt;
+        table.innerHTML = html
+        $("#printout-click").on('click',function(e){
+            e.preventDefault();
+            printClick('printout','Graph')
+        })
+    }
+    return {
+        init:init
+    }
+}()
+
+document.addEventListener("DOMContentLoaded", () => {
+    kt_graph.init();
+});

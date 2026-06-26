@@ -1,0 +1,29 @@
+step 1:
+upload kesemua file laravel masuk dalam folder server
+
+step 2:
+link domain kepada folder public
+
+bagi yg pakai nginx cara tambah sites available:
+/etc/nginx/sites-available/default.conf
+server {
+	listen 80:
+	root /var/www/mbiclick_v2/public;
+	server_name mbiclick.esoftiot.net;
+	index index.html index.htm index.php;
+
+	location / {
+		#try_files $uri $uri/ /index.php;
+		location / { try_files $uri $uri/ /index.php?$query_string; }
+	}
+	location ~ \.php$ {
+		include snippets/fastcgi-php.conf;
+		fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+	}
+	location ~ /\.ht {
+		deny all;
+	}
+}
+
+untuk apache
+RewriteRule ^(.*)$ index.php?url=$1&%{QUERY_STRING} [L,R=301]
