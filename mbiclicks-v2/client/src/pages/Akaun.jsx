@@ -271,7 +271,7 @@ export default function Akaun() {
   const [search,     setSearch]     = useState('')
   const [dSearch,    setDSearch]    = useState('')
   const [typeFilter, setTypeFilter] = useState('')
-  const [status,     setStatus]     = useState('')
+  const [status,     setStatus]     = useState('active')
 
   // dialog: { mode: 'root'|'child'|'edit', parentRow?, record? }
   const [dialog,       setDialog]       = useState(null)
