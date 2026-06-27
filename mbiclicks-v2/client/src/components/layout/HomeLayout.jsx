@@ -1,23 +1,99 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Navigate, Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { Bell, ChevronDown, LogOut, User, Menu, X } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, User, Menu, X, Lock } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/api'
 import { APP_NAME, APP_TAGLINE } from '@/lib/constants'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button, Label, Spinner } from '@/components/ui'
 
-const navItems = [
+const BASE_NAV = [
   { to: '/dashboard',  label: 'Utama'      },
   { to: '/permohonan', label: 'Permohonan' },
   { to: '/pekeliling', label: 'Pekeliling' },
   { to: '/kalendar',   label: 'Kalendar'   },
+  { to: '/bajet',      label: 'Bajet'      },
   { to: '/laporan',    label: 'Laporan'    },
 ]
 
+function ChangePasswordDialog({ open, onClose }) {
+  const pwdRef = useRef(null)
+  const [form, setForm]     = useState({ current: '', next: '', confirm: '' })
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState({})
+
+  useEffect(() => {
+    if (open) { setForm({ current: '', next: '', confirm: '' }); setErrors({}) }
+    if (open) setTimeout(() => pwdRef.current?.focus(), 50)
+  }, [open])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const e2 = {}
+    if (!form.current) e2.current = 'Diperlukan'
+    if (!form.next || form.next.length < 6) e2.next = 'Sekurang-kurangnya 6 aksara'
+    if (form.next !== form.confirm) e2.confirm = 'Tidak sepadan'
+    if (Object.keys(e2).length) { setErrors(e2); return }
+    setLoading(true)
+    try {
+      await api.post('/auth/change-password', { currentPassword: form.current, newPassword: form.next })
+      toast.success('Kata laluan berjaya dikemaskini')
+      onClose()
+    } catch (err) {
+      toast.error(err.response?.data?.message ?? 'Gagal kemaskini kata laluan')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogContent className="max-w-sm w-full">
+        <DialogHeader>
+          <DialogTitle>Tukar Kata Laluan</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-1">
+          {[
+            { id: 'current', label: 'Kata Laluan Semasa', ref: pwdRef },
+            { id: 'next',    label: 'Kata Laluan Baharu' },
+            { id: 'confirm', label: 'Sahkan Kata Laluan Baharu' },
+          ].map(({ id, label, ref }) => (
+            <div key={id}>
+              <Label>{label}</Label>
+              <input
+                ref={ref}
+                type="password"
+                value={form[id]}
+                onChange={(e) => { setForm((f) => ({ ...f, [id]: e.target.value })); setErrors((er) => ({ ...er, [id]: undefined })) }}
+                className={`block w-full rounded-lg border px-3 py-2.5 text-sm transition-colors
+                  focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500
+                  ${errors[id] ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'}`}
+              />
+              {errors[id] && <p className="text-xs text-red-500 mt-1">{errors[id]}</p>}
+            </div>
+          ))}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Spinner size={14} />} Simpan
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function HomeTopbar() {
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
-  const [userOpen,   setUserOpen]   = useState(false)
-  const [notifOpen,  setNotifOpen]  = useState(false)
+  const { user, logout, hasRole } = useAuthStore()
+  const isFinance = hasRole('finance_hod', 'finance', 'admin')
+  const navItems = BASE_NAV
+    .filter((item) => item.to !== '/laporan' || isFinance)
+    .concat(hasRole('admin') ? [{ to: '/tetapan', label: 'Tetapan' }] : [])
+  const [userOpen,    setUserOpen]    = useState(false)
+  const [notifOpen,   setNotifOpen]   = useState(false)
+  const [showChgPwd,  setShowChgPwd]  = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const initials = user?.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? '?'
@@ -124,6 +200,13 @@ function HomeTopbar() {
                       <User className="w-4 h-4 text-gray-400" />
                       Profil Saya
                     </button>
+                    <button
+                      onClick={() => { setUserOpen(false); setShowChgPwd(true) }}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 w-full text-left transition-colors"
+                    >
+                      <Lock className="w-4 h-4 text-gray-400" />
+                      Tukar Kata Laluan
+                    </button>
                     <hr className="border-gray-100 mx-2" />
                     <button
                       onClick={handleLogout}
@@ -163,6 +246,8 @@ function HomeTopbar() {
           </nav>
         </>
       )}
+
+      <ChangePasswordDialog open={showChgPwd} onClose={() => setShowChgPwd(false)} />
     </header>
   )
 }

@@ -133,31 +133,51 @@ export async function getLines(req, res, next) {
 
     await prisma.budgetYear.findUniqueOrThrow({ where: { id: budgetYearId } })
 
-    if (version === 'latest') {
-      // Untuk setiap accNo, ambil versi terkini (ADJ2 > ADJ1 > ORIGINAL)
-      const all = await prisma.budgetLine.findMany({
-        where: { budgetYearId },
-        include: { account: true },
-        orderBy: [{ accNo: 'asc' }, { version: 'desc' }],
-      })
+    // Semua akaun (aktif dan tidak aktif) — user boleh set nilai untuk mana-mana
+    const [allAccounts, childRows] = await Promise.all([
+      prisma.account.findMany({ orderBy: { accNo: 'asc' } }),
+      prisma.account.findMany({ where: { parentAccNo: { not: null } }, select: { parentAccNo: true } }),
+    ])
+    const groupAccNos = new Set(childRows.map((r) => r.parentAccNo).filter(Boolean))
 
-      const latest = new Map()
-      const versionOrder = { ADJ2: 3, ADJ1: 2, ORIGINAL: 1 }
-      for (const line of all) {
-        const existing = latest.get(line.accNo)
-        if (!existing || versionOrder[line.version] > versionOrder[existing.version]) {
-          latest.set(line.accNo, line)
-        }
+    // Budget lines untuk tahun ini
+    const allLines = await prisma.budgetLine.findMany({
+      where: { budgetYearId },
+      orderBy: [{ accNo: 'asc' }, { version: 'desc' }],
+    })
+
+    const versionOrder = { ADJ2: 3, ADJ1: 2, ORIGINAL: 1 }
+    const latestMap = new Map()
+    for (const line of allLines) {
+      if (version !== 'latest' && line.version !== version) continue
+      const existing = latestMap.get(line.accNo)
+      if (!existing || versionOrder[line.version] > versionOrder[existing.version]) {
+        latestMap.set(line.accNo, line)
       }
-      return res.json(Array.from(latest.values()))
     }
 
-    const lines = await prisma.budgetLine.findMany({
-      where: { budgetYearId, version },
-      include: { account: true },
-      orderBy: { accNo: 'asc' },
+    const zeroMonths = monthFields.reduce((o, m) => ({ ...o, [m]: 0 }), {})
+
+    // Gabung — semua akaun, dengan nilai dari budget line jika ada, sifar jika tiada
+    const result = allAccounts.map((acc) => {
+      const isGroup = groupAccNos.has(acc.accNo)
+      const line = latestMap.get(acc.accNo)
+      if (line) {
+        return { ...line, isGroup, account: acc }
+      }
+      return {
+        id: null,
+        budgetYearId,
+        accNo: acc.accNo,
+        version: 'ORIGINAL',
+        ...zeroMonths,
+        total: 0,
+        isGroup,
+        account: acc,
+      }
     })
-    res.json(lines)
+
+    res.json(result)
   } catch (err) { next(err) }
 }
 
@@ -192,6 +212,14 @@ export async function saveLines(req, res, next) {
 
     const { lines } = saveLinesSchema.parse(req.body)
 
+    // Tapis akaun kumpulan — akaun yang mempunyai anak tidak boleh ada nilai sendiri
+    const childRows = await prisma.account.findMany({
+      where: { parentAccNo: { not: null } },
+      select: { parentAccNo: true },
+    })
+    const groupAccNos = new Set(childRows.map((r) => r.parentAccNo).filter(Boolean))
+    const filteredLines = lines.filter((l) => !groupAccNos.has(l.accNo))
+
     // Tentukan versi berdasarkan status dan adjCount
     let version = 'ORIGINAL'
     if (budgetYear.status === 'ACTIVE') {
@@ -202,7 +230,7 @@ export async function saveLines(req, res, next) {
     const userId = req.user.id
 
     await prisma.$transaction(async (tx) => {
-      for (const line of lines) {
+      for (const line of filteredLines) {
         const total = monthFields.reduce((sum, m) => sum + (line[m] ?? 0), 0)
         await tx.budgetLine.upsert({
           where: { budgetYearId_accNo_version: { budgetYearId, accNo: line.accNo, version } },
@@ -321,5 +349,204 @@ export async function updateConfig(req, res, next) {
       data: { adjLimit },
     })
     res.json({ message: 'Konfigurasi bajet dikemaskini', data: updated })
+  } catch (err) { next(err) }
+}
+
+// ─── Delete Budget Year (DRAFT sahaja) ───────────────────────────────────────
+
+export async function deleteYear(req, res, next) {
+  try {
+    const id = Number(req.params.id)
+    const year = await prisma.budgetYear.findUniqueOrThrow({ where: { id } })
+
+    if (year.status !== 'DRAFT') {
+      return res.status(400).json({ message: 'Hanya bajet DRAF boleh dipadam' })
+    }
+
+    await prisma.budgetYear.delete({ where: { id } })
+    res.json({ message: `Bajet ${year.year} berjaya dipadam` })
+  } catch (err) { next(err) }
+}
+
+// ─── Active Belanja — untuk dropdown permohonan ───────────────────────────────
+
+export async function getActiveBelanja(req, res, next) {
+  try {
+    const activeYear = await prisma.budgetYear.findFirst({ where: { status: 'ACTIVE' } })
+    if (!activeYear) return res.json({ budgetYear: null, lines: [] })
+
+    const all = await prisma.budgetLine.findMany({
+      where: { budgetYearId: activeYear.id, account: { isActive: true } },
+      include: { account: { select: { accNo: true, name: true, accType: true, level: true, parentAccNo: true } } },
+    })
+
+    // Ambil versi terkini setiap akaun
+    const versionOrder = { ADJ2: 3, ADJ1: 2, ORIGINAL: 1 }
+    const latestMap = new Map()
+    for (const line of all) {
+      const existing = latestMap.get(line.accNo)
+      if (!existing || versionOrder[line.version] > versionOrder[existing.version]) {
+        latestMap.set(line.accNo, line)
+      }
+    }
+
+    // Ambil jumlah permohonan diluluskan untuk tahun ini (BELANJA sahaja)
+    const approved = await prisma.billing.findMany({
+      where: {
+        status: { in: ['APPROVED', 'PAID'] },
+        createdAt: {
+          gte: new Date(activeYear.year, 0, 1),
+          lt:  new Date(activeYear.year + 1, 0, 1),
+        },
+        accNo: { not: null },
+      },
+      select: { accNo: true, amount: true },
+    }).catch(() => [])
+
+    const spentMap = new Map()
+    for (const b of approved) {
+      if (!b.accNo) continue
+      spentMap.set(b.accNo, (spentMap.get(b.accNo) ?? 0) + Number(b.amount))
+    }
+
+    const lines = Array.from(latestMap.values())
+      .filter((l) => l.account.accType === 'BELANJA')
+      .map((l) => {
+        const peruntukan = Number(l.total)
+        const digunakan  = spentMap.get(l.accNo) ?? 0
+        const baki       = peruntukan - digunakan
+        return {
+          accNo:      l.accNo,
+          name:       l.account.name,
+          level:      l.account.level,
+          parentAccNo: l.account.parentAccNo,
+          peruntukan,
+          digunakan,
+          baki,
+        }
+      })
+      .sort((a, b) => a.accNo.localeCompare(b.accNo))
+
+    res.json({ budgetYear: activeYear, lines })
+  } catch (err) { next(err) }
+}
+
+// ─── Laporan Bajet — 4 sheet ──────────────────────────────────────────────────
+
+export async function getReport(req, res, next) {
+  try {
+    const budgetYearId = Number(req.params.id)
+    const [byRaw] = await prisma.$queryRaw`
+      SELECT id, year, status, adj_count, adj_limit, next_budget_month,
+             baki_awal, tabungan_khas, deposit_simpanan_tetap, deposit_simpanan_tetap_sebenar,
+             activated_at, closed_at, created_at, updated_at
+      FROM budget_years WHERE id = ${budgetYearId}
+    `
+    if (!byRaw) return res.status(404).json({ message: 'Bajet tidak dijumpai' })
+    const budgetYear = {
+      id: byRaw.id, year: Number(byRaw.year), status: byRaw.status,
+      adjCount: byRaw.adj_count, adjLimit: byRaw.adj_limit,
+      nextBudgetMonth: byRaw.next_budget_month,
+      bakiAwal: Number(byRaw.baki_awal ?? 0),
+      tabunganKhas: Number(byRaw.tabungan_khas ?? 0),
+      depositSimpananTetap: Number(byRaw.deposit_simpanan_tetap ?? 0),
+      depositSimpananTetapSebenar: Number(byRaw.deposit_simpanan_tetap_sebenar ?? 0),
+      activatedAt: byRaw.activated_at, closedAt: byRaw.closed_at,
+    }
+
+    const all = await prisma.budgetLine.findMany({
+      where: { budgetYearId },
+      include: { account: true },
+    })
+
+    const versionOrder = { ADJ2: 3, ADJ1: 2, ORIGINAL: 1 }
+    const latestMap = new Map()
+    for (const line of all) {
+      const existing = latestMap.get(line.accNo)
+      if (!existing || versionOrder[line.version] > versionOrder[existing.version]) {
+        latestMap.set(line.accNo, line)
+      }
+    }
+
+    // Actual data — per month per accNo
+    const actuals = await prisma.actualData.findMany({ where: { year: budgetYear.year } })
+    const actualMonthMap = new Map()  // accNo -> { jan:0, feb:0, ... }
+    for (const a of actuals) {
+      if (!actualMonthMap.has(a.accNo)) {
+        actualMonthMap.set(a.accNo, { jan:0,feb:0,mar:0,apr:0,may:0,jun:0,jul:0,aug:0,sep:0,oct:0,nov:0,dec:0 })
+      }
+      const monthName = monthFields[a.month - 1]
+      if (monthName) actualMonthMap.get(a.accNo)[monthName] += Number(a.amount)
+    }
+
+    // Permohonan diluluskan
+    const approved = await prisma.billing.findMany({
+      where: {
+        status: { in: ['APPROVED', 'PAID'] },
+        createdAt: { gte: new Date(budgetYear.year, 0, 1), lt: new Date(budgetYear.year + 1, 0, 1) },
+        accNo: { not: null },
+      },
+      select: { accNo: true, amount: true },
+    }).catch(() => [])
+    const spentMap = new Map()
+    for (const b of approved) {
+      if (!b.accNo) spentMap.set(b.accNo, (spentMap.get(b.accNo) ?? 0) + Number(b.amount))
+    }
+
+    const lines = Array.from(latestMap.values()).map((l) => {
+      const peruntukan    = Number(l.total)
+      const actualMonths  = actualMonthMap.get(l.accNo) ?? {}
+      const sebenar       = monthFields.reduce((s, m) => s + (actualMonths[m] ?? 0), 0)
+      const permohonan    = spentMap.get(l.accNo) ?? 0
+      const bajetMonths   = monthFields.reduce((o, m) => ({ ...o, [m]: Number(l[m] ?? 0) }), {})
+      return {
+        accNo:       l.accNo,
+        name:        l.account.name,
+        accType:     l.account.accType,
+        level:       l.account.level,
+        parentAccNo: l.account.parentAccNo,
+        peruntukan,
+        sebenar,
+        permohonan,
+        baki:        peruntukan - permohonan,
+        bajetMonths,
+        actualMonths,
+      }
+    }).sort((a, b) => a.accNo.localeCompare(b.accNo))
+
+    // Tahun-tahun lepas (max 2 tahun sebelum tahun semasa)
+    const allYears = await prisma.budgetYear.findMany({ orderBy: { year: 'asc' } })
+    const prevBudgetYears = allYears.filter((y) => y.year < budgetYear.year).slice(-2)
+
+    const prevYears = []
+    for (const py of prevBudgetYears) {
+      const pyLines = await prisma.budgetLine.findMany({
+        where: { budgetYearId: py.id },
+        select: { accNo: true, version: true, total: true },
+      })
+      const pyMap = new Map()
+      for (const l of pyLines) {
+        const ex = pyMap.get(l.accNo)
+        if (!ex || versionOrder[l.version] > versionOrder[ex.version]) pyMap.set(l.accNo, l)
+      }
+      const pyActuals = await prisma.actualData.findMany({
+        where: { year: py.year },
+        select: { accNo: true, amount: true },
+      })
+      const pyActualMap = new Map()
+      for (const a of pyActuals) pyActualMap.set(a.accNo, (pyActualMap.get(a.accNo) ?? 0) + Number(a.amount))
+
+      const byAccNo = {}
+      for (const [accNo, l] of pyMap) {
+        byAccNo[accNo] = { bajet: Number(l.total), sebenar: pyActualMap.get(accNo) ?? 0 }
+      }
+      // Include accounts that only have actuals (no budget line)
+      for (const [accNo, amt] of pyActualMap) {
+        if (!byAccNo[accNo]) byAccNo[accNo] = { bajet: 0, sebenar: amt }
+      }
+      prevYears.push({ year: py.year, byAccNo })
+    }
+
+    res.json({ budgetYear, lines, prevYears })
   } catch (err) { next(err) }
 }

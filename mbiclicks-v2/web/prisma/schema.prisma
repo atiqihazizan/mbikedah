@@ -100,14 +100,18 @@ model User {
 
   deptHeadOf         Department[]       @relation("DeptHead")
   refreshTokens      RefreshToken[]
+  activityLogs       ActivityLog[]
   billingsCreated    Billing[]          @relation("BillingApplicant")
   billingsPaidBy     Billing[]          @relation("BillingPaidBy")
   billingApprovals   BillingApproval[]
   circularsIssued    Circular[]
   eventsCreated      Event[]
+  eventInvites       EventInvitee[]
+  notifications      Notification[]
   budgetLinesCreated BudgetLine[]       @relation("BudgetLineCreator")
   budgetAdjusted     BudgetAdjustment[] @relation("AdjustedBy")
   budgetApproved     BudgetAdjustment[] @relation("ApprovedBy")
+  reportLayouts      ReportLayout[]     @relation("ReportLayoutCreator")
   circularReads      CircularRead[]
   attachments        BillingAttachment[]
 
@@ -178,9 +182,13 @@ model BudgetYear {
   status          BudgetStatus @default(DRAFT)
   adjCount        Int          @default(0) @map("adj_count")
   adjLimit        Int          @default(2) @map("adj_limit")
-  nextBudgetMonth Int          @default(10) @map("next_budget_month")
-  activatedAt     DateTime?    @map("activated_at")
-  closedAt        DateTime?    @map("closed_at")
+  nextBudgetMonth      Int          @default(10) @map("next_budget_month")
+  bakiAwal             Decimal      @default(0) @map("baki_awal") @db.Decimal(15, 2)
+  tabunganKhas                Decimal      @default(0) @map("tabungan_khas") @db.Decimal(15, 2)
+  depositSimpananTetap        Decimal      @default(0) @map("deposit_simpanan_tetap") @db.Decimal(15, 2)
+  depositSimpananTetapSebenar Decimal      @default(0) @map("deposit_simpanan_tetap_sebenar") @db.Decimal(15, 2)
+  activatedAt                 DateTime?    @map("activated_at")
+  closedAt             DateTime?    @map("closed_at")
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
 
@@ -427,24 +435,122 @@ model CircularRead {
   @@map("circular_reads")
 }
 
+// ─── ACTIVITY LOG ────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName  String?  @map("user_name") @db.VarChar(100)
+  action    String   @db.VarChar(50)
+  module    String   @db.VarChar(50)
+  targetId  Int?     @map("target_id")
+  detail    String?  @db.Text
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([module, createdAt])
+  @@map("activity_logs")
+}
+
 // ─── EVENTS / CALENDAR ───────────────────────────────────────────────────────
 
 model Event {
-  id           Int         @id @default(autoincrement())
-  title        String      @db.VarChar(200)
-  description  String?     @db.Text
-  location     String?     @db.VarChar(200)
-  startAt      DateTime    @map("start_at")
-  endAt        DateTime    @map("end_at")
-  isAllDay     Boolean     @default(false) @map("is_all_day")
-  departmentId Int?        @map("department_id")
-  department   Department? @relation(fields: [departmentId], references: [id])
-  isPublic     Boolean     @default(true) @map("is_public")
-  createdById  Int         @map("created_by")
-  createdBy    User        @relation(fields: [createdById], references: [id])
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
+  id           Int             @id @default(autoincrement())
+  title        String          @db.VarChar(200)
+  description  String?         @db.Text
+  location     String?         @db.VarChar(200)
+  meetLink     String?         @map("meet_link") @db.VarChar(500)
+  color        String?         @db.VarChar(20)
+  startAt      DateTime        @map("start_at")
+  endAt        DateTime        @map("end_at")
+  isAllDay     Boolean         @default(false) @map("is_all_day")
+  departmentId Int?            @map("department_id")
+  department   Department?     @relation(fields: [departmentId], references: [id])
+  isPublic     Boolean         @default(true) @map("is_public")
+  createdById  Int             @map("created_by")
+  createdBy    User            @relation(fields: [createdById], references: [id])
+  invitees     EventInvitee[]
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
 
   @@index([startAt, endAt])
   @@map("events")
+}
+
+model EventInvitee {
+  id        Int      @id @default(autoincrement())
+  eventId   Int      @map("event_id")
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sentAt    DateTime @default(now()) @map("sent_at")
+
+  @@unique([eventId, userId])
+  @@map("event_invitees")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @db.VarChar(200)
+  body      String?  @db.Text
+  link      String?  @db.VarChar(255)
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ─── LAPORAN LAYOUT ───────────────────────────────────────────────────────────
+
+model ReportLayout {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(100)
+  description String?   @db.VarChar(255)
+  createdBy   Int       @map("created_by")
+  creator     User      @relation("ReportLayoutCreator", fields: [createdBy], references: [id])
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  sections    ReportSection[]
+
+  @@map("report_layouts")
+}
+
+enum ReportSectionType {
+  HASIL
+  BELANJA
+  CUSTOM
+  SEPARATOR
+}
+
+model ReportSection {
+  id          Int               @id @default(autoincrement())
+  layoutId    Int               @map("layout_id")
+  layout      ReportLayout      @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+  title       String            @db.VarChar(100)
+  sectionType ReportSectionType @default(CUSTOM) @map("section_type")
+  showTotal   Boolean           @default(true) @map("show_total")
+  totalLabel  String?           @db.VarChar(100) @map("total_label")
+  sortOrder   Int               @default(0) @map("sort_order")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  items       ReportSectionItem[]
+
+  @@map("report_sections")
+}
+
+model ReportSectionItem {
+  id            Int           @id @default(autoincrement())
+  sectionId     Int           @map("section_id")
+  section       ReportSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  accNo         String        @map("acc_no") @db.VarChar(20)
+  label         String?       @db.VarChar(200)
+  isGroupHeader Boolean       @default(false) @map("is_group_header")
+  sortOrder     Int           @default(0) @map("sort_order")
+
+  @@map("report_section_items")
 }

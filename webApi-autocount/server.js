@@ -26,11 +26,19 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Security ────────────────────────────────────────────────────────────────
-app.use(helmet());
+app.use(
+  helmet({
+    strictTransportSecurity:  false,
+    contentSecurityPolicy:    false,
+    crossOriginOpenerPolicy:  false,
+    crossOriginEmbedderPolicy: false,
+    originAgentCluster:       false,
+  })
+);
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "*",
+    origin: "*",
     methods: ["GET", "OPTIONS"],
     allowedHeaders: ["Content-Type", "X-API-Key", "Authorization"],
   })
@@ -68,14 +76,48 @@ app.get("/health", async (req, res) => {
 });
 
 // ─── Swagger (no auth required) ──────────────────────────────────────────────
-app.use(
-  "/api-docs",
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerSpec, {
-    customSiteTitle: "AutoCount REST API",
-    customCss: ".swagger-ui .topbar { display: none }",
-  })
-);
+// Serve static assets swagger-ui-express
+app.use("/api-docs", swaggerUi.serve);
+
+// Custom HTML dengan URL http:// explicit — elak browser upgrade ke https://
+app.get("/api-docs", (req, res) => {
+  const host = req.headers.host;
+  const base = `http://${host}/api-docs`;
+
+  res.setHeader("Content-Type", "text/html");
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AutoCount REST API</title>
+  <link rel="stylesheet" type="text/css" href="${base}/swagger-ui.css">
+  <style>
+    .swagger-ui .topbar { display: none }
+    body { margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="${base}/swagger-ui-bundle.js"></script>
+  <script src="${base}/swagger-ui-standalone-preset.js"></script>
+  <script>
+    window.onload = function() {
+      SwaggerUIBundle({
+        url: "http://${host}/api-docs.json",
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+        layout: "StandaloneLayout"
+      });
+    };
+  </script>
+</body>
+</html>`);
+});
 
 app.get("/api-docs.json", (req, res) => {
   res.setHeader("Content-Type", "application/json");
@@ -98,8 +140,8 @@ app.use(errorHandler);
 async function start() {
   try {
     await getPool();
-    app.listen(PORT, () => {
-      logger.info(`Server running on http://localhost:${PORT}`);
+    app.listen(PORT, "0.0.0.0", () => {
+      logger.info(`Server running on http://0.0.0.0:${PORT} (accessible from all network interfaces)`);
       logger.info(`Swagger UI:  http://localhost:${PORT}/api-docs`);
       logger.info(`Health:      http://localhost:${PORT}/health`);
     });

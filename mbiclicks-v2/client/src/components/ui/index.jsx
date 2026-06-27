@@ -96,12 +96,12 @@ export function Badge({ variant = 'default', className = '', children, ...props 
   )
 }
 
-export function Dialog({ open, onClose, children }) {
+export function Dialog({ open, onClose, children, className = '' }) {
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md">{children}</div>
+      <div className={`relative z-10 w-full max-w-md ${className}`}>{children}</div>
     </div>
   )
 }

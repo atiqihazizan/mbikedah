@@ -1,7 +1,7 @@
 import api from './api'
 
 export const MONTHS = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogs', 'Sep', 'Okt', 'Nov', 'Dis']
-export const MONTH_KEYS = ['jan', 'feb', 'mac', 'apr', 'mei', 'jun', 'jul', 'ogs', 'sep', 'okt', 'nov', 'dis']
+export const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
 export const STATUS_LABEL = { DRAFT: 'Draf', ACTIVE: 'Aktif', CLOSED: 'Tutup' }
 export const STATUS_COLOR = {
@@ -23,4 +23,22 @@ export const budgetApi = {
   saveLines: (id, lines) => api.put(`/budget/years/${id}/lines`, { lines }).then((r) => r.data),
   getSummary: (id) => api.get(`/budget/years/${id}/summary`).then((r) => r.data),
   getAdjustments: (id) => api.get(`/budget/years/${id}/adjustments`).then((r) => r.data),
+  deleteYear: (id) => api.delete(`/budget/years/${id}`).then((r) => r.data),
+  getReport: (id) => api.get(`/budget/years/${id}/report`).then((r) => r.data),
+  getActiveBelanja: () => api.get('/budget/active-belanja').then((r) => r.data),
+}
+
+export const reportLayoutApi = {
+  list:   () => api.get('/report-layouts').then(r => r.data),
+  get:    (id) => api.get(`/report-layouts/${id}`).then(r => r.data),
+  create: (data) => api.post('/report-layouts', data).then(r => r.data),
+  update: (id, data) => api.put(`/report-layouts/${id}`, data).then(r => r.data),
+  remove: (id) => api.delete(`/report-layouts/${id}`).then(r => r.data),
+  addSection:      (id, data) => api.post(`/report-layouts/${id}/sections`, data).then(r => r.data),
+  updateSection:   (id, sid, data) => api.put(`/report-layouts/${id}/sections/${sid}`, data).then(r => r.data),
+  deleteSection:   (id, sid) => api.delete(`/report-layouts/${id}/sections/${sid}`).then(r => r.data),
+  reorderSections: (id, ids) => api.put(`/report-layouts/${id}/sections/reorder`, { ids }).then(r => r.data),
+  bulkSaveItems:   (id, sid, items) => api.put(`/report-layouts/${id}/sections/${sid}/items/bulk`, { items }).then(r => r.data),
+  deleteItem:      (id, sid, iid) => api.delete(`/report-layouts/${id}/sections/${sid}/items/${iid}`).then(r => r.data),
+  reorderItems:    (id, sid, ids) => api.put(`/report-layouts/${id}/sections/${sid}/items/reorder`, { ids }).then(r => r.data),
 }

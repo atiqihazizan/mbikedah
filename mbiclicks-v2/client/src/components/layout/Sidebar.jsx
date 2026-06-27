@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Bell,
-  Calendar, BarChart3, Settings, ChevronRight, LogOut,
+  Calendar, BarChart3, Settings, ChevronRight, LogOut, BookOpen, PiggyBank,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/api'
@@ -12,7 +12,17 @@ const navItems = [
   { to: '/permohonan',icon: FileText,         label: 'Permohonan', module: 'billing'   },
   { to: '/pekeliling',icon: Bell,             label: 'Pekeliling', module: 'circular'  },
   { to: '/kalendar',  icon: Calendar,         label: 'Kalendar',   module: 'event'     },
-  { to: '/laporan',   icon: BarChart3,        label: 'Laporan',    module: 'report'    },
+]
+
+// Kewangan — semua role boleh lihat Bajet
+const kewanganItems = [
+  { to: '/bajet', icon: PiggyBank, label: 'Bajet' },
+]
+
+// Finance & admin sahaja
+const financeOnlyItems = [
+  { to: '/laporan', icon: BarChart3, label: 'Laporan'   },
+  { to: '/akaun',   icon: BookOpen,  label: 'Kod Akaun' },
 ]
 
 export default function Sidebar({ open, onClose }) {
@@ -21,10 +31,11 @@ export default function Sidebar({ open, onClose }) {
   const hasRole  = useAuthStore((s) => s.hasRole)
   const logout   = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
-  const isAdmin  = hasRole('admin')
+  const isAdmin   = hasRole('admin')
+  const isFinance = hasRole('finance_hod', 'finance', 'admin')
 
   const visible = navItems.filter(
-    (item) => item.module === 'dashboard' || can(item.module)
+    (item) => !item.module || item.module === 'dashboard' || can(item.module)
   )
 
   async function handleLogout() {
@@ -94,6 +105,30 @@ export default function Sidebar({ open, onClose }) {
             )}
           </NavLink>
         ))}
+
+        {/* Kewangan — semua role nampak Bajet; finance/admin nampak Laporan & Kod Akaun */}
+        <>
+          <div className="pt-3 pb-1">
+            <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest px-3">Kewangan</p>
+          </div>
+          {[...kewanganItems, ...(isFinance ? financeOnlyItems : [])].map((item) => (
+            <NavLink key={item.to} to={item.to} onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all group ${
+                  isActive ? 'bg-green-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-white'}`} />
+                  <span className="flex-1">{item.label}</span>
+                  {isActive && <ChevronRight className="w-3 h-3 text-white/60" />}
+                </>
+              )}
+            </NavLink>
+          ))}
+        </>
 
         {isAdmin && (
           <>

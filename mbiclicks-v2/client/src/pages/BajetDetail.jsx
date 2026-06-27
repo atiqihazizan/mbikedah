@@ -5,9 +5,9 @@ import { toast } from 'sonner'
 import { ArrowLeft, Save, Lock, Info, ChevronDown, ChevronRight, FileText, Settings } from 'lucide-react'
 import { budgetApi, MONTHS, MONTH_KEYS, STATUS_LABEL, STATUS_COLOR } from '@/lib/budget'
 import { useAuthStore } from '@/store/auth'
-import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Label, Input, Select } from '@/components/ui'
+import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Label, Select } from '@/components/ui'
 
-function formatRM(n) {
+function fmtRM(n) {
   return Number(n).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
@@ -24,8 +24,9 @@ export default function BajetDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const can = useAuthStore((s) => s.can)
   const hasRole = useAuthStore((s) => s.hasRole)
+
+  const isFinance = hasRole('finance_hod', 'finance')
 
   const [editValues, setEditValues] = useState({})
   const [collapsed, setCollapsed] = useState(new Set())
@@ -44,15 +45,15 @@ export default function BajetDetail() {
     enabled: !!id,
   })
 
+
   useEffect(() => {
     if (budgetYear) setConfigForm({ adjLimit: budgetYear.adjLimit })
   }, [budgetYear])
 
-  const canManage = hasRole('admin', 'finance_hod', 'finance')
   const isReadOnly =
+    !isFinance ||
     budgetYear?.status === 'CLOSED' ||
-    (budgetYear?.status === 'ACTIVE' && budgetYear.adjCount >= budgetYear.adjLimit) ||
-    !can('budget', 'canEdit')
+    (budgetYear?.status === 'ACTIVE' && budgetYear.adjCount >= budgetYear.adjLimit)
 
   useEffect(() => {
     if (lines.length > 0) {
@@ -66,13 +67,13 @@ export default function BajetDetail() {
 
   const rows = useMemo(() => {
     return lines.map((l) => ({
-      accNo: l.account.accNo,
-      name: l.account.name,
-      accType: l.account.accType,
+      accNo:       l.account.accNo,
+      name:        l.account.name,
+      accType:     l.account.accType,
       parentAccNo: l.account.parentAccNo,
-      level: l.account.level,
-      isGroup: l.account.level < 2 && lines.some((x) => x.account.parentAccNo === l.account.accNo),
-      values: editValues[l.account.accNo] ?? Object.fromEntries(MONTH_KEYS.map((m) => [m, 0])),
+      level:       l.account.level,
+      isGroup:     l.isGroup ?? false,
+      values:      editValues[l.account.accNo] ?? Object.fromEntries(MONTH_KEYS.map((m) => [m, 0])),
     }))
   }, [lines, editValues])
 
@@ -99,7 +100,8 @@ export default function BajetDetail() {
     if (!row.parentAccNo) return false
     if (collapsed.has(row.parentAccNo)) return true
     const parent = rows.find((r) => r.accNo === row.parentAccNo)
-    return parent?.parentAccNo ? isHidden(parent) : false
+    if (!parent) return false
+    return parent.parentAccNo ? isHidden(parent) : false
   }
 
   const initMut = useMutation({
@@ -113,9 +115,13 @@ export default function BajetDetail() {
 
   const saveMut = useMutation({
     mutationFn: () => {
-      const payload = Object.entries(editValues).map(([accNo, vals]) => ({
-        accNo, ...Object.fromEntries(MONTH_KEYS.map((m) => [m, vals[m] ?? 0])),
-      }))
+      // Akaun kumpulan (ada anak) tidak disimpan — nilai mereka dikira auto dari anak-anak
+      const groupSet = new Set(rows.filter((r) => r.isGroup).map((r) => r.accNo))
+      const payload = Object.entries(editValues)
+        .filter(([accNo]) => !groupSet.has(accNo))
+        .map(([accNo, vals]) => ({
+          accNo, ...Object.fromEntries(MONTH_KEYS.map((m) => [m, vals[m] ?? 0])),
+        }))
       return budgetApi.saveLines(Number(id), payload)
     },
     onSuccess: (data) => {
@@ -138,11 +144,12 @@ export default function BajetDetail() {
     onError: (err) => toast.error(err.response?.data?.message ?? 'Gagal kemaskini'),
   })
 
-  const grandTotal = filtered.filter((r) => !r.parentAccNo).reduce((sum, r) => {
-    return sum + (r.isGroup
-      ? MONTH_KEYS.reduce((s, m) => s + sumChildren(rows, r.accNo, m), 0)
-      : rowTotal(r.accNo))
-  }, 0)
+  // Grand total — skip virtual group rows (mereka aggregate sahaja, bukan nilai sebenar)
+  const grandTotal = useMemo(() => {
+    return filtered
+      .filter((r) => !r.isGroup)
+      .reduce((sum, r) => sum + rowTotal(r.accNo), 0)
+  }, [filtered, editValues])
 
   return (
     <div className="p-6 space-y-4">
@@ -167,10 +174,13 @@ export default function BajetDetail() {
                 {budgetYear.adjCount >= budgetYear.adjLimit ? 'Had dicapai' : `${budgetYear.adjLimit - budgetYear.adjCount} berbaki`}
               </p>
             )}
+            {budgetYear?.status === 'DRAFT' && (
+              <p className="text-xs text-gray-500">Bajet hadapan — belum digunakan dalam permohonan</p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {canManage && budgetYear?.status !== 'CLOSED' && (
+          {isFinance && budgetYear?.status !== 'CLOSED' && (
             <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}>
               <Settings size={14} /> Konfigurasi
             </Button>
@@ -178,7 +188,9 @@ export default function BajetDetail() {
           {isReadOnly ? (
             <div className="flex items-center gap-1.5 text-sm text-gray-400">
               <Lock size={14} />
-              {budgetYear?.status === 'CLOSED' ? 'Read Only' : 'Had pindaan dicapai'}
+              {!isFinance ? 'Lihat Sahaja'
+                : budgetYear?.status === 'CLOSED' ? 'Read Only'
+                : 'Had pindaan dicapai'}
             </div>
           ) : (
             <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
@@ -191,7 +203,21 @@ export default function BajetDetail() {
         </div>
       </div>
 
-      {/* Last adj warning */}
+      {/* Info bars */}
+      {budgetYear?.status === 'DRAFT' && isFinance && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
+          <Info size={15} className="shrink-0" />
+          Bajet draf — boleh edit sepenuhnya. Tidak digunakan dalam permohonan sehingga diaktifkan.
+        </div>
+      )}
+
+      {budgetYear?.status === 'ACTIVE' && !isReadOnly && budgetYear.adjCount < budgetYear.adjLimit && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
+          <Info size={15} className="shrink-0" />
+          Bajet semasa — boleh kemaskini jumlah sahaja. Digunakan dalam borang permohonan.
+        </div>
+      )}
+
       {budgetYear?.status === 'ACTIVE' && budgetYear.adjCount === budgetYear.adjLimit - 1 && !isReadOnly && (
         <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-300 rounded-xl text-sm text-amber-800">
           <Info size={15} className="shrink-0" />
@@ -222,7 +248,7 @@ export default function BajetDetail() {
             <p className="font-medium text-gray-700">Belum ada senarai akaun</p>
             <p className="text-sm text-gray-400 mt-1">Muatkan kod akaun untuk mula isi bajet</p>
           </div>
-          {can('budget', 'canCreate') && (
+          {isFinance && (
             <Button onClick={() => initMut.mutate()} disabled={initMut.isPending}>
               {initMut.isPending ? 'Memuatkan...' : 'Muatkan Senarai Akaun'}
             </Button>
@@ -247,7 +273,7 @@ export default function BajetDetail() {
             </thead>
             <tbody>
               {filtered.filter((r) => !isHidden(r)).map((row) => {
-                const indent = row.level * 20
+                const indent = (row.level ?? 0) * 20
                 const isParent = row.isGroup
                 const isCollapsed = collapsed.has(row.accNo)
                 const total = isParent
@@ -276,7 +302,7 @@ export default function BajetDetail() {
                       <td key={m} className="px-1 py-1">
                         {isParent ? (
                           <div className="text-right px-2 py-1 text-gray-500 font-mono">
-                            {formatRM(sumChildren(rows, row.accNo, m))}
+                            {fmtRM(sumChildren(rows, row.accNo, m))}
                           </div>
                         ) : (
                           <input
@@ -296,7 +322,7 @@ export default function BajetDetail() {
                       </td>
                     ))}
                     <td className={`px-4 py-1.5 text-right font-mono font-semibold ${isParent ? 'text-gray-900' : 'text-gray-700'}`}>
-                      {formatRM(total)}
+                      {fmtRM(total)}
                     </td>
                   </tr>
                 )
@@ -307,47 +333,48 @@ export default function BajetDetail() {
                 </td>
                 {MONTH_KEYS.map((m) => (
                   <td key={m} className="px-2 py-2.5 text-right font-mono text-gray-700">
-                    {formatRM(
-                      filtered.filter((r) => !r.parentAccNo).reduce((s, r) =>
-                        s + (r.isGroup ? sumChildren(rows, r.accNo, m) : (editValues[r.accNo]?.[m] ?? 0)), 0)
+                    {fmtRM(
+                      filtered
+                        .filter((r) => !r.isGroup)
+                        .reduce((s, r) => s + (editValues[r.accNo]?.[m] ?? 0), 0)
                     )}
                   </td>
                 ))}
-                <td className="px-4 py-2.5 text-right font-mono text-gray-700">{formatRM(grandTotal)}</td>
+                <td className="px-4 py-2.5 text-right font-mono text-gray-700">{fmtRM(grandTotal)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       )}
 
-      {/* Config dialog — finance/admin sahaja */}
-      <Dialog open={showConfig} onClose={() => setShowConfig(false)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Konfigurasi Bajet {budgetYear?.year}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="space-y-1.5">
-              <Label>Had Pindaan</Label>
-              <Select
-                value={configForm.adjLimit}
-                onChange={(e) => setConfigForm((f) => ({ ...f, adjLimit: +e.target.value }))}
-              >
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <option key={n} value={n}>{n} pindaan</option>
-                ))}
-              </Select>
-              <p className="text-xs text-gray-400">Pindaan semasa: {budgetYear?.adjCount ?? 0}</p>
+      {/* Config dialog */}
+      {isFinance && (
+        <Dialog open={showConfig} onClose={() => setShowConfig(false)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Konfigurasi Bajet {budgetYear?.year}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div className="space-y-1.5">
+                <Label>Had Pindaan</Label>
+                <Select
+                  value={configForm.adjLimit}
+                  onChange={(e) => setConfigForm((f) => ({ ...f, adjLimit: +e.target.value }))}
+                >
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>{n} pindaan</option>
+                  ))}
+                </Select>
+                <p className="text-xs text-gray-400">Pindaan semasa: {budgetYear?.adjCount ?? 0}</p>
+              </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfig(false)}>Batal</Button>
-            <Button onClick={() => configMut.mutate()} disabled={configMut.isPending}>
-              Simpan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowConfig(false)}>Batal</Button>
+              <Button onClick={() => configMut.mutate()} disabled={configMut.isPending}>Simpan</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
