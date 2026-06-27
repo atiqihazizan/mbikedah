@@ -44,33 +44,36 @@ function accNumericCode(accNo) {
 // ─── Sheet: Ringkasan ─────────────────────────────────────────────────────────
 function SheetRingkasan({ lines, budgetYear, prevYears = [] }) {
   const { hasil, belanja } = useMemo(() => {
-    function sumRange(min, max, field) {
+    function sumRange(accNo, field) {
       return lines
-        .filter((l) => { const n = accNumericCode(l.accNo); return !isNaN(n) && n >= min && n <= max })
+        // .filter((l) => { const n = accNumericCode(l.accNo); return !isNaN(n) && n >= min && n <= max })
+        .filter((l) => l.accNo === accNo)
         .reduce((s, l) => s + (Number(l[field]) || 0), 0)
     }
-    function sumRangePrev(min, max, py, field) {
+    function sumRangePrev(an, py, field) {
       let t = 0
       for (const [accNo, v] of Object.entries(py.byAccNo)) {
-        const n = accNumericCode(accNo)
-        if (!isNaN(n) && n >= min && n <= max) t += v[field] ?? 0
+        // const n = accNumericCode(accNo)
+        // if (!isNaN(n) && n >= min && n <= max) t += v[field] ?? 0
+        if (accNo === an) t += v[field] ?? 0
       }
       return t
     }
     function groupName(accNo) { return lines.find((l) => l.accNo === accNo)?.name ?? accNo }
     const mapGroup = (g, i) => ({
       bil: i + 1, accNo: g.accNo, name: groupName(g.accNo),
-      sebenar: sumRange(g.min, g.max, 'sebenar'),
-      bajet:   sumRange(g.min, g.max, 'peruntukan'),
+      sebenar: sumRange(g.accNo, 'sebenar'),
+      bajet:   sumRange(g.accNo, 'peruntukan'),
       prev:    prevYears.map((py) => ({
         year:    py.year,
-        sebenar: sumRangePrev(g.min, g.max, py, 'sebenar'),
-        bajet:   sumRangePrev(g.min, g.max, py, 'bajet'),
+        sebenar: sumRangePrev(g.accNo, py, 'sebenar'),
+        bajet:   sumRangePrev(g.accNo, py, 'bajet'),
       })),
     })
+
     return {
       hasil:   HASIL_GROUPS.map(mapGroup),
-      belanja: BELANJA_GROUPS.map(mapGroup).filter((r) => r.bajet > 0 || r.sebenar > 0),
+      belanja: BELANJA_GROUPS.map(mapGroup),
     }
   }, [lines, prevYears])
 

@@ -454,14 +454,15 @@ export async function getReport(req, res, next) {
       activatedAt: byRaw.activated_at, closedAt: byRaw.closed_at,
     }
 
-    const all = await prisma.budgetLine.findMany({
-      where: { budgetYearId },
-      include: { account: true },
-    })
+    // Semua akaun — termasuk group account yang tiada budget line sendiri
+    const [allAccounts, allLines] = await Promise.all([
+      prisma.account.findMany({ orderBy: { accNo: 'asc' } }),
+      prisma.budgetLine.findMany({ where: { budgetYearId } }),
+    ])
 
     const versionOrder = { ADJ2: 3, ADJ1: 2, ORIGINAL: 1 }
     const latestMap = new Map()
-    for (const line of all) {
+    for (const line of allLines) {
       const existing = latestMap.get(line.accNo)
       if (!existing || versionOrder[line.version] > versionOrder[existing.version]) {
         latestMap.set(line.accNo, line)
@@ -470,7 +471,7 @@ export async function getReport(req, res, next) {
 
     // Actual data — per month per accNo
     const actuals = await prisma.actualData.findMany({ where: { year: budgetYear.year } })
-    const actualMonthMap = new Map()  // accNo -> { jan:0, feb:0, ... }
+    const actualMonthMap = new Map()
     for (const a of actuals) {
       if (!actualMonthMap.has(a.accNo)) {
         actualMonthMap.set(a.accNo, { jan:0,feb:0,mar:0,apr:0,may:0,jun:0,jul:0,aug:0,sep:0,oct:0,nov:0,dec:0 })
@@ -493,18 +494,22 @@ export async function getReport(req, res, next) {
       if (!b.accNo) spentMap.set(b.accNo, (spentMap.get(b.accNo) ?? 0) + Number(b.amount))
     }
 
-    const lines = Array.from(latestMap.values()).map((l) => {
-      const peruntukan    = Number(l.total)
-      const actualMonths  = actualMonthMap.get(l.accNo) ?? {}
-      const sebenar       = monthFields.reduce((s, m) => s + (actualMonths[m] ?? 0), 0)
-      const permohonan    = spentMap.get(l.accNo) ?? 0
-      const bajetMonths   = monthFields.reduce((o, m) => ({ ...o, [m]: Number(l[m] ?? 0) }), {})
+    const zeroMonths = monthFields.reduce((o, m) => ({ ...o, [m]: 0 }), {})
+
+    // Gabung semua akaun dengan budget line — sifar jika tiada line
+    const lines = allAccounts.map((acc) => {
+      const l           = latestMap.get(acc.accNo)
+      const peruntukan  = l ? Number(l.total) : 0
+      const actualMonths = actualMonthMap.get(acc.accNo) ?? {}
+      const sebenar     = monthFields.reduce((s, m) => s + (actualMonths[m] ?? 0), 0)
+      const permohonan  = spentMap.get(acc.accNo) ?? 0
+      const bajetMonths = l ? monthFields.reduce((o, m) => ({ ...o, [m]: Number(l[m] ?? 0) }), {}) : { ...zeroMonths }
       return {
-        accNo:       l.accNo,
-        name:        l.account.name,
-        accType:     l.account.accType,
-        level:       l.account.level,
-        parentAccNo: l.account.parentAccNo,
+        accNo:       acc.accNo,
+        name:        acc.name,
+        accType:     acc.accType,
+        level:       acc.level,
+        parentAccNo: acc.parentAccNo,
         peruntukan,
         sebenar,
         permohonan,
