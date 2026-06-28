@@ -4,54 +4,59 @@ import { logActivity } from '../utils/activityLog.js'
 
 const YEAR = new Date().getFullYear()
 
-// ─── Helper: baki bajet bagi satu accNo ──────────────────────────────────────
+const PENDING_STATUSES = [
+  'PENDING_HOD', 'PENDING_CEO', 'PENDING_FINANCE_CHECK',
+  'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL', 'PENDING_CEO_FINAL', 'APPROVED',
+]
+
+// budgetYear cached — sama sepanjang process lifecycle
+let _cachedBudgetYearId = null
+async function getBudgetYearId() {
+  if (_cachedBudgetYearId) return _cachedBudgetYearId
+  const by = await prisma.budgetYear.findFirst({ where: { year: YEAR }, select: { id: true } })
+  _cachedBudgetYearId = by?.id ?? null
+  return _cachedBudgetYearId
+}
+
+// ─── Helper: baki bajet bagi satu accNo (semua queries parallel) ─────────────
 async function getBudgetBalance(accNo, excludeBillingId) {
   if (!accNo) return null
 
-  // Peruntukan — ambil versi terkini (ADJ2 > ADJ1 > ORIGINAL)
-  const budgetYear = await prisma.budgetYear.findFirst({
-    where: { year: YEAR },
-    select: { id: true },
-  })
+  const [budgetYearId, actualResult, tertangguhResult] = await Promise.all([
+    getBudgetYearId(),
+    prisma.actualData.aggregate({
+      where: { accNo, year: YEAR },
+      _sum: { amount: true },
+    }),
+    prisma.billingItem.aggregate({
+      where: {
+        accNo,
+        isDeleted: false,
+        billing: {
+          status: { in: PENDING_STATUSES },
+          isDeleted: false,
+          ...(excludeBillingId ? { id: { not: excludeBillingId } } : {}),
+        },
+      },
+      _sum: { amount: true },
+    }),
+  ])
+
+  // Peruntukan — versi terkini (ADJ2 > ADJ1 > ORIGINAL) secara parallel
   let peruntukan = 0
-  if (budgetYear) {
-    const versions = ['ADJ2', 'ADJ1', 'ORIGINAL']
-    for (const version of versions) {
-      const line = await prisma.budgetLine.findFirst({
-        where: { budgetYearId: budgetYear.id, accNo, version },
-        select: { total: true },
-      })
-      if (line) { peruntukan = parseFloat(line.total); break }
-    }
+  if (budgetYearId) {
+    const lines = await prisma.budgetLine.findMany({
+      where: { budgetYearId, accNo, version: { in: ['ADJ2', 'ADJ1', 'ORIGINAL'] } },
+      select: { version: true, total: true },
+    })
+    const priority = { ADJ2: 0, ADJ1: 1, ORIGINAL: 2 }
+    lines.sort((a, b) => priority[a.version] - priority[b.version])
+    if (lines[0]) peruntukan = parseFloat(lines[0].total)
   }
 
-  // Belanja sebenar (dari ActualData)
-  const actual = await prisma.actualData.aggregate({
-    where: { accNo, year: YEAR },
-    _sum: { amount: true },
-  })
-  const belanja = parseFloat(actual._sum.amount ?? 0)
-
-  // Tertangguh — billings dalam proses (exclude billing semasa)
-  const pendingStatuses = [
-    'PENDING_HOD', 'PENDING_FINANCE_CHECK', 'PENDING_FINANCE_VERIFY',
-    'PENDING_FINANCE_APPROVAL', 'APPROVED',
-  ]
-  const tertangguhAgg = await prisma.billingItem.aggregate({
-    where: {
-      accNo,
-      isDeleted: false,
-      billing: {
-        status: { in: pendingStatuses },
-        isDeleted: false,
-        ...(excludeBillingId ? { id: { not: excludeBillingId } } : {}),
-      },
-    },
-    _sum: { amount: true },
-  })
-  const tertangguh = parseFloat(tertangguhAgg._sum.amount ?? 0)
-
-  const baki = peruntukan - belanja - tertangguh
+  const belanja    = parseFloat(actualResult._sum.amount ?? 0)
+  const tertangguh = parseFloat(tertangguhResult._sum.amount ?? 0)
+  const baki       = peruntukan - belanja - tertangguh
 
   return { accNo, peruntukan, belanja, tertangguh, baki }
 }
@@ -89,12 +94,10 @@ export async function getFinanceCheck(req, res, next) {
     if (billing.status !== 'PENDING_FINANCE_CHECK')
       return res.status(400).json({ message: 'Permohonan bukan dalam peringkat Semakan Kewangan' })
 
-    // Kira baki bajet untuk setiap accNo unik
+    // Kira baki bajet untuk setiap accNo unik — semua parallel
     const uniqueAccNos = [...new Set(billing.items.map(i => i.accNo).filter(Boolean))]
-    const budgetMap = {}
-    for (const accNo of uniqueAccNos) {
-      budgetMap[accNo] = await getBudgetBalance(accNo, id)
-    }
+    const balances = await Promise.all(uniqueAccNos.map(accNo => getBudgetBalance(accNo, id)))
+    const budgetMap = Object.fromEntries(uniqueAccNos.map((accNo, i) => [accNo, balances[i]]))
 
     res.json({ data: billing, budgetMap })
   } catch (err) { next(err) }
