@@ -261,6 +261,7 @@ function SheetPenyata({ lines, budgetYear, type }) {
   }
   const th = 'px-3 py-2 text-left text-xs font-semibold text-gray-600 bg-gray-50 border-b border-gray-200'
   const td = 'px-3 py-2 text-sm border-b border-gray-100'
+  console.log(topLevel);
   return (
     <div className="overflow-x-auto rounded-xl border border-gray-200">
       <table className="w-full text-xs">
@@ -306,56 +307,15 @@ function SheetPenyata({ lines, budgetYear, type }) {
   )
 }
 
-// ─── Sheet: Sub Hasil ─────────────────────────────────────────────────────────
-function SheetSubHasil({ lines, budgetYear }) {
-  const filtered = lines.filter((l) => l.accType === 'HASIL' && l.parentAccNo)
-  const th = 'px-3 py-2 text-left text-xs font-semibold text-gray-600 bg-gray-50 border-b border-gray-200'
-  const td = 'px-3 py-2 text-sm border-b border-gray-100'
-  return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200">
-      <table className="w-full text-xs">
-        <thead>
-          <tr>
-            <th className={th} style={{ width: 110 }}>Kod Akaun</th>
-            <th className={th}>Perihal</th>
-            <th className={th} style={{ width: 110 }}>Induk</th>
-            <th className={`${th} text-right`} style={{ width: 140 }}>Bajet {budgetYear?.year} (RM)</th>
-            <th className={`${th} text-right`} style={{ width: 140 }}>Sebenar (RM)</th>
-            <th className={`${th} text-right`} style={{ width: 140 }}>Baki (RM)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map((l) => (
-            <tr key={l.accNo} className="hover:bg-gray-50">
-              <td className={`${td} font-mono text-gray-500`}>{l.accNo}</td>
-              <td className={td}>{l.name}</td>
-              <td className={`${td} font-mono text-gray-400`}>{l.parentAccNo}</td>
-              <td className={`${td} text-right font-mono`}>{fmtRM(l.peruntukan)}</td>
-              <td className={`${td} text-right font-mono`}>{fmtRM(l.sebenar)}</td>
-              <td className={`${td} text-right font-mono ${clsNum(l.baki)}`}>{fmtRM(l.baki)}</td>
-            </tr>
-          ))}
-          <tr className="border-t-2 border-gray-300 bg-gray-100 font-bold">
-            <td colSpan={3} className="px-3 py-2.5 text-xs font-bold text-gray-700">JUMLAH SUB HASIL</td>
-            <td className="px-3 py-2.5 text-right font-mono text-xs">{fmtRMFull(filtered.reduce((s, l) => s + l.peruntukan, 0))}</td>
-            <td className="px-3 py-2.5 text-right font-mono text-xs">{fmtRMFull(filtered.reduce((s, l) => s + l.sebenar, 0))}</td>
-            <td className={`px-3 py-2.5 text-right font-mono text-xs ${clsNum(filtered.reduce((s, l) => s + l.baki, 0))}`}>
-              {fmtRMFull(filtered.reduce((s, l) => s + l.baki, 0))}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-// ─── Sheet: Sub Belanja ───────────────────────────────────────────────────────
 const MKEYS  = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
 const MLABEL = ['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogs','Sep','Okt','Nov','Dis']
 const GRP_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-function SheetSubBelanja({ lines, budgetYear }) {
-  const belanjaAll = useMemo(() => lines.filter((l) => l.accType === 'BELANJA'), [lines])
+// ─── Sheet: Sub Hasil ─────────────────────────────────────────────────────────
+// ─── Sheet: Sub Hasil & Sub Belanja (dikongsi) ───────────────────────────────
+function SheetSubAkaun({ lines, budgetYear, type }) {
+  const label  = type === 'HASIL' ? 'HASIL' : 'BELANJA'
+  const belanjaAll = useMemo(() => lines.filter((l) => l.accType === type), [lines, type])
 
   const ytdMonth = useMemo(() => {
     let last = 0
@@ -533,7 +493,7 @@ function SheetSubBelanja({ lines, budgetYear }) {
         <tbody>
           {renderNodes(topNodes)}
           <tr className="bg-orange-100 border-t-2 border-orange-400 font-bold">
-            <td colSpan={3} className="px-2 py-2 text-xs font-bold text-orange-900">JUMLAH KESELURUHAN BELANJA</td>
+            <td colSpan={3} className="px-2 py-2 text-xs font-bold text-orange-900">JUMLAH KESELURUHAN {label}</td>
             <td className="px-1.5 py-2 text-right font-mono text-xs font-bold text-orange-900">{fmtRMFull(gtBajet)}</td>
             <td className="px-1.5 py-2 text-right font-mono text-xs font-bold text-orange-900">{fmtRMFull(gtActual)}</td>
             {MKEYS.slice(0, ytdMonth).map((m) => (
@@ -847,8 +807,8 @@ export default function Laporan() {
               <SheetPenyata lines={lines} budgetYear={budgetYear} type="BELANJA" />
             </div>
           )}
-          {activeSheet === 'subhasil'   && <SheetSubHasil   lines={lines} budgetYear={budgetYear} />}
-          {activeSheet === 'subbelanja' && <SheetSubBelanja lines={lines} budgetYear={budgetYear} />}
+          {activeSheet === 'subhasil'   && <SheetSubAkaun lines={lines} budgetYear={budgetYear} type="HASIL" />}
+          {activeSheet === 'subbelanja' && <SheetSubAkaun lines={lines} budgetYear={budgetYear} type="BELANJA" />}
           {activeSheet.startsWith('layout-') && (
             <SheetCustomLayout layout={activeLayout} lines={lines} />
           )}
