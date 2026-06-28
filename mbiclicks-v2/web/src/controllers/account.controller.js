@@ -260,7 +260,7 @@ export async function syncFromAutocount(req, res, next) {
 
 export async function syncFromFile(req, res, next) {
   try {
-    const filePath = resolve(__dirname, '../../upload/account.json')
+    const filePath = resolve(__dirname, '../../uploads/account.json')
     let rawList
     try {
       const content = readFileSync(filePath, 'utf8')

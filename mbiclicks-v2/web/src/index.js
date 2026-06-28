@@ -12,7 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = process.env.PORT ?? 4000
 const PUBLIC_DIR  = path.join(__dirname, '..', 'public')
-const UPLOAD_DIR  = path.join(__dirname, '..', 'upload')
+const UPLOAD_DIR  = path.join(__dirname, '..', 'uploads')
 
 app.use(helmet({ contentSecurityPolicy: false }))
 app.use(cors({ origin: process.env.CORS_ORIGIN ?? '*' }))
@@ -25,7 +25,7 @@ app.use('/api', routes)
 app.get('/health', (_, res) => res.json({ status: 'ok', ts: new Date() }))
 
 // Upload folder — accessible via /upload/filename
-app.use('/upload', express.static(UPLOAD_DIR))
+app.use('/uploads', express.static(UPLOAD_DIR))
 
 // Serve React static export dari public/
 app.use(express.static(PUBLIC_DIR))
