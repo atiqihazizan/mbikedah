@@ -497,27 +497,43 @@ export async function getReport(req, res, next) {
     const zeroMonths = monthFields.reduce((o, m) => ({ ...o, [m]: 0 }), {})
 
     // Gabung semua akaun dengan budget line — sifar jika tiada line
-    const lines = allAccounts.map((acc) => {
-      const l           = latestMap.get(acc.accNo)
-      const peruntukan  = l ? Number(l.total) : 0
+    const lineMap = new Map()
+    for (const acc of allAccounts) {
+      const l            = latestMap.get(acc.accNo)
       const actualMonths = actualMonthMap.get(acc.accNo) ?? {}
-      const sebenar     = monthFields.reduce((s, m) => s + (actualMonths[m] ?? 0), 0)
-      const permohonan  = spentMap.get(acc.accNo) ?? 0
-      const bajetMonths = l ? monthFields.reduce((o, m) => ({ ...o, [m]: Number(l[m] ?? 0) }), {}) : { ...zeroMonths }
-      return {
+      lineMap.set(acc.accNo, {
         accNo:       acc.accNo,
         name:        acc.name,
         accType:     acc.accType,
         level:       acc.level,
         parentAccNo: acc.parentAccNo,
-        peruntukan,
-        sebenar,
-        permohonan,
-        baki:        peruntukan - permohonan,
-        bajetMonths,
+        peruntukan:  l ? Number(l.total) : 0,
+        sebenar:     monthFields.reduce((s, m) => s + (actualMonths[m] ?? 0), 0),
+        permohonan:  spentMap.get(acc.accNo) ?? 0,
+        bajetMonths: l ? monthFields.reduce((o, m) => ({ ...o, [m]: Number(l[m] ?? 0) }), {}) : { ...zeroMonths },
         actualMonths,
+      })
+    }
+
+    // Bottom-up aggregation — group account dapat nilai dari jumlah children
+    // Sort terbalik supaya children diproses sebelum parent
+    const sorted = [...lineMap.values()].sort((a, b) => b.accNo.localeCompare(a.accNo))
+    for (const row of sorted) {
+      if (!row.parentAccNo) continue
+      const parent = lineMap.get(row.parentAccNo)
+      if (!parent) continue
+      parent.peruntukan  += row.peruntukan
+      parent.sebenar     += row.sebenar
+      parent.permohonan  += row.permohonan
+      for (const m of monthFields) {
+        parent.bajetMonths[m]  = (parent.bajetMonths[m]  ?? 0) + (row.bajetMonths[m]  ?? 0)
+        parent.actualMonths[m] = (parent.actualMonths[m] ?? 0) + (row.actualMonths[m] ?? 0)
       }
-    }).sort((a, b) => a.accNo.localeCompare(b.accNo))
+    }
+
+    const lines = [...lineMap.values()]
+      .map((row) => ({ ...row, baki: row.peruntukan - row.permohonan }))
+      .sort((a, b) => a.accNo.localeCompare(b.accNo))
 
     // Tahun-tahun lepas (max 2 tahun sebelum tahun semasa)
     const allYears = await prisma.budgetYear.findMany({ orderBy: { year: 'asc' } })
