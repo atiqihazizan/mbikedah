@@ -56,6 +56,17 @@ async function getBudgetBalance(accNo, excludeBillingId) {
   return { accNo, peruntukan, belanja, tertangguh, baki }
 }
 
+// ─── GET budget balance untuk satu accNo (real-time semasa officer tukar kod) ─
+export async function getBudgetBalanceApi(req, res, next) {
+  try {
+    const { accNo, excludeBillingId } = req.query
+    if (!accNo) return res.status(400).json({ message: 'accNo diperlukan' })
+    const excludeId = excludeBillingId ? parseInt(excludeBillingId) : null
+    const bal = await getBudgetBalance(accNo, excludeId)
+    res.json({ data: bal })
+  } catch (err) { next(err) }
+}
+
 // ─── GET finance check data ───────────────────────────────────────────────────
 export async function getFinanceCheck(req, res, next) {
   try {

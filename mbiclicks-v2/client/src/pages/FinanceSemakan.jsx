@@ -26,7 +26,14 @@ const PAYMENT_METHODS = [
 ]
 
 function BudgetBadge({ bal, amount }) {
-  if (!bal) return <span className="text-xs text-gray-400">Tiada rekod bajet</span>
+  if (bal === undefined) return <span className="text-xs text-gray-400 italic">Memeriksa bajet...</span>
+  if (bal === null) return (
+    <div className="text-xs rounded-lg px-3 py-2 bg-red-50 border border-red-200">
+      <p className="text-red-600 font-medium flex items-center gap-1">
+        <AlertTriangle className="w-3 h-3" /> Tiada rekod bajet untuk kod ini
+      </p>
+    </div>
+  )
   const cukup = bal.baki >= amount
   return (
     <div className={`text-xs rounded-lg px-3 py-2 ${cukup ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
@@ -92,10 +99,16 @@ export default function FinanceSemakan() {
     queryFn:  () => api.get('/accounts', { params: { type: 'BELANJA', status: 'active', limit: 2000 } }).then(r => r.data),
   })
 
-  const billing   = checkData?.data
-  const budgetMap = checkData?.budgetMap ?? {}
-  const banks     = bankData?.data ?? []
-  const accounts  = accountData?.data ?? []
+  const billing          = checkData?.data
+  const serverBudgetMap  = checkData?.budgetMap ?? {}
+  const banks            = bankData?.data ?? []
+  const accounts         = accountData?.data ?? []
+
+  // localBudgetMap: cache balances yang di-fetch on-demand bila accNo bertukar
+  const [localBudgetMap, setLocalBudgetMap] = useState({})
+
+  // Gabung server budgetMap + local overrides
+  const budgetMap = { ...serverBudgetMap, ...localBudgetMap }
 
   // Sync items apabila data dimuatkan
   useEffect(() => {
@@ -137,16 +150,35 @@ export default function FinanceSemakan() {
     })
   }
 
-  const updateItemAccNo = (itemId, accNo) =>
+  const updateItemAccNo = (itemId, accNo) => {
     setItems(prev => prev.map(i => i.id === itemId ? { ...i, accNo: accNo ?? '' } : i))
+
+    // Fetch balance untuk accNo baru jika belum ada dalam budgetMap (gabungan server+local)
+    if (accNo && !(accNo in budgetMap)) {
+      api.get('/budget-balance', { params: { accNo, excludeBillingId: id } })
+        .then(r => {
+          if (r.data?.data) {
+            setLocalBudgetMap(prev => ({ ...prev, [accNo]: r.data.data }))
+          }
+        })
+        .catch(() => {
+          // Jika gagal, set null supaya BudgetBadge papar "Tiada rekod bajet"
+          setLocalBudgetMap(prev => ({ ...prev, [accNo]: null }))
+        })
+    }
+  }
 
   const accOpts = accounts.map(a => ({ value: a.accNo, label: a.accNo, sub: a.name }))
   const bankOpts = banks.map(b => ({ value: String(b.id), label: b.name, sub: `${b.bankName} · ${b.accNo}` }))
 
-  // Semak baki tidak mencukupi untuk mana-mana item
+  // Semak baki tidak mencukupi untuk mana-mana item (hanya jika data ada)
   const hasBudgetIssue = items.some(item => {
+    if (!item.accNo) return false
     const bal = budgetMap[item.accNo]
-    return item.accNo && bal && bal.baki < parseFloat(item.amount)
+    // Jika tiada rekod bajet (bal === null atau undefined), anggap tidak mencukupi
+    if (bal === undefined) return false  // masih loading, jangan block
+    if (bal === null) return true        // tiada rekod — block submit
+    return bal.baki < parseFloat(item.amount)
   })
 
   if (isLoading) return <div className="flex justify-center py-20"><Spinner /></div>
