@@ -377,14 +377,6 @@ export default function Akaun() {
           </p>
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
-          <Button
-            variant="outline"
-            onClick={() => syncMut.mutate()}
-            disabled={syncMut.isPending}
-          >
-            {syncMut.isPending ? <Spinner size={14} /> : <RefreshCw className="w-4 h-4" />}
-            Sync AutoCount
-          </Button>
           <Button onClick={openRoot}>
             <Plus className="w-4 h-4" /> Tambah Akaun Induk
           </Button>
