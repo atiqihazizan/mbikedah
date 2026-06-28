@@ -7,10 +7,11 @@ import {
 
 const router = Router()
 
-// finance_hod, finance dan admin boleh akses
-router.use(authenticate, requireRole('finance_hod', 'finance', 'admin'))
+// Semua pengguna log masuk boleh list akaun (untuk dropdown permohonan)
+router.get('/', authenticate, listAccounts)
 
-router.get('/',              listAccounts)
+// Kemaskini dan pentadbiran — finance/admin sahaja
+router.use(authenticate, requireRole('finance_hod', 'finance', 'admin'))
 router.post('/',             createAccount)
 router.put('/:id',           updateAccount)
 router.patch('/:id/toggle',  toggleAccount)

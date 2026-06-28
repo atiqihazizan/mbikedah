@@ -1,9 +1,13 @@
 import { Router } from 'express'
 import prisma from '../lib/prisma.js'
 import { authenticate } from '../middleware/auth.js'
+import { getDashboard } from '../controllers/dashboard.controller.js'
 
 const router = Router()
 router.use(authenticate)
+
+// GET /api/dashboard
+router.get('/', getDashboard)
 
 // GET /api/dashboard/pending-approvals
 // KJ  → staff dalam jabatan + count PENDING_HOD milik mereka

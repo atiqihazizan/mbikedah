@@ -1,19 +1,27 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileText, Bell, Calendar, BarChart3, Clock, CheckCircle, XCircle, AlertCircle, ArrowRight, ChevronRight, Users, Building2 } from 'lucide-react'
 // Building2 kekal untuk PendingApprovalsList (CEO view)
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
+import { Button } from '@/components/ui'
 import api from '@/lib/api'
 
 const hour = new Date().getHours()
 const greeting = hour < 12 ? 'Selamat Pagi' : hour < 18 ? 'Selamat Tengah Hari' : 'Selamat Petang'
 
 const STATUS_CONFIG = {
-  DRAFT:    { label: 'Draf',        color: 'bg-gray-100 text-gray-600',    icon: FileText    },
-  PENDING:  { label: 'Menunggu',    color: 'bg-amber-100 text-amber-700',  icon: Clock       },
-  APPROVED: { label: 'Diluluskan',  color: 'bg-green-100 text-green-700',  icon: CheckCircle },
-  REJECTED: { label: 'Ditolak',     color: 'bg-red-100 text-red-700',      icon: XCircle     },
-  RETURNED: { label: 'Dikembalikan',color: 'bg-orange-100 text-orange-700',icon: AlertCircle },
+  DRAFT:                      { label: 'Draf',              color: 'bg-gray-100 text-gray-600',    icon: FileText    },
+  PENDING_HOD:                { label: 'Menunggu KJ',       color: 'bg-amber-100 text-amber-700',  icon: Clock       },
+  PENDING_CEO:                { label: 'Menunggu Ketua Eksekutif', color: 'bg-rose-100 text-rose-700', icon: Clock },
+  PENDING_FINANCE_CHECK:      { label: 'Semakan Kewangan',  color: 'bg-blue-100 text-blue-700',    icon: Clock       },
+  PENDING_FINANCE_VERIFY:     { label: 'Pengesahan',        color: 'bg-indigo-100 text-indigo-700', icon: Clock       },
+  PENDING_FINANCE_APPROVAL:   { label: 'Kelulusan Kewangan', color: 'bg-purple-100 text-purple-700', icon: Clock       },
+  PENDING_CEO_FINAL:          { label: 'Kelulusan Muktamad', color: 'bg-rose-100 text-rose-700',    icon: Clock       },
+  APPROVED:                   { label: 'Diluluskan',        color: 'bg-green-100 text-green-700',  icon: CheckCircle },
+  PAID:                       { label: 'Dibayar',           color: 'bg-teal-100 text-teal-700',    icon: CheckCircle },
+  REJECTED:                   { label: 'Ditolak',           color: 'bg-red-100 text-red-700',      icon: XCircle     },
+  RETURNED:                   { label: 'Dikembalikan',      color: 'bg-orange-100 text-orange-700', icon: AlertCircle },
 }
 
 const ALL_QUICK_LINKS = [
@@ -22,6 +30,8 @@ const ALL_QUICK_LINKS = [
   { to: '/kalendar',        icon: Calendar,  label: 'Kalendar',        module: 'event',    bg: 'bg-gray-800' },
   { to: '/laporan',         icon: BarChart3, label: 'Laporan',         module: 'report',   bg: 'bg-gray-800' },
 ]
+
+const fmtRM = (v) => 'RM ' + Number(v).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 // ── Komponen: Senarai Pending Kelulusan (untuk KJ & CEO) ─────────────────────
 function PendingApprovalsList({ role }) {
@@ -117,11 +127,14 @@ export default function Dashboard() {
   const role    = user?.role?.slug
   const navigate = useNavigate()
 
+  // HOD & Finance HOD boleh approve PENDING_HOD
+  const isApprover = ['hod', 'finance_hod', 'admin'].includes(role)
+
   const quickLinks = ALL_QUICK_LINKS.filter((l) => can(l.module))
 
-  const { data: permohonanList = [] } = useQuery({
-    queryKey: ['dashboard-permohonan'],
-    queryFn: () => api.get('/billing?limit=5').then((r) => r.data.data ?? []),
+  const { data: dashboardData } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: () => api.get('/dashboard').then((r) => r.data),
     staleTime: 30_000,
   })
 
@@ -131,11 +144,17 @@ export default function Dashboard() {
     staleTime: 60_000,
   })
 
+  const permohonanList = dashboardData?.recent ?? []
+  const billingStats = dashboardData?.stats?.billingByStatus ?? {}
+
   const statsCount = {
-    total:    permohonanList.length,
-    pending:  permohonanList.filter((p) => p.status?.startsWith('PENDING')).length,
-    approved: permohonanList.filter((p) => p.status === 'APPROVED').length,
-    rejected: permohonanList.filter((p) => p.status === 'REJECTED').length,
+    total:           dashboardData?.stats?.totalBilling ?? 0,
+    pending:         dashboardData?.stats?.pendingApproval ?? 0,
+    approved:        billingStats.APPROVED ?? 0,
+    rejected:        billingStats.REJECTED ?? 0,
+    draft:           billingStats.DRAFT ?? 0,
+    paid:            billingStats.PAID ?? 0,
+    approvedAmount:  dashboardData?.stats?.approvedAmount ?? 0,
   }
 
   const showApprovalPanel = role === 'hod' || role === 'finance_hod' || role === 'ceo'
@@ -185,22 +204,25 @@ export default function Dashboard() {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
 
           {/* Status Summary */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             {[
-              { label: 'Jumlah Permohonan', value: statsCount.total,    color: 'text-gray-900',  bg: 'bg-gray-100' },
-              { label: 'Menunggu Kelulusan', value: statsCount.pending,  color: 'text-amber-700', bg: 'bg-amber-50' },
-              { label: 'Diluluskan',         value: statsCount.approved, color: 'text-green-700', bg: 'bg-green-50' },
-              { label: 'Ditolak',            value: statsCount.rejected, color: 'text-red-700',   bg: 'bg-red-50'   },
+              // { label: 'Jumlah Permohonan', value: statsCount.total,           color: 'text-gray-900',  bg: 'bg-gray-100' },
+              { label: 'Draf',              value: statsCount.draft,           color: 'text-gray-600',  bg: 'bg-gray-100' },
+              { label: 'Menunggu Kelulusan', value: statsCount.pending,        color: 'text-amber-700', bg: 'bg-amber-50' },
+              { label: 'Diluluskan',         value: statsCount.approved,       color: 'text-green-700', bg: 'bg-green-50' },
+              { label: 'Dibayar',            value: statsCount.paid,           color: 'text-teal-700',  bg: 'bg-teal-50'  },
+              { label: 'Ditolak',            value: statsCount.rejected,       color: 'text-red-700',   bg: 'bg-red-50'   },
+              // { label: 'Jumlah Disahkan',    value: `RM ${statsCount.approvedAmount.toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: 'text-green-700', bg: 'bg-green-50' },
             ].map(({ label, value, color, bg }) => (
               <div key={label} className={`${bg} rounded-xl p-4 border border-white shadow-sm`}>
                 <p className="text-xs text-gray-500 font-medium">{label}</p>
-                <p className={`text-3xl font-bold mt-1 ${color}`}>{value}</p>
+                <p className={`${typeof value === 'string' ? 'text-sm font-bold' : 'text-2xl'} font-bold mt-1 ${color}`}>{value}</p>
               </div>
             ))}
           </div>
 
           {/* Panel kelulusan — hanya untuk KJ dan CEO */}
-          {showApprovalPanel && <PendingApprovalsList role={role} />}
+          {/* {showApprovalPanel && <PendingApprovalsList role={role} />} */}
 
           {/* Two column: Permohonan + Pekeliling */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
@@ -223,10 +245,41 @@ export default function Dashboard() {
                 <div className="divide-y divide-gray-50">
                   {permohonanList.slice(0, 5).map((p) => {
                     const cfg = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.DRAFT
+
+                    // Determine action page based on role + status
+                    const getActionRoute = () => {
+                      const role = user?.role?.slug
+
+                      // HOD action page
+                      if (p.status === 'PENDING_HOD' && ['hod', 'finance_hod', 'admin'].includes(role))
+                        return `/permohonan/${p.id}/hod`
+
+                      // CEO action pages (PENDING_CEO or PENDING_CEO_FINAL)
+                      if ((p.status === 'PENDING_CEO' || p.status === 'PENDING_CEO_FINAL') && ['ceo', 'admin'].includes(role))
+                        return `/permohonan/${p.id}/ceo`
+
+                      // Finance Check page
+                      if (p.status === 'PENDING_FINANCE_CHECK' && ['finance', 'finance_hod', 'admin'].includes(role))
+                        return `/permohonan/${p.id}/semakan-kewangan`
+
+                      // Finance Verify page
+                      if (p.status === 'PENDING_FINANCE_VERIFY' && ['finance', 'finance_hod', 'admin'].includes(role))
+                        return `/permohonan/${p.id}/pengesahan-kewangan`
+
+                      // Finance Approval page
+                      if (p.status === 'PENDING_FINANCE_APPROVAL' && ['finance_hod', 'admin'].includes(role))
+                        return `/permohonan/${p.id}/kelulusan-kewangan`
+
+                      // Default: view only
+                      return `/permohonan/${p.id}`
+                    }
+
+                    const actionRoute = getActionRoute()
+
                     return (
                       <button
                         key={p.id}
-                        onClick={() => navigate(`/permohonan/${p.id}`)}
+                        onClick={() => navigate(actionRoute)}
                         className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors text-left"
                       >
                         <div className="flex-1 min-w-0">
@@ -283,6 +336,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
     </div>
   )
 }

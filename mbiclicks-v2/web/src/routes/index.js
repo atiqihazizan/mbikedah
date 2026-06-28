@@ -13,6 +13,9 @@ import eventRoutes        from './event.routes.js'
 import notificationRoutes from './notification.routes.js'
 import autocountRoutes      from './autocount.routes.js'
 import reportLayoutRoutes  from './reportLayout.routes.js'
+import billingRoutes       from './billing.routes.js'
+import vendorRoutes        from './vendor.routes.js'
+import financeCheckRoutes  from './financeCheck.routes.js'
 
 const router = Router()
 
@@ -30,5 +33,8 @@ router.use('/events',         eventRoutes)
 router.use('/notifications',  notificationRoutes)
 router.use('/autocount',      autocountRoutes)
 router.use('/report-layouts', reportLayoutRoutes)
+router.use('/billings',      billingRoutes)
+router.use('/vendors',       vendorRoutes)
+router.use('/',              financeCheckRoutes)
 
 export default router

@@ -11,7 +11,8 @@
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.js",
     "db:studio": "prisma studio",
-    "generate": "prisma generate"
+    "generate": "prisma generate",
+    "cleanup:test": "node scripts/cleanup-test-data.js"
   },
   "keywords": [],
   "author": "",

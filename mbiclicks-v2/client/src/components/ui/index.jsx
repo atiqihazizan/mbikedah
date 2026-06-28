@@ -1,4 +1,5 @@
 import { forwardRef } from 'react'
+export { default as SearchableSelect } from './SearchableSelect'
 
 const V = {
   default:     'bg-green-600 text-white hover:bg-green-700 border-transparent shadow-sm',
