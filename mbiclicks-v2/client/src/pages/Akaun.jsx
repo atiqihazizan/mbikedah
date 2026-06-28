@@ -233,6 +233,8 @@ function DeleteDialog({ open, onClose, record, onConfirm, isDeleting }) {
 // ─── Dialog keputusan sync ────────────────────────────────────────────────────
 
 function SyncResultDialog({ open, onClose, result }) {
+  const isFile = result?.source === 'file'
+  const acc = isFile ? result?.accounts : result
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogContent className="max-w-sm w-full">
@@ -241,11 +243,12 @@ function SyncResultDialog({ open, onClose, result }) {
             <CheckCircle2 className="w-5 h-5 text-green-600" /> Sync Berjaya
           </DialogTitle>
         </DialogHeader>
-        <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+        <p className="text-xs font-medium text-gray-500 mt-3">Kod Akaun</p>
+        <div className="mt-1 grid grid-cols-3 gap-3 text-center">
           {[
-            { label: 'Ditambah', value: result?.inserted, color: 'text-green-600' },
-            { label: 'Dikemaskini', value: result?.updated,  color: 'text-blue-600' },
-            { label: 'Tiada Ubah', value: result?.skipped,  color: 'text-gray-400' },
+            { label: 'Ditambah',    value: acc?.inserted, color: 'text-green-600' },
+            { label: 'Dikemaskini', value: acc?.updated,  color: 'text-blue-600' },
+            { label: 'Tiada Ubah',  value: acc?.skipped,  color: 'text-gray-400' },
           ].map(({ label, value, color }) => (
             <div key={label} className="bg-gray-50 rounded-lg p-3">
               <p className={`text-2xl font-bold ${color}`}>{value ?? 0}</p>
@@ -253,8 +256,24 @@ function SyncResultDialog({ open, onClose, result }) {
             </div>
           ))}
         </div>
+        {isFile && result?.bajet && (
+          <>
+            <p className="text-xs font-medium text-gray-500 mt-3">Bajet</p>
+            <div className="mt-1 grid grid-cols-2 gap-3 text-center">
+              {[
+                { label: 'Lines disimpan', value: result.bajet.inserted, color: 'text-green-600' },
+                { label: 'Dilangkau',      value: result.bajet.skipped,  color: 'text-gray-400' },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="bg-gray-50 rounded-lg p-3">
+                  <p className={`text-2xl font-bold ${color}`}>{value ?? 0}</p>
+                  <p className="text-xs text-gray-500 mt-1">{label}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
         <p className="text-xs text-gray-400 text-center mt-2">
-          {result?.source === 'file' ? 'Sumber: File account.json' : 'Sumber: AutoCount'} · {result?.total ?? 0} rekod
+          {isFile ? 'Sumber: File JSON (uploads/)' : 'Sumber: AutoCount'} · {acc?.total ?? 0} rekod
         </p>
         <DialogFooter>
           <Button onClick={onClose} className="w-full">Tutup</Button>

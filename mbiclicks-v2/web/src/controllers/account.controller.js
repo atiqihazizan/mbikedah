@@ -316,8 +316,43 @@ export async function syncFromFile(req, res, next) {
       data: { syncType: 'accounts_file', status: 'success', recordsCount: result.data.length },
     })
 
-    await logActivity({ userId: req.user.id, userName: req.user.name, action: 'SYNC', module: 'account', detail: `File JSON — Inserted:${inserted} Updated:${updated} Skipped:${skipped}`, req })
-    res.json({ message: 'Sync dari file berjaya', inserted, updated, skipped, total: result.data.length })
+    // ── Reimport bajet dari bajet_2026_data.json ──────────────────────────────
+    let bajetInserted = 0, bajetSkipped = 0
+    try {
+      const bajetPath = resolve(__dirname, '../../uploads/bajet_2026_data.json')
+      const bajetData = JSON.parse(readFileSync(bajetPath, 'utf8'))
+      const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+
+      const by = await prisma.budgetYear.findFirst({ where: { year: bajetData.year } })
+      if (by) {
+        const childRows = await prisma.account.findMany({
+          where: { parentAccNo: { not: null } }, select: { parentAccNo: true }
+        })
+        const groupSet  = new Set(childRows.map(r => r.parentAccNo).filter(Boolean))
+        const allAccNos = new Set((await prisma.account.findMany({ select: { accNo: true } })).map(a => a.accNo))
+
+        const toSave = bajetData.lines.filter(l => !groupSet.has(l.accNo) && allAccNos.has(l.accNo))
+        bajetSkipped = bajetData.lines.length - toSave.length
+
+        await prisma.budgetLine.deleteMany({ where: { budgetYearId: by.id, version: 'ORIGINAL' } })
+        const bajetResult = await prisma.budgetLine.createMany({
+          data: toSave.map(l => ({
+            budgetYearId: by.id, accNo: l.accNo, version: 'ORIGINAL',
+            total: l.annual, createdBy: req.user.id,
+            ...Object.fromEntries(MONTHS.map(m => [m, l[m] ?? 0]))
+          }))
+        })
+        bajetInserted = bajetResult.count
+      }
+    } catch { /* fail senyap — akaun sync tetap berjaya */ }
+
+    await logActivity({ userId: req.user.id, userName: req.user.name, action: 'SYNC', module: 'account', detail: `File JSON — Acc:${inserted}/${updated}/${skipped} Bajet:${bajetInserted}`, req })
+    res.json({
+      message: 'Sync dari file berjaya',
+      accounts: { inserted, updated, skipped, total: result.data.length },
+      bajet: { inserted: bajetInserted, skipped: bajetSkipped },
+      source: 'file',
+    })
   } catch (err) {
     await prisma.syncLog.create({
       data: { syncType: 'accounts_file', status: 'error', recordsCount: 0, errorMsg: err.message },
