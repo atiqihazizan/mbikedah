@@ -93,10 +93,10 @@ export default function FinanceSemakan() {
     queryFn:  () => api.get('/bank-accounts?status=active').then(r => r.data),
   })
 
-  // Fetch accounts untuk dropdown accNo
+  // Fetch accounts untuk dropdown accNo — BELANJA, leaf sahaja (tiada anak/group)
   const { data: accountData } = useQuery({
-    queryKey: ['accounts-belanja'],
-    queryFn:  () => api.get('/accounts', { params: { type: 'BELANJA', status: 'active', limit: 2000 } }).then(r => r.data),
+    queryKey: ['accounts-belanja-leaf'],
+    queryFn:  () => api.get('/accounts', { params: { type: 'BELANJA', status: 'active', leafOnly: 'true', limit: 2000 } }).then(r => r.data),
   })
 
   const billing          = checkData?.data

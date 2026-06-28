@@ -12,9 +12,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export async function listAccounts(req, res, next) {
   try {
-    const { type, search, status, page = 1, limit = 100 } = req.query
+    const { type, search, status, leafOnly, page = 1, limit = 100 } = req.query
     const pg  = Math.max(1, parseInt(page))
     const lim = Math.min(2000, parseInt(limit) || 100)
+
+    // Dapatkan semua accNo yang menjadi parent (group/kumpulan — ada anak di bawah)
+    const childRows = await prisma.account.findMany({
+      where: { parentAccNo: { not: null } },
+      select: { parentAccNo: true },
+    })
+    const groupSet = new Set(childRows.map((r) => r.parentAccNo).filter(Boolean))
 
     const where = {}
     if (type)   where.accType  = type.toUpperCase()
@@ -26,6 +33,8 @@ export async function listAccounts(req, res, next) {
         { name:  { contains: search } },
       ]
     }
+    // leafOnly=true — hanya akaun paling bawah (tiada anak), sesuai untuk pilih kod bajet billing
+    if (leafOnly === 'true') where.accNo = { notIn: [...groupSet] }
 
     // where tanpa filter type — untuk kiraan keseluruhan hasil/belanja
     const whereBase = {}
@@ -33,7 +42,7 @@ export async function listAccounts(req, res, next) {
     if (status === 'inactive') whereBase.isActive = false
     if (search) whereBase.OR = where.OR
 
-    const [total, data, totalHasil, totalBelanja, childRows] = await Promise.all([
+    const [total, data, totalHasil, totalBelanja] = await Promise.all([
       prisma.account.count({ where }),
       prisma.account.findMany({
         where,
@@ -43,10 +52,8 @@ export async function listAccounts(req, res, next) {
       }),
       prisma.account.count({ where: { ...whereBase, accType: 'HASIL' } }),
       prisma.account.count({ where: { ...whereBase, accType: 'BELANJA' } }),
-      prisma.account.findMany({ where: { parentAccNo: { not: null } }, select: { parentAccNo: true } }),
     ])
 
-    const groupSet = new Set(childRows.map((r) => r.parentAccNo).filter(Boolean))
     const dataWithGroup = data.map((a) => ({ ...a, isGroup: groupSet.has(a.accNo) }))
 
     res.json({ data: dataWithGroup, total, page: pg, totalPages: Math.ceil(total / lim), totalHasil, totalBelanja })
