@@ -1,7 +1,12 @@
 import axios from 'axios'
+import { readFileSync } from 'fs'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import { z } from 'zod'
 import prisma from '../lib/prisma.js'
 import { logActivity } from '../utils/activityLog.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 // ─── List ─────────────────────────────────────────────────────────────────────
 
@@ -224,13 +229,13 @@ export async function syncFromAutocount(req, res, next) {
 
         if (!existing) {
           await tx.account.create({
-            data: { accNo: acc.accountCode, name: acc.accountName, accType, parentAccNo: acc.parentAccNo ?? null, level, syncedAt: new Date() },
+            data: { accNo: acc.accountCode, name: acc.accountName, accType, parentAccNo: acc.parentAccNo ?? null, level, isActive: true, syncedAt: new Date() },
           })
           inserted++
         } else {
           await tx.account.update({
             where: { accNo: acc.accountCode },
-            data:  { name: acc.accountName, accType, parentAccNo: acc.parentAccNo ?? null, level, syncedAt: new Date() },
+            data:  { name: acc.accountName, accType, parentAccNo: acc.parentAccNo ?? null, level, isActive: true, syncedAt: new Date() },
           })
           updated++
         }
@@ -246,6 +251,76 @@ export async function syncFromAutocount(req, res, next) {
   } catch (err) {
     await prisma.syncLog.create({
       data: { syncType: 'accounts', status: 'error', recordsCount: 0, errorMsg: err.message },
+    }).catch(() => {})
+    next(err)
+  }
+}
+
+// ─── Sync from local JSON file ────────────────────────────────────────────────
+
+export async function syncFromFile(req, res, next) {
+  try {
+    const filePath = resolve(__dirname, '../../../../account.json')
+    let rawList
+    try {
+      const content = readFileSync(filePath, 'utf8')
+      const parsed = JSON.parse(content)
+      rawList = parsed.data ?? parsed
+    } catch {
+      return res.status(404).json({ message: 'File account.json tidak dijumpai dalam server' })
+    }
+
+    if (!Array.isArray(rawList)) {
+      return res.status(400).json({ message: 'Format file account.json tidak sah' })
+    }
+
+    const schema = z.array(z.object({
+      accountCode:  z.string(),
+      accountName:  z.string(),
+      accountType:  z.string(),
+      parentAccNo:  z.string().nullable().optional(),
+      currencyCode: z.string().optional(),
+    }))
+
+    const result = schema.safeParse(rawList)
+    if (!result.success) {
+      return res.status(400).json({ message: 'Data dalam file tidak sah', errors: result.error.flatten() })
+    }
+
+    let inserted = 0, updated = 0, skipped = 0
+
+    await prisma.$transaction(async (tx) => {
+      for (const acc of result.data) {
+        const accType = mapAccType(acc.accountType)
+        if (!accType) { skipped++; continue }
+
+        const level    = deriveLevel(acc.accountCode, acc.parentAccNo ?? null)
+        const existing = await tx.account.findUnique({ where: { accNo: acc.accountCode } })
+
+        if (!existing) {
+          await tx.account.create({
+            data: { accNo: acc.accountCode, name: acc.accountName, accType, parentAccNo: acc.parentAccNo ?? null, level, isActive: true, syncedAt: new Date() },
+          })
+          inserted++
+        } else {
+          await tx.account.update({
+            where: { accNo: acc.accountCode },
+            data:  { name: acc.accountName, accType, parentAccNo: acc.parentAccNo ?? null, level, isActive: true, syncedAt: new Date() },
+          })
+          updated++
+        }
+      }
+    })
+
+    await prisma.syncLog.create({
+      data: { syncType: 'accounts_file', status: 'success', recordsCount: result.data.length },
+    })
+
+    await logActivity({ userId: req.user.id, userName: req.user.name, action: 'SYNC', module: 'account', detail: `File JSON — Inserted:${inserted} Updated:${updated} Skipped:${skipped}`, req })
+    res.json({ message: 'Sync dari file berjaya', inserted, updated, skipped, total: result.data.length })
+  } catch (err) {
+    await prisma.syncLog.create({
+      data: { syncType: 'accounts_file', status: 'error', recordsCount: 0, errorMsg: err.message },
     }).catch(() => {})
     next(err)
   }

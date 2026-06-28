@@ -253,7 +253,9 @@ function SyncResultDialog({ open, onClose, result }) {
             </div>
           ))}
         </div>
-        <p className="text-xs text-gray-400 text-center mt-2">Jumlah dari AutoCount: {result?.total ?? 0} rekod</p>
+        <p className="text-xs text-gray-400 text-center mt-2">
+          {result?.source === 'file' ? 'Sumber: File account.json' : 'Sumber: AutoCount'} · {result?.total ?? 0} rekod
+        </p>
         <DialogFooter>
           <Button onClick={onClose} className="w-full">Tutup</Button>
         </DialogFooter>
@@ -337,6 +339,15 @@ export default function Akaun() {
       setSyncResult(res.data)
     },
     onError: (err) => toast.error(err.response?.data?.message ?? 'Sync gagal'),
+  })
+
+  const syncFileMut = useMutation({
+    mutationFn: () => api.post('/accounts/sync-file'),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['accounts'] })
+      setSyncResult({ ...res.data, source: 'file' })
+    },
+    onError: (err) => toast.error(err.response?.data?.message ?? 'Sync dari file gagal'),
   })
 
   const [actualYear, setActualYear] = useState(new Date().getFullYear())
@@ -445,6 +456,18 @@ export default function Akaun() {
                 {syncActualMut.isPending ? 'Menyegerak...' : 'Sync'}
               </Button>
             </div>
+          </div>
+
+          {/* Sync dari File JSON */}
+          <div className="flex items-center justify-between rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 sm:col-span-2">
+            <div>
+              <p className="text-sm font-medium text-gray-700">Kod Akaun (File JSON)</p>
+              <p className="text-xs text-gray-400 mt-0.5">Segerak dari <span className="font-mono">account.json</span> dalam server — set aktif=true untuk semua akaun</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => syncFileMut.mutate()} disabled={syncFileMut.isPending}>
+              {syncFileMut.isPending ? <Spinner size={14} /> : <RefreshCw className="w-3.5 h-3.5" />}
+              {syncFileMut.isPending ? 'Menyegerak...' : 'Sync File'}
+            </Button>
           </div>
         </div>
       </div>
