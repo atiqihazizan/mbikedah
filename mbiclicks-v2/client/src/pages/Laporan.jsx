@@ -313,16 +313,12 @@ const GRP_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 // ─── Sheet: Sub Hasil ─────────────────────────────────────────────────────────
 // ─── Sheet: Sub Hasil & Sub Belanja (dikongsi) ───────────────────────────────
-function SheetSubAkaun({ lines, budgetYear, type }) {
+function SheetSubAkaun({ lines, budgetYear, type, currentMonth }) {
   const label  = type === 'HASIL' ? 'HASIL' : 'BELANJA'
   const belanjaAll = useMemo(() => lines.filter((l) => l.accType === type), [lines, type])
 
-  const ytdMonth = useMemo(() => {
-    let last = 0
-    for (const l of belanjaAll)
-      MKEYS.forEach((m, i) => { if ((l.actualMonths?.[m] ?? 0) !== 0) last = Math.max(last, i + 1) })
-    return last || 5
-  }, [belanjaAll])
+  // Guna currentMonth dari backend (bulan semasa tahun aktif, atau 12 untuk tahun lalu)
+  const ytdMonth = currentMonth ?? 5
 
   const byAccNo  = useMemo(() => Object.fromEntries(belanjaAll.map((l) => [l.accNo, l])), [belanjaAll])
   const children = useMemo(() => {
@@ -712,7 +708,7 @@ export default function Laporan() {
     )
   }
 
-  const { budgetYear, lines = [], prevYears = [] } = reportData ?? {}
+  const { budgetYear, lines = [], prevYears = [], currentMonth } = reportData ?? {}
   const selectedYear = years.find((y) => y.id === effectiveYearId)
 
   return (
@@ -807,8 +803,8 @@ export default function Laporan() {
               <SheetPenyata lines={lines} budgetYear={budgetYear} type="BELANJA" />
             </div>
           )}
-          {activeSheet === 'subhasil'   && <SheetSubAkaun lines={lines} budgetYear={budgetYear} type="HASIL" />}
-          {activeSheet === 'subbelanja' && <SheetSubAkaun lines={lines} budgetYear={budgetYear} type="BELANJA" />}
+          {activeSheet === 'subhasil'   && <SheetSubAkaun lines={lines} budgetYear={budgetYear} type="HASIL"   currentMonth={currentMonth} />}
+          {activeSheet === 'subbelanja' && <SheetSubAkaun lines={lines} budgetYear={budgetYear} type="BELANJA" currentMonth={currentMonth} />}
           {activeSheet.startsWith('layout-') && (
             <SheetCustomLayout layout={activeLayout} lines={lines} />
           )}

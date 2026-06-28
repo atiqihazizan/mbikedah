@@ -469,8 +469,15 @@ export async function getReport(req, res, next) {
       }
     }
 
-    // Actual data — per month per accNo
-    const actuals = await prisma.actualData.findMany({ where: { year: budgetYear.year } })
+    // Filter hingga bulan semasa sahaja (Jan–bulan semasa tahun aktif)
+    const now          = new Date()
+    const currentMonth = budgetYear.status === 'ACTIVE' ? now.getMonth() + 1 : 12  // bulan 1–12
+    const cutoffDate   = new Date(budgetYear.year, currentMonth, 1)  // awal bulan SELEPAS bulan semasa
+
+    // Actual data — per month per accNo, hingga bulan semasa
+    const actuals = await prisma.actualData.findMany({
+      where: { year: budgetYear.year, month: { lte: currentMonth } },
+    })
     const actualMonthMap = new Map()
     for (const a of actuals) {
       if (!actualMonthMap.has(a.accNo)) {
@@ -480,11 +487,11 @@ export async function getReport(req, res, next) {
       if (monthName) actualMonthMap.get(a.accNo)[monthName] += Number(a.amount)
     }
 
-    // Permohonan diluluskan
+    // Permohonan diluluskan — hingga bulan semasa
     const approved = await prisma.billing.findMany({
       where: {
         status: { in: ['APPROVED', 'PAID'] },
-        createdAt: { gte: new Date(budgetYear.year, 0, 1), lt: new Date(budgetYear.year + 1, 0, 1) },
+        createdAt: { gte: new Date(budgetYear.year, 0, 1), lt: cutoffDate },
         accNo: { not: null },
       },
       select: { accNo: true, amount: true },
@@ -568,6 +575,6 @@ export async function getReport(req, res, next) {
       prevYears.push({ year: py.year, byAccNo })
     }
 
-    res.json({ budgetYear, lines, prevYears })
+    res.json({ budgetYear, lines, prevYears, currentMonth })
   } catch (err) { next(err) }
 }
