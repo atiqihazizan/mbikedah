@@ -300,8 +300,8 @@ export default function PermohonanDetail() {
   })
 
   const { data: accountData } = useQuery({
-    queryKey: ['accounts-belanja'],
-    queryFn:  () => api.get('/accounts', { params: { type: 'BELANJA', status: 'active', limit: 2000 } }).then(r => r.data),
+    queryKey: ['accounts-belanja-leaf'],
+    queryFn:  () => api.get('/accounts', { params: { type: 'BELANJA', status: 'active', leafOnly: 'true', limit: 2000 } }).then(r => r.data),
   })
 
   const billing = data?.data
