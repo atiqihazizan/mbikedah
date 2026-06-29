@@ -19,7 +19,8 @@ const STATUS_CONFIG = {
   PENDING_FINANCE_APPROVAL:   { label: 'Kelulusan Kewangan', color: 'bg-purple-100 text-purple-700', icon: Clock       },
   PENDING_CEO_FINAL:          { label: 'Kelulusan Muktamad', color: 'bg-rose-100 text-rose-700',    icon: Clock       },
   APPROVED:                   { label: 'Diluluskan',        color: 'bg-green-100 text-green-700',  icon: CheckCircle },
-  PAID:                       { label: 'Dibayar',           color: 'bg-teal-100 text-teal-700',    icon: CheckCircle },
+  PARTIAL_PAID:               { label: 'Bayaran Ansuran',   color: 'bg-cyan-100 text-cyan-700',    icon: Clock       },
+  PAID:                       { label: 'Selesai Dibayar',   color: 'bg-teal-100 text-teal-700',    icon: CheckCircle },
   REJECTED:                   { label: 'Ditolak',           color: 'bg-red-100 text-red-700',      icon: XCircle     },
   RETURNED:                   { label: 'Dikembalikan',      color: 'bg-orange-100 text-orange-700', icon: AlertCircle },
 }

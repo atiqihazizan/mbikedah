@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Eye, FileText } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
-import { billingApi, STATUS_TABS } from '@/lib/billing'
+import { billingApi, STATUS_TABS, BILLING_STATUS } from '@/lib/billing'
 import { Button, Spinner } from '@/components/ui'
 
 function fmtDate(d) {
