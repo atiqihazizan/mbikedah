@@ -11,6 +11,7 @@ import Laporan from '@/pages/Laporan'
 import Pekeliling from '@/pages/Pekeliling'
 import Tetapan from '@/pages/Tetapan'
 import Akaun from '@/pages/Akaun'
+import AkaunBank from '@/pages/AkaunBank'
 import Kalendar from '@/pages/Kalendar'
 import LaporanLayout from '@/pages/LaporanLayout'
 import Permohonan from '@/pages/Permohonan'
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/pekeliling" element={<Pekeliling />} />
             <Route path="/tetapan" element={<Tetapan />} />
             <Route path="/akaun" element={<Akaun />} />
+            <Route path="/akaun-bank" element={<AkaunBank />} />
             <Route path="/kalendar" element={<Kalendar />} />
           </Route>
         </Routes>

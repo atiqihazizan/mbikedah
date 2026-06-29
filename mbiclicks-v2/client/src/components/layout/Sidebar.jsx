@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Bell,
-  Calendar, BarChart3, Settings, ChevronRight, LogOut, BookOpen, PiggyBank,
+  Calendar, BarChart3, Settings, ChevronRight, LogOut, BookOpen, PiggyBank, Landmark,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/api'
@@ -21,8 +21,9 @@ const kewanganItems = [
 
 // Finance & admin sahaja
 const financeOnlyItems = [
-  { to: '/laporan', icon: BarChart3, label: 'Laporan'   },
-  { to: '/akaun',   icon: BookOpen,  label: 'Kod Akaun' },
+  { to: '/laporan',    icon: BarChart3, label: 'Laporan'    },
+  { to: '/akaun',      icon: BookOpen,  label: 'Kod Akaun'  },
+  { to: '/akaun-bank', icon: Landmark,  label: 'Akaun Bank' },
 ]
 
 export default function Sidebar({ open, onClose }) {
