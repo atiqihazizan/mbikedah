@@ -58,12 +58,14 @@ function getStepConfig(billing) {
 }
 
 // ─── Helper: scope permohonan mengikut role ───────────────────────────────────
-// staff        : permohonan sendiri, semua status
-// hod          : jabatan sendiri, PENDING_HOD sahaja
-// ceo          : semua, PENDING_CEO / PENDING_CEO_FINAL
-// finance      : semua, CHECK/VERIFY/APPROVAL/APPROVED/PARTIAL_PAID (belum PAID)
-// finance_hod  : (jabatan + PENDING_HOD) ATAU (PENDING_FINANCE_APPROVAL / PENDING_CEO_FINAL)
-// admin        : semua, semua status
+// Setiap role SENTIASA nampak permohonan SENDIRI (semua status) sebagai pemohon.
+// Tambahan mengikut role:
+//   staff       : permohonan sendiri sahaja
+//   hod         : + jabatan sendiri PENDING_HOD
+//   ceo         : + semua PENDING_CEO / PENDING_CEO_FINAL
+//   finance     : + semua CHECK/VERIFY/APPROVAL/APPROVED/PARTIAL_PAID
+//   finance_hod : + jabatan PENDING_HOD + semua PENDING_FINANCE_APPROVAL/PENDING_CEO_FINAL
+//   admin       : semua, tiada had
 
 const FINANCE_SCOPE    = ['PENDING_FINANCE_CHECK', 'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL', 'APPROVED', 'PARTIAL_PAID']
 const FIN_HOD_APPROVAL = ['PENDING_FINANCE_APPROVAL', 'PENDING_CEO_FINAL']
@@ -77,44 +79,67 @@ export function buildBillingScope(user, statusFilter) {
     return w
   }
 
+  // Own branch — pemohon sentiasa nampak permohonan sendiri
+  const ownBranch = statusFilter
+    ? { applicantId: user.id, status: statusFilter }
+    : { applicantId: user.id }
+
+  // Tanpa filter (tab Semua): own + role-based scope
+  if (!statusFilter) {
+    if (role === 'hod') {
+      return { isDeleted: false, OR: [ownBranch, { departmentId: user.departmentId, status: { in: ['PENDING_HOD'] } }] }
+    }
+    if (role === 'ceo') {
+      return { isDeleted: false, OR: [ownBranch, { status: { in: ['PENDING_CEO', 'PENDING_CEO_FINAL'] } }] }
+    }
+    if (role === 'finance') {
+      return { isDeleted: false, OR: [ownBranch, { status: { in: FINANCE_SCOPE } }] }
+    }
+    if (role === 'finance_hod') {
+      return {
+        isDeleted: false,
+        OR: [
+          ownBranch,
+          { departmentId: user.departmentId, status: 'PENDING_HOD' },
+          { status: { in: FIN_HOD_APPROVAL } },
+        ],
+      }
+    }
+    // staff: own sahaja
+    return { isDeleted: false, applicantId: user.id }
+  }
+
+  // Ada status filter — semak sama ada dalam role scope atau tidak
+  const inHodScope        = ['PENDING_HOD'].includes(statusFilter)
+  const inCeoScope        = ['PENDING_CEO', 'PENDING_CEO_FINAL'].includes(statusFilter)
+  const inFinanceScope    = FINANCE_SCOPE.includes(statusFilter)
+  const inFinHodScope     = ['PENDING_HOD', ...FIN_HOD_APPROVAL].includes(statusFilter)
+
   if (role === 'hod') {
-    const allowed = ['PENDING_HOD']
-    const s = statusFilter ? (allowed.includes(statusFilter) ? statusFilter : null) : { in: allowed }
-    return { isDeleted: false, departmentId: user.departmentId, status: s ?? { in: [] } }
+    if (!inHodScope) return { isDeleted: false, ...ownBranch }  // luar scope: own sahaja
+    return { isDeleted: false, OR: [ownBranch, { departmentId: user.departmentId, status: statusFilter }] }
   }
 
   if (role === 'ceo') {
-    const allowed = ['PENDING_CEO', 'PENDING_CEO_FINAL']
-    const s = statusFilter ? (allowed.includes(statusFilter) ? statusFilter : null) : { in: allowed }
-    return { isDeleted: false, status: s ?? { in: [] } }
+    if (!inCeoScope) return { isDeleted: false, ...ownBranch }
+    return { isDeleted: false, OR: [ownBranch, { status: statusFilter }] }
   }
 
   if (role === 'finance') {
-    const s = statusFilter ? (FINANCE_SCOPE.includes(statusFilter) ? statusFilter : null) : { in: FINANCE_SCOPE }
-    return { isDeleted: false, status: s ?? { in: [] } }
+    if (!inFinanceScope) return { isDeleted: false, ...ownBranch }
+    return { isDeleted: false, OR: [ownBranch, { status: statusFilter }] }
   }
 
   if (role === 'finance_hod') {
-    const allAllowed = ['PENDING_HOD', ...FIN_HOD_APPROVAL]
-    if (statusFilter) {
-      if (!allAllowed.includes(statusFilter)) return { isDeleted: false, status: { in: [] } }
-      if (statusFilter === 'PENDING_HOD')
-        return { isDeleted: false, departmentId: user.departmentId, status: 'PENDING_HOD' }
-      return { isDeleted: false, status: statusFilter }
+    if (!inFinHodScope) return { isDeleted: false, ...ownBranch }
+    if (statusFilter === 'PENDING_HOD') {
+      return { isDeleted: false, OR: [ownBranch, { departmentId: user.departmentId, status: 'PENDING_HOD' }] }
     }
-    return {
-      isDeleted: false,
-      OR: [
-        { departmentId: user.departmentId, status: 'PENDING_HOD' },
-        { status: { in: FIN_HOD_APPROVAL } },
-      ],
-    }
+    return { isDeleted: false, OR: [ownBranch, { status: statusFilter }] }
   }
 
-  // default: owner — semua status permohonan sendiri
-  const w = { isDeleted: false, applicantId: user.id }
-  if (statusFilter) w.status = statusFilter
-  return w
+  // staff: own + filter
+  return { isDeleted: false, ...ownBranch }
 }
 
 // ─── Helper: jana refNo ───────────────────────────────────────────────────────
