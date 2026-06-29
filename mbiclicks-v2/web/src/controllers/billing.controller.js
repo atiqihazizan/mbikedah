@@ -57,6 +57,66 @@ function getStepConfig(billing) {
   }
 }
 
+// ─── Helper: scope permohonan mengikut role ───────────────────────────────────
+// staff        : permohonan sendiri, semua status
+// hod          : jabatan sendiri, PENDING_HOD sahaja
+// ceo          : semua, PENDING_CEO / PENDING_CEO_FINAL
+// finance      : semua, CHECK/VERIFY/APPROVAL/APPROVED/PARTIAL_PAID (belum PAID)
+// finance_hod  : (jabatan + PENDING_HOD) ATAU (PENDING_FINANCE_APPROVAL / PENDING_CEO_FINAL)
+// admin        : semua, semua status
+
+const FINANCE_SCOPE    = ['PENDING_FINANCE_CHECK', 'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL', 'APPROVED', 'PARTIAL_PAID']
+const FIN_HOD_APPROVAL = ['PENDING_FINANCE_APPROVAL', 'PENDING_CEO_FINAL']
+
+export function buildBillingScope(user, statusFilter) {
+  const role = user.role?.slug
+
+  if (role === 'admin') {
+    const w = { isDeleted: false }
+    if (statusFilter) w.status = statusFilter
+    return w
+  }
+
+  if (role === 'hod') {
+    const allowed = ['PENDING_HOD']
+    const s = statusFilter ? (allowed.includes(statusFilter) ? statusFilter : null) : { in: allowed }
+    return { isDeleted: false, departmentId: user.departmentId, status: s ?? { in: [] } }
+  }
+
+  if (role === 'ceo') {
+    const allowed = ['PENDING_CEO', 'PENDING_CEO_FINAL']
+    const s = statusFilter ? (allowed.includes(statusFilter) ? statusFilter : null) : { in: allowed }
+    return { isDeleted: false, status: s ?? { in: [] } }
+  }
+
+  if (role === 'finance') {
+    const s = statusFilter ? (FINANCE_SCOPE.includes(statusFilter) ? statusFilter : null) : { in: FINANCE_SCOPE }
+    return { isDeleted: false, status: s ?? { in: [] } }
+  }
+
+  if (role === 'finance_hod') {
+    const allAllowed = ['PENDING_HOD', ...FIN_HOD_APPROVAL]
+    if (statusFilter) {
+      if (!allAllowed.includes(statusFilter)) return { isDeleted: false, status: { in: [] } }
+      if (statusFilter === 'PENDING_HOD')
+        return { isDeleted: false, departmentId: user.departmentId, status: 'PENDING_HOD' }
+      return { isDeleted: false, status: statusFilter }
+    }
+    return {
+      isDeleted: false,
+      OR: [
+        { departmentId: user.departmentId, status: 'PENDING_HOD' },
+        { status: { in: FIN_HOD_APPROVAL } },
+      ],
+    }
+  }
+
+  // default: owner — semua status permohonan sendiri
+  const w = { isDeleted: false, applicantId: user.id }
+  if (statusFilter) w.status = statusFilter
+  return w
+}
+
 // ─── Helper: jana refNo ───────────────────────────────────────────────────────
 async function generateRefNo() {
   const year  = new Date().getFullYear()
@@ -92,24 +152,8 @@ export async function listBillings(req, res, next) {
     const { status, page = 1, limit = 20 } = req.query
     const pg  = Math.max(1, parseInt(page))
     const lim = Math.min(100, parseInt(limit) || 20)
-    const user = req.user
 
-    const where = {}
-
-    // Finance & HOD roles nampak semua dalam scope mereka
-    // Staff & HOD hanya nampak permohonan sendiri / jabatan
-    const role      = user.role?.slug
-    const isFinance = ['finance', 'finance_hod', 'admin'].includes(role)
-    const isHod     = ['hod', 'finance_hod'].includes(role)
-
-    if (!isFinance && !isHod) {
-      where.applicantId = user.id
-    } else if (isHod && !isFinance) {
-      where.departmentId = user.departmentId
-    }
-
-    if (status) where.status = status
-    where.isDeleted = false
+    const where = buildBillingScope(req.user, status || null)
 
     const [total, data] = await Promise.all([
       prisma.billing.count({ where }),

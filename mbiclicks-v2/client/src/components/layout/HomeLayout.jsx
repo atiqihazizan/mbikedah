@@ -8,12 +8,12 @@ import { APP_NAME, APP_TAGLINE } from '@/lib/constants'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button, Label, Spinner } from '@/components/ui'
 
 const BASE_NAV = [
-  { to: '/dashboard',  label: 'Utama'      },
-  { to: '/permohonan', label: 'Permohonan' },
-  { to: '/pekeliling', label: 'Pekeliling' },
-  { to: '/kalendar',   label: 'Kalendar'   },
-  { to: '/bajet',      label: 'Bajet'      },
-  { to: '/laporan',    label: 'Laporan'    },
+  { to: '/dashboard',  label: 'Utama'                         },
+  { to: '/permohonan', label: 'Permohonan'                    },
+  { to: '/pekeliling', label: 'Pekeliling'                    },
+  { to: '/kalendar',   label: 'Kalendar'                      },
+  { to: '/bajet',      label: 'Bajet',      financeOnly: true },
+  { to: '/laporan',    label: 'Laporan',    financeOnly: true },
 ]
 
 function ChangePasswordDialog({ open, onClose }) {
@@ -89,11 +89,11 @@ function HomeTopbar() {
   const { user, logout, hasRole } = useAuthStore()
   const isFinance = hasRole('finance_hod', 'finance', 'admin')
   const navItems = BASE_NAV
-    .filter((item) => item.to !== '/laporan' || isFinance)
+    .filter((item) => !item.financeOnly || isFinance)
     .concat(hasRole('admin') ? [{ to: '/tetapan', label: 'Tetapan' }] : [])
-  const [userOpen,    setUserOpen]    = useState(false)
-  const [notifOpen,   setNotifOpen]   = useState(false)
-  const [showChgPwd,  setShowChgPwd]  = useState(false)
+  const [userOpen,   setUserOpen]   = useState(false)
+  const [notifOpen,  setNotifOpen]  = useState(false)
+  const [showChgPwd, setShowChgPwd] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const initials = user?.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? '?'

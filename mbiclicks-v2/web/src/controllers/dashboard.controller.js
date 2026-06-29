@@ -1,18 +1,25 @@
 import prisma from '../lib/prisma.js'
+import { buildBillingScope } from './billing.controller.js'
 
 export async function getDashboard(req, res, next) {
   try {
     const user = req.user
 
-    // Billing stats — jangan count soft deleted
+    // Scope sama seperti listBillings — non-owner hanya nampak yang belum diambil tindakan
+    const scopeWhere = buildBillingScope(user, null)
+
+    // Billing stats — ikut scope user
     const billingStats = {}
     const billingStatuses = [
       'DRAFT',
       'PENDING_HOD',
+      'PENDING_CEO',
       'PENDING_FINANCE_CHECK',
       'PENDING_FINANCE_VERIFY',
       'PENDING_FINANCE_APPROVAL',
+      'PENDING_CEO_FINAL',
       'APPROVED',
+      'PARTIAL_PAID',
       'PAID',
       'REJECTED',
       'RETURNED',
@@ -20,15 +27,15 @@ export async function getDashboard(req, res, next) {
 
     for (const status of billingStatuses) {
       billingStats[status] = await prisma.billing.count({
-        where: { status, isDeleted: false },
+        where: { ...scopeWhere, status },
       })
     }
 
-    const totalBilling = await prisma.billing.count({ where: { isDeleted: false } })
+    const totalBilling = await prisma.billing.count({ where: scopeWhere })
 
-    // Recent billings — untuk user view maklumat permohonan terbaru (diurutkan by updated, bukan created)
+    // Recent billings — ikut scope user
     const recentBillings = await prisma.billing.findMany({
-      where: { isDeleted: false },
+      where: scopeWhere,
       take: 5,
       orderBy: { updatedAt: 'desc' },
       select: {
@@ -43,12 +50,11 @@ export async function getDashboard(req, res, next) {
       },
     })
 
-    // Aggregate totals
-    const totalAmount = await prisma.$queryRaw`
-      SELECT SUM(CAST(total_amount AS DECIMAL(15,2))) as total
-      FROM billings
-      WHERE is_deleted = false AND status IN ('APPROVED', 'PAID')
-    `
+    // Aggregate totals — ikut scope user
+    const totalAmount = await prisma.billing.aggregate({
+      where: { ...scopeWhere, status: { in: ['APPROVED', 'PAID'] } },
+      _sum: { totalAmount: true },
+    })
 
     // User stats
     const totalUsers = await prisma.user.count()
@@ -56,11 +62,13 @@ export async function getDashboard(req, res, next) {
 
     // Summary untuk cards
     const pendingApproval = billingStats.PENDING_HOD +
+      billingStats.PENDING_CEO +
       billingStats.PENDING_FINANCE_CHECK +
       billingStats.PENDING_FINANCE_VERIFY +
-      billingStats.PENDING_FINANCE_APPROVAL
+      billingStats.PENDING_FINANCE_APPROVAL +
+      billingStats.PENDING_CEO_FINAL
 
-    const approvedAmount = totalAmount[0]?.total ?? 0
+    const approvedAmount = totalAmount._sum?.totalAmount ?? 0
 
     res.json({
       stats: {
@@ -68,7 +76,6 @@ export async function getDashboard(req, res, next) {
         billingByStatus: billingStats,
         pendingApproval,
         approvedAmount: parseFloat(approvedAmount),
-        totalAmount,
       },
       recent: recentBillings,
       system: {

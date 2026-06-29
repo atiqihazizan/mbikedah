@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import ApprovalPageBase from '@/components/ApprovalPageBase'
-import { billingApi } from '@/lib/billing'
+import api from '@/lib/api'
 
 export default function FinanceKelulusan() {
   const { id } = useParams()
@@ -22,7 +22,7 @@ export default function FinanceKelulusan() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['billing-finance-approval', id],
-    queryFn: () => billingApi.get(`/billings/${id}/kelulusan-kewangan`).then(r => r.data),
+    queryFn: () => api.get(`/billings/${id}/kelulusan-kewangan`).then(r => r.data),
     retry: (count, err) => err?.response?.status !== 403 && err?.response?.status !== 404 && count < 2,
   })
 

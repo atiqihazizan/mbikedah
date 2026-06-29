@@ -14,13 +14,9 @@ const navItems = [
   { to: '/kalendar',  icon: Calendar,         label: 'Kalendar',   module: 'event'     },
 ]
 
-// Kewangan — semua role boleh lihat Bajet
-const kewanganItems = [
-  { to: '/bajet', icon: PiggyBank, label: 'Bajet' },
-]
-
 // Finance & admin sahaja
 const financeOnlyItems = [
+  { to: '/bajet',      icon: PiggyBank, label: 'Bajet'      },
   { to: '/laporan',    icon: BarChart3, label: 'Laporan'    },
   { to: '/akaun',      icon: BookOpen,  label: 'Kod Akaun'  },
   { to: '/akaun-bank', icon: Landmark,  label: 'Akaun Bank' },
@@ -107,12 +103,13 @@ export default function Sidebar({ open, onClose }) {
           </NavLink>
         ))}
 
-        {/* Kewangan — semua role nampak Bajet; finance/admin nampak Laporan & Kod Akaun */}
+        {/* Kewangan — finance & admin sahaja */}
+        {isFinance && (
         <>
           <div className="pt-3 pb-1">
             <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest px-3">Kewangan</p>
           </div>
-          {[...kewanganItems, ...(isFinance ? financeOnlyItems : [])].map((item) => (
+          {financeOnlyItems.map((item) => (
             <NavLink key={item.to} to={item.to} onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all group ${
@@ -130,6 +127,7 @@ export default function Sidebar({ open, onClose }) {
             </NavLink>
           ))}
         </>
+        )}
 
         {isAdmin && (
           <>
