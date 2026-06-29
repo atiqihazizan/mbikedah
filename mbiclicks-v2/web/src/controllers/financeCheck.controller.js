@@ -224,7 +224,8 @@ const bankSchema = z.object({
   code:     z.string().min(1).max(20).toUpperCase(),
   name:     z.string().min(1).max(100),
   bankName: z.string().min(1).max(100),
-  accNo:    z.string().min(1).max(50),
+  accNo:    z.string().max(50).nullable().optional(),
+  type:     z.enum(['BANK', 'PETTY_CASH']).default('BANK'),
 })
 
 export async function createBankAccount(req, res, next) {

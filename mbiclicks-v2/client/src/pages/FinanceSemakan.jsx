@@ -169,7 +169,20 @@ export default function FinanceSemakan() {
   }
 
   const accOpts = accounts.map(a => ({ value: a.accNo, label: a.accNo, sub: a.name }))
-  const bankOpts = banks.map(b => ({ value: String(b.id), label: b.name, sub: `${b.bankName} · ${b.accNo}` }))
+  const bankOpts = banks.map(b => ({
+    value: String(b.id),
+    label: b.name,
+    sub: b.type === 'PETTY_CASH' ? 'Panjar / Tunai' : `${b.bankName} · ${b.accNo}`,
+  }))
+
+  const selectedBank = payingBankId ? banks.find(b => String(b.id) === payingBankId) : null
+
+  function handleBankChange(v) {
+    setPayingBankId(v ?? '')
+    const bank = banks.find(b => String(b.id) === v)
+    if (bank?.type === 'PETTY_CASH') setPaymentMethod('CASH')
+    else if (paymentMethod === 'CASH') setPaymentMethod('') // reset if was cash
+  }
 
   // Semak baki tidak mencukupi untuk mana-mana item (hanya jika data ada)
   const hasBudgetIssue = items.some(item => {
@@ -297,9 +310,9 @@ export default function FinanceSemakan() {
               <SearchableSelect
                 className="mt-1"
                 value={payingBankId || null}
-                onChange={(v) => setPayingBankId(v ?? '')}
+                onChange={handleBankChange}
                 options={bankOpts}
-                placeholder="Pilih bank..."
+                placeholder="Pilih bank / panjar..."
                 clearable
                 renderOption={opt => (
                   <div>
@@ -308,35 +321,43 @@ export default function FinanceSemakan() {
                   </div>
                 )}
               />
-              {payingBankId && (
+              {selectedBank && (
                 <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
                   <Building2 className="w-3.5 h-3.5 shrink-0" />
-                  <span>{banks.find(b => String(b.id) === payingBankId)?.bankName} · {banks.find(b => String(b.id) === payingBankId)?.accNo}</span>
+                  {selectedBank.type === 'PETTY_CASH'
+                    ? <span className="text-amber-600 font-medium">Panjar / Tunai — bayaran CASH automatik</span>
+                    : <span>{selectedBank.bankName} · {selectedBank.accNo}</span>}
                 </div>
               )}
             </div>
 
             <div>
               <Label>Jenis Bayaran <span className="text-red-500">*</span></Label>
-              <div className="mt-1 grid grid-cols-1 gap-2">
-                {PAYMENT_METHODS.map(m => (
-                  <label key={m.value}
-                    className={`flex items-center gap-2.5 border rounded-lg px-3 py-2.5 cursor-pointer transition-colors
-                      ${paymentMethod === m.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                    <input type="radio" name="paymentMethod" value={m.value}
-                      checked={paymentMethod === m.value}
-                      onChange={() => setPaymentMethod(m.value)}
-                      className="hidden" />
-                    <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0
-                      ${paymentMethod === m.value ? 'border-blue-500' : 'border-gray-300'}`}>
-                      {paymentMethod === m.value && <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
-                    </div>
-                    <span className={`text-sm ${paymentMethod === m.value ? 'text-blue-700 font-medium' : 'text-gray-600'}`}>
-                      {m.label}
-                    </span>
-                  </label>
-                ))}
-              </div>
+              {selectedBank?.type === 'PETTY_CASH' ? (
+                <div className="mt-1 flex items-center gap-2 px-3 py-2.5 border border-amber-200 bg-amber-50 rounded-lg text-sm text-amber-700 font-medium">
+                  Tunai (auto — panjar dipilih)
+                </div>
+              ) : (
+                <div className="mt-1 grid grid-cols-1 gap-2">
+                  {PAYMENT_METHODS.filter(m => m.value !== 'CASH').map(m => (
+                    <label key={m.value}
+                      className={`flex items-center gap-2.5 border rounded-lg px-3 py-2.5 cursor-pointer transition-colors
+                        ${paymentMethod === m.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                      <input type="radio" name="paymentMethod" value={m.value}
+                        checked={paymentMethod === m.value}
+                        onChange={() => setPaymentMethod(m.value)}
+                        className="hidden" />
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0
+                        ${paymentMethod === m.value ? 'border-blue-500' : 'border-gray-300'}`}>
+                        {paymentMethod === m.value && <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                      </div>
+                      <span className={`text-sm ${paymentMethod === m.value ? 'text-blue-700 font-medium' : 'text-gray-600'}`}>
+                        {m.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="col-span-2">

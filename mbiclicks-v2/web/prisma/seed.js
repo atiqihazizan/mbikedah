@@ -1346,6 +1346,38 @@ async function main() {
   }
   console.log('  ✓ Ketua jabatan ditetapkan')
 
+  // ── Bank Accounts ────────────────────────────────────────────────────────────
+  const BANKS = [
+    { code: 'MUM01',  name: 'Bank Muamalat',                        bankName: 'Bank Muamalat Malaysia Berhad', accNo: '02010004544718',  type: 'BANK' },
+    { code: 'MBB01',  name: 'Maybank Alor Setar',                   bankName: 'Maybank',                       accNo: '552022021635',    type: 'BANK' },
+    { code: 'MBB02',  name: 'Maybank Mergong',                      bankName: 'Maybank',                       accNo: '552095231479',    type: 'BANK' },
+    { code: 'MBB03',  name: 'Maybank Ladang Mahang',                bankName: 'Maybank',                       accNo: '552022605570',    type: 'BANK' },
+    { code: 'RHB01',  name: 'RHB',                                  bankName: 'RHB Bank',                      accNo: '25205500010292',  type: 'BANK' },
+    { code: 'CIM01',  name: 'CIMB Mergong',                         bankName: 'CIMB Bank',                     accNo: '8602892627',      type: 'BANK' },
+    { code: 'CIM02',  name: 'CIMB Guar Chempedak',                  bankName: 'CIMB Bank',                     accNo: '8602983896',      type: 'BANK' },
+    { code: 'AFF01',  name: 'Bank Affin',                           bankName: 'Affin Bank',                    accNo: '105230003688',    type: 'BANK' },
+    { code: 'AMB01',  name: 'AmBank',                               bankName: 'AmBank',                        accNo: '8881010808630',   type: 'BANK' },
+    { code: 'BIS01',  name: 'Bank Islam',                           bankName: 'Bank Islam Malaysia Berhad',    accNo: '02011010118337',  type: 'BANK' },
+    { code: 'PKS01',  name: 'Panjar Khas - Sumbangan',              bankName: 'Panjar',                        accNo: null,              type: 'PETTY_CASH' },
+    { code: 'PWR01',  name: 'Panjar Wang Runcit',                   bankName: 'Panjar',                        accNo: null,              type: 'PETTY_CASH' },
+    { code: 'PKS02',  name: 'Panjar Khas - Kenderaan',              bankName: 'Panjar',                        accNo: null,              type: 'PETTY_CASH' },
+    { code: 'PKS03',  name: 'Panjar Khas - Pej. Ketua Eksekutif',  bankName: 'Panjar',                        accNo: null,              type: 'PETTY_CASH' },
+    { code: 'PKS04',  name: 'Panjar Khas - Touch N Go KPE',         bankName: 'Panjar',                        accNo: null,              type: 'PETTY_CASH' },
+    { code: 'PWK01',  name: 'Panjar Wang Khas',                     bankName: 'Panjar',                        accNo: null,              type: 'PETTY_CASH' },
+    { code: 'TUN01',  name: 'Tunai',                                bankName: 'Tunai',                         accNo: null,              type: 'PETTY_CASH' },
+  ]
+
+  let bankInserted = 0
+  for (const b of BANKS) {
+    await prisma.bankAccount.upsert({
+      where: { code: b.code },
+      update: {},
+      create: b,
+    })
+    bankInserted++
+  }
+  console.log(`  ✓ Akaun bank/panjar: ${bankInserted} rekod`)
+
   console.log('\n✅ Seed selesai!')
   console.log('\nLog masuk menggunakan No. Staf:')
   console.log('  Admin:          No. Staf: ADMIN   / Kata Laluan: admin123')
