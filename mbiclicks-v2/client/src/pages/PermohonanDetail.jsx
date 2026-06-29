@@ -10,6 +10,8 @@ import { billingApi, vendorApi, BILLING_STATUS } from '@/lib/billing'
 import { useAuthStore } from '@/store/auth'
 import { Button, Input, Label, Spinner, SearchableSelect } from '@/components/ui'
 import api from '@/lib/api'
+import PaymentModal from '@/components/PaymentModal'
+import PaymentProgress from '@/components/PaymentProgress'
 
 const EMPTY_ITEM   = { accNo: '', description: '', invoiceNo: '', qty: 1, unitCost: '' }
 const EMPTY_VENDOR = { code: '', name: '', type: 'VENDOR', email: '', phone: '', address: '', bankName: '', bankAcc: '', accNo: '' }
@@ -227,47 +229,7 @@ function ActionDialog({ open, action, onClose, onConfirm, isPending }) {
   )
 }
 
-// ─── Modal bayaran ──────────────────────────────────────────────────────────
-function PayDialog({ open, onClose, onConfirm, isPending }) {
-  const [paymentRef, setPaymentRef] = useState('')
-  const [remarks, setRemarks]       = useState('')
-  if (!open) return null
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <CreditCard className="w-5 h-5 text-teal-600" />
-          <h3 className="text-base font-semibold text-gray-900">Rekod Pembayaran</h3>
-        </div>
-        <div className="space-y-3 mb-5">
-          <div>
-            <Label>No. Rujukan Bayaran <span className="text-red-500">*</span></Label>
-            <Input className="mt-1" placeholder="Cth: TRX20241219001" value={paymentRef}
-              onChange={e => setPaymentRef(e.target.value)} />
-          </div>
-          <div>
-            <Label>Catatan</Label>
-            <textarea className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mt-1"
-              rows={2} placeholder="Catatan tambahan..." value={remarks}
-              onChange={e => setRemarks(e.target.value)} />
-          </div>
-        </div>
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose}>Batal</Button>
-          <button
-            disabled={isPending || !paymentRef.trim()}
-            onClick={() => onConfirm(paymentRef, remarks)}
-            className="px-4 py-2 rounded-lg text-white text-sm font-medium bg-teal-600 hover:bg-teal-700 disabled:opacity-50 flex items-center gap-2"
-          >
-            {isPending && <Spinner className="w-4 h-4" />}
-            Rekod Bayaran
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ─── Page Utama ──────────────────────────────────────────────────────────────
 export default function PermohonanDetail() {
@@ -333,7 +295,7 @@ export default function PermohonanDetail() {
   const canHodAct  = isHod && billing?.status === 'PENDING_HOD'
   const canFinAct  = isFinance && ['PENDING_FINANCE_CHECK', 'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL'].includes(billing?.status)
   const canFinAppr = ['finance_hod', 'admin'].includes(roleSlug) && billing?.status === 'PENDING_FINANCE_APPROVAL'
-  const canPay     = isFinance && billing?.status === 'APPROVED'
+  const canPay     = isFinance && ['APPROVED', 'PARTIAL_PAID'].includes(billing?.status)
   const showActions = canHodAct || canFinAct || canFinAppr
 
   // Mutations
@@ -366,11 +328,6 @@ export default function PermohonanDetail() {
     onError:    (e) => toast.error(e.response?.data?.message ?? 'Gagal'),
   })
 
-  const payMut = useMutation({
-    mutationFn: ({ paymentRef, remarks }) => billingApi.pay(id, { paymentRef, remarks }),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['billing', id] }); qc.invalidateQueries({ queryKey: ['billings'] }); toast.success('Pembayaran direkodkan'); setDialog(null) },
-    onError:    (e) => toast.error(e.response?.data?.message ?? 'Gagal'),
-  })
 
   const deleteAttMut = useMutation({
     mutationFn: (attId) => billingApi.deleteAtt(id, attId),
@@ -453,7 +410,7 @@ console.log(id, billing);
   if (id && !billing)  return <div className="p-10 text-center text-gray-400">Permohonan tidak dijumpai</div>
 
   // Lock mode: REJECTED, PAID (tidak boleh edit)
-  const isLocked = billing && ['REJECTED', 'PAID'].includes(billing.status)
+  const isLocked = billing && ['REJECTED', 'PAID', 'PARTIAL_PAID'].includes(billing.status)
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -752,17 +709,21 @@ console.log(id, billing);
           </section>
         )}
 
-        {/* Maklumat pembayaran */}
-        {billing?.status === 'PAID' && (
-          <section className="bg-teal-50 border border-teal-200 rounded-lg p-5">
-            <h2 className="text-xs font-semibold text-teal-700 uppercase tracking-wide mb-3">Maklumat Pembayaran</h2>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div><span className="text-gray-500">No. Rujukan</span><p className="font-mono font-medium mt-0.5">{billing.paymentRef}</p></div>
-              <div><span className="text-gray-500">Tarikh Bayar</span><p className="font-medium mt-0.5">{fmtDate(billing.paidAt)}</p></div>
-              <div><span className="text-gray-500">Dibayar Oleh</span><p className="font-medium mt-0.5">{billing.paidBy?.name}</p></div>
-              <div><span className="text-gray-500">Jumlah</span><p className="font-bold text-teal-700 mt-0.5">{fmtRM(billing.totalAmount)}</p></div>
-            </div>
-          </section>
+        {/* Kemajuan bayaran */}
+        {['APPROVED', 'PARTIAL_PAID', 'PAID'].includes(billing?.status) && (billing?.payments?.length > 0 || billing?.status === 'PAID') && (
+          billing?.payments?.length > 0
+            ? <PaymentProgress billing={billing} canPay={canPay} queryKey={['billing', id]} />
+            : billing?.status === 'PAID' && (
+              <section className="bg-teal-50 border border-teal-200 rounded-lg p-5">
+                <h2 className="text-xs font-semibold text-teal-700 uppercase tracking-wide mb-3">Maklumat Pembayaran</h2>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div><span className="text-gray-500">No. Rujukan</span><p className="font-mono font-medium mt-0.5">{billing.paymentRef ?? '—'}</p></div>
+                  <div><span className="text-gray-500">Tarikh Bayar</span><p className="font-medium mt-0.5">{fmtDate(billing.paidAt)}</p></div>
+                  <div><span className="text-gray-500">Dibayar Oleh</span><p className="font-medium mt-0.5">{billing.paidBy?.name}</p></div>
+                  <div><span className="text-gray-500">Jumlah</span><p className="font-bold text-teal-700 mt-0.5">{fmtRM(billing.totalAmount)}</p></div>
+                </div>
+              </section>
+            )
         )}
 
         {/* Sejarah */}
@@ -835,12 +796,13 @@ console.log(id, billing);
         onConfirm={(remarks) => actionMut.mutate({ action: dialog.action, remarks })}
         isPending={actionMut.isPending}
       />
-      <PayDialog
-        open={dialog?.type === 'pay'}
-        onClose={() => setDialog(null)}
-        onConfirm={(paymentRef, remarks) => payMut.mutate({ paymentRef, remarks })}
-        isPending={payMut.isPending}
-      />
+      {dialog?.type === 'pay' && billing && (
+        <PaymentModal
+          billing={billing}
+          queryKey={['billing', id]}
+          onClose={() => setDialog(null)}
+        />
+      )}
       <VendorModal
         open={vendorModal !== null}
         initial={vendorModal?.initial}

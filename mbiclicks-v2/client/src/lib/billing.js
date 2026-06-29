@@ -9,7 +9,9 @@ export const billingApi = {
   delete:       (id)     => api.delete(`/billings/${id}`).then(r => r.data),
   submit:       (id, body) => api.post(`/billings/${id}/submit`, body).then(r => r.data),
   action:       (id, action, body) => api.post(`/billings/${id}/action/${action}`, body).then(r => r.data),
-  pay:          (id, body) => api.post(`/billings/${id}/pay`, body).then(r => r.data),
+  pay:          (id, body) => api.post(`/billings/${id}/payments`, body).then(r => r.data),
+  payPhase:     (id, phaseId, body) => api.patch(`/billings/${id}/payments/${phaseId}`, body).then(r => r.data),
+  listPayments: (id) => api.get(`/billings/${id}/payments`).then(r => r.data),
   uploadAtt:    (id, file) => {
     const fd = new FormData()
     fd.append('file', file)
@@ -35,7 +37,8 @@ export const BILLING_STATUS = {
   PENDING_FINANCE_APPROVAL: { label: 'Kelulusan Kewangan',  color: 'purple' },
   PENDING_CEO_FINAL:        { label: 'Kelulusan Muktamad',  color: 'rose'   },
   APPROVED:                 { label: 'Diluluskan',          color: 'green'  },
-  PAID:                     { label: 'Dibayar',             color: 'teal'   },
+  PARTIAL_PAID:             { label: 'Bayaran Ansuran',     color: 'cyan'   },
+  PAID:                     { label: 'Selesai Dibayar',     color: 'teal'   },
   REJECTED:                 { label: 'Ditolak',             color: 'red'    },
   RETURNED:                 { label: 'Dikembalikan',        color: 'orange' },
 }
@@ -50,6 +53,7 @@ export const STATUS_TABS = [
   { key: 'PENDING_FINANCE_APPROVAL', label: 'Kelulusan'        },
   { key: 'PENDING_CEO_FINAL',      label: 'Kelulusan Muktamad' },
   { key: 'APPROVED',               label: 'Diluluskan'         },
-  { key: 'PAID',                   label: 'Dibayar'            },
+  { key: 'PARTIAL_PAID',           label: 'Bayaran Ansuran'    },
+  { key: 'PAID',                   label: 'Selesai Dibayar'    },
   { key: 'REJECTED',               label: 'Ditolak'            },
 ]

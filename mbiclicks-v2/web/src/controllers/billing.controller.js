@@ -145,6 +145,7 @@ export async function getBilling(req, res, next) {
         approvals:   { include: { actor: { select: { id: true, name: true, position: { select: { name: true } } } } }, orderBy: { actionedAt: 'asc' } },
         attachments: { where: { isDeleted: false }, include: { uploadedBy: { select: { id: true, name: true } } }, orderBy: { uploadedAt: 'desc' } },
         paidBy:      { select: { id: true, name: true } },
+        payments:    { include: { paidBy: { select: { id: true, name: true } } }, orderBy: { phase: 'asc' } },
       },
     })
     if (!data) return res.status(404).json({ message: 'Permohonan tidak dijumpai' })

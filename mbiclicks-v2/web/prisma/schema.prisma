@@ -104,6 +104,7 @@ model User {
   billingsCreated    Billing[]          @relation("BillingApplicant")
   billingsPaidBy     Billing[]          @relation("BillingPaidBy")
   billingApprovals   BillingApproval[]
+  billingPayments    BillingPayment[]
   circularsIssued    Circular[]
   eventsCreated      Event[]
   eventInvites       EventInvitee[]
@@ -337,6 +338,7 @@ model Billing {
   items       BillingItem[]
   approvals   BillingApproval[]
   attachments BillingAttachment[]
+  payments    BillingPayment[]
 
   @@index([status, departmentId])
   @@index([applicantId])
@@ -364,6 +366,7 @@ enum BillingStatus {
   PENDING_FINANCE_APPROVAL
   PENDING_CEO_FINAL
   APPROVED
+  PARTIAL_PAID
   REJECTED
   RETURNED
   PAID
@@ -411,6 +414,24 @@ enum ApprovalAction {
   RETURN
   VERIFY
   PAY
+}
+
+model BillingPayment {
+  id         Int       @id @default(autoincrement())
+  billingId  Int       @map("billing_id")
+  billing    Billing   @relation(fields: [billingId], references: [id], onDelete: Cascade)
+  phase      Int
+  amount     Decimal   @db.Decimal(15, 2)
+  dueDate    DateTime? @map("due_date")
+  paidAt     DateTime? @map("paid_at")
+  paymentRef String?   @map("payment_ref") @db.VarChar(100)
+  paidById   Int?      @map("paid_by")
+  paidBy     User?     @relation(fields: [paidById], references: [id])
+  remarks    String?   @db.Text
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([billingId])
+  @@map("billing_payments")
 }
 
 model BillingAttachment {
