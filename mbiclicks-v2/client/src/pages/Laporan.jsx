@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, Fragment } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { FileBarChart2, ChevronDown, LayoutTemplate } from 'lucide-react'
 import { budgetApi, reportLayoutApi, STATUS_LABEL, STATUS_COLOR } from '@/lib/budget'
@@ -659,7 +659,9 @@ export default function Laporan() {
   const isFinance = hasRole('finance_hod', 'finance')
   const navigate  = useNavigate()
 
-  const [activeSheet, setActiveSheet] = useState('ringkasan')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeSheet    = searchParams.get('sheet') ?? 'ringkasan'
+  const setActiveSheet = (val) => setSearchParams({ sheet: val })
   const [selectedYearId, setSelectedYearId] = useState(null)
 
   // Fetch custom layouts

@@ -60,10 +60,7 @@ function buildKelulusanSubs({ isFinanceHod }) {
   return items
 }
 
-function SubMenuItem({ status, label, currentStatus, isOnPermohonan, onClose }) {
-  const isActive = isOnPermohonan && currentStatus === status
-  const to = status ? `/permohonan?status=${status}` : '/permohonan'
-
+function SubMenuItem({ to, label, isActive, onClose }) {
   return (
     <Link
       to={to}
@@ -80,6 +77,15 @@ function SubMenuItem({ status, label, currentStatus, isOnPermohonan, onClose }) 
   )
 }
 
+function useSubActive(basePath, paramName, defaultVal = '') {
+  const location = useLocation()
+  const isOn = location.pathname === basePath
+  const current = isOn ? (new URLSearchParams(location.search).get(paramName) ?? defaultVal) : null
+  const check = (val) => isOn && current === val
+  const make  = (val, def = defaultVal) => val === def ? basePath : `${basePath}?${paramName}=${val}`
+  return { isOn, check, make }
+}
+
 export default function Sidebar({ open, onClose }) {
   const can      = useAuthStore((s) => s.can)
   const user     = useAuthStore((s) => s.user)
@@ -94,13 +100,27 @@ export default function Sidebar({ open, onClose }) {
   const isHod        = hasRole('hod', 'finance_hod', 'admin')
   const isCeo        = hasRole('ceo', 'admin')
 
-  const isOnPermohonan = location.pathname === '/permohonan'
-  const currentStatus  = isOnPermohonan
-    ? (new URLSearchParams(location.search).get('status') ?? '')
-    : null
+  const perm    = useSubActive('/permohonan', 'status', '')
+  const laporan = useSubActive('/laporan', 'sheet', 'ringkasan')
+  const tetapan = useSubActive('/tetapan', 'tab', 'pengguna')
 
   const permohonanSubs = buildPermohonanSubs({ isHod, isCeo, isFinance })
   const kelulusanSubs  = buildKelulusanSubs({ isFinanceHod })
+
+  const LAPORAN_SUBS = [
+    { val: 'ringkasan',  label: 'Ringkasan'               },
+    { val: 'penyata',    label: 'Penyata Hasil & Belanja'  },
+    { val: 'subhasil',   label: 'Sub Hasil'                },
+    { val: 'subbelanja', label: 'Sub Belanja'              },
+  ]
+
+  const TETAPAN_SUBS = [
+    { val: 'pengguna', label: 'Pengguna'           },
+    { val: 'jabatan',  label: 'Jabatan'            },
+    { val: 'jawatan',  label: 'Jawatan'            },
+    { val: 'log',      label: 'Log Aktiviti'       },
+    { val: 'peranan',  label: 'Peranan & Kebenaran'},
+  ]
 
   const visible = navItems.filter(
     (item) => !item.module || item.module === 'dashboard' || can(item.module)
@@ -111,8 +131,6 @@ export default function Sidebar({ open, onClose }) {
     logout()
     navigate('/login')
   }
-
-  const subItemProps = { currentStatus, isOnPermohonan, onClose }
 
   return (
     <aside
@@ -175,48 +193,37 @@ export default function Sidebar({ open, onClose }) {
         {/* Permohonan + sub-menu */}
         {can('billing') && (
           <>
-            <div
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all group cursor-default ${
-                isOnPermohonan
-                  ? 'text-white'
-                  : 'text-gray-400'
-              }`}
-            >
-              <FileText className={`w-4 h-4 flex-shrink-0 ${isOnPermohonan ? 'text-green-400' : 'text-gray-500'}`} />
+            <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-default ${perm.isOn ? 'text-white' : 'text-gray-400'}`}>
+              <FileText className={`w-4 h-4 flex-shrink-0 ${perm.isOn ? 'text-green-400' : 'text-gray-500'}`} />
               <span className="flex-1 font-medium">Permohonan</span>
             </div>
             <div className="space-y-0.5 mb-1">
               {permohonanSubs.map((item) => (
-                <SubMenuItem key={item.status} {...item} {...subItemProps} />
+                <SubMenuItem key={item.status} to={perm.make(item.status)} label={item.label} isActive={perm.check(item.status)} onClose={onClose} />
               ))}
             </div>
           </>
         )}
 
-        {/* Kelulusan — finance & admin sahaja */}
+        {/* Kelulusan + Laporan — finance & admin sahaja */}
         {isFinance && (
           <>
             <div className="pt-2 pb-1">
               <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest px-3">Kewangan</p>
             </div>
 
-            <div
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all cursor-default ${
-                isOnPermohonan ? 'text-white' : 'text-gray-400'
-              }`}
-            >
-              <ClipboardCheck className={`w-4 h-4 flex-shrink-0 ${isOnPermohonan ? 'text-blue-400' : 'text-gray-500'}`} />
+            {/* Kelulusan sub-menu */}
+            <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-default ${perm.isOn ? 'text-white' : 'text-gray-400'}`}>
+              <ClipboardCheck className={`w-4 h-4 flex-shrink-0 ${perm.isOn ? 'text-blue-400' : 'text-gray-500'}`} />
               <span className="flex-1 font-medium">Kelulusan</span>
             </div>
             <div className="space-y-0.5 mb-1">
               {kelulusanSubs.map((item) => (
-                <SubMenuItem key={`k-${item.status}`} {...item} {...subItemProps} />
+                <SubMenuItem key={`k-${item.status}`} to={perm.make(item.status)} label={item.label} isActive={perm.check(item.status)} onClose={onClose} />
               ))}
             </div>
 
-            <div className="pt-1 pb-1">
-              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest px-3">Laporan</p>
-            </div>
+            {/* Bajet & Akaun */}
             {financeOnlyItems.map((item) => (
               <NavLink key={item.to} to={item.to} onClick={onClose}
                 className={({ isActive }) =>
@@ -234,32 +241,35 @@ export default function Sidebar({ open, onClose }) {
                 )}
               </NavLink>
             ))}
+
+            {/* Laporan sub-menu */}
+            <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-default ${laporan.isOn ? 'text-white' : 'text-gray-400'}`}>
+              <BarChart3 className={`w-4 h-4 flex-shrink-0 ${laporan.isOn ? 'text-green-400' : 'text-gray-500'}`} />
+              <span className="flex-1 font-medium">Laporan</span>
+            </div>
+            <div className="space-y-0.5 mb-1">
+              {LAPORAN_SUBS.map((item) => (
+                <SubMenuItem key={item.val} to={laporan.make(item.val)} label={item.label} isActive={laporan.check(item.val)} onClose={onClose} />
+              ))}
+            </div>
           </>
         )}
 
-        {/* Admin */}
+        {/* Admin — Tetapan sub-menu */}
         {isAdmin && (
           <>
             <div className="pt-3 pb-1">
               <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest px-3">Admin</p>
             </div>
-            <NavLink
-              to="/tetapan"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all group ${
-                  isActive ? 'bg-green-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <Settings className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-white'}`} />
-                  <span className="flex-1">Tetapan</span>
-                  {isActive && <ChevronRight className="w-3 h-3 text-white/60" />}
-                </>
-              )}
-            </NavLink>
+            <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-default ${tetapan.isOn ? 'text-white' : 'text-gray-400'}`}>
+              <Settings className={`w-4 h-4 flex-shrink-0 ${tetapan.isOn ? 'text-green-400' : 'text-gray-500'}`} />
+              <span className="flex-1 font-medium">Tetapan</span>
+            </div>
+            <div className="space-y-0.5">
+              {TETAPAN_SUBS.map((item) => (
+                <SubMenuItem key={item.val} to={tetapan.make(item.val)} label={item.label} isActive={tetapan.check(item.val)} onClose={onClose} />
+              ))}
+            </div>
           </>
         )}
       </nav>

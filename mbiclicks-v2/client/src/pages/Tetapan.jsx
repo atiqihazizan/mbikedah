@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   Users, Plus, Search, Pencil, ToggleLeft, ToggleRight,
@@ -921,7 +922,8 @@ function TabPeranan() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function Tetapan() {
-  const [activeTab, setActiveTab] = useState('pengguna')
+  const [searchParams] = useSearchParams()
+  const activeTab = searchParams.get('tab') ?? 'pengguna'
 
   const { data: meta } = useQuery({
     queryKey: ['users-meta'],
@@ -929,11 +931,8 @@ export default function Tetapan() {
     staleTime: 300_000,
   })
 
-  const TAB_ICON_MAP = { pengguna: Users, jabatan: Building2, jawatan: Briefcase, log: Activity, peranan: ShieldCheck }
-
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-[1400px] mx-auto">
-      {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-green-600" /> Tetapan Sistem
@@ -941,19 +940,6 @@ export default function Tetapan() {
         <p className="text-sm text-gray-500 mt-0.5">Urus pengguna, jabatan, jawatan, kebenaran dan log aktiviti</p>
       </div>
 
-      {/* Tab nav */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-full overflow-x-auto">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-1 justify-center
-              ${activeTab === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-            <Icon className="w-4 h-4 shrink-0" />
-            <span className="hidden sm:inline">{label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
       {activeTab === 'pengguna' && <TabPengguna meta={meta} />}
       {activeTab === 'jabatan'  && <TabJabatan />}
       {activeTab === 'jawatan'  && <TabJawatan />}
