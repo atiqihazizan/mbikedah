@@ -66,7 +66,7 @@ function MiniCalendar() {
       {/* Header hari */}
       <div className="grid grid-cols-7 mb-1">
         {DAYS_MY.map((d) => (
-          <div key={d} className="text-center text-base text-gray-500 font-semibold py-2">{d}</div>
+          <div key={d} className="text-[30px] text-center text-base text-gray-500 font-semibold py-2">{d}</div>
         ))}
       </div>
 
@@ -82,7 +82,7 @@ function MiniCalendar() {
               evByDay[day] ? 'cursor-pointer hover:bg-gray-800' : ''
             } ${selectedDay === day ? 'bg-gray-800' : ''}`}
           >
-            <span className={`text-5xl font-light leading-none ${
+            <span className={`text-4xl font-light leading-none ${
               isToday(day) ? 'text-green-400 font-medium' : 'text-gray-400'
             }`}>{day}</span>
             {evByDay[day] && (
@@ -320,7 +320,7 @@ export default function Login() {
       </div>
 
       {/* Right panel — pekeliling + kalendar mini, grid 2 col pada xl, stack pada lg */}
-      <div className="hidden lg:grid lg:grid-cols-1 xl:grid-cols-2 flex-1 bg-gray-900 overflow-hidden">
+      <div className="hidden lg:grid lg:grid-cols-1 lg:grid-rows-2 xl:grid-cols-2 xl:grid-rows-1 flex-1 bg-gray-900 overflow-hidden">
 
         {/* Bahagian Pekeliling */}
         <div className="flex flex-col p-8 overflow-y-auto border-b border-gray-800 xl:border-b-0 xl:border-r xl:border-gray-800">
@@ -354,7 +354,7 @@ export default function Login() {
         </div>
 
         {/* Bahagian Kalendar Mini */}
-        <div className="flex flex-col flex-1 p-8 overflow-y-auto">
+        <div className="flex flex-col p-8 overflow-y-auto">
           <div className="flex items-center gap-2 mb-5">
             <CalendarDays className="w-4 h-4 text-blue-400" />
             <p className="text-blue-400 text-xs font-semibold uppercase tracking-widest">Kalendar Acara</p>
