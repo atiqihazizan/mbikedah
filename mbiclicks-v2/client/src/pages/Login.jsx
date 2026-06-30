@@ -237,7 +237,7 @@ export default function Login() {
 
             {step === 1 && (
               <>
-                <div className="mb-7 text-center">
+                <div className="mb-7 text-left">
                   <h1 className="text-2xl font-bold text-gray-900">Log Masuk</h1>
                   <p className="text-gray-500 text-sm mt-1">Masukkan no. staf anda untuk log masuk</p>
                 </div>
