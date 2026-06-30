@@ -82,13 +82,13 @@ function MiniCalendar() {
               evByDay[day] ? 'cursor-pointer hover:bg-gray-800' : ''
             } ${selectedDay === day ? 'bg-gray-800' : ''}`}
           >
-            <span className={`text-lg w-11 h-11 flex items-center justify-center rounded-full leading-none font-medium ${
-              isToday(day) ? 'bg-green-600 text-white font-semibold' : 'text-gray-400'
+            <span className={`text-5xl font-light leading-none ${
+              isToday(day) ? 'text-green-400 font-medium' : 'text-gray-400'
             }`}>{day}</span>
             {evByDay[day] && (
-              <div className="flex gap-0.5 mt-0.5">
+              <div className="flex gap-1 mt-2">
                 {evByDay[day].slice(0, 3).map((ev, i) => (
-                  <div key={i} className={`w-1.5 h-1.5 rounded-full ${COLOR_DOT[ev.color] ?? 'bg-blue-400'}`} />
+                  <div key={i} className={`w-2 h-2 rounded-full ${COLOR_DOT[ev.color] ?? 'bg-blue-400'}`} />
                 ))}
               </div>
             )}
