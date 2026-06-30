@@ -135,7 +135,7 @@ export default function Sidebar({ open, onClose }) {
     <aside
       className={`
         fixed md:static inset-y-0 left-0 z-30
-        w-[240px] shrink-0 flex flex-col h-full bg-gray-900
+        w-[240px] shrink-0 flex flex-col h-full bg-[#1a2236]
         transition-transform duration-200 ease-in-out
         ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}
