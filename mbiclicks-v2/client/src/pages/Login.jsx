@@ -82,7 +82,7 @@ function MiniCalendar() {
               evByDay[day] ? 'cursor-pointer hover:bg-gray-800' : ''
             } ${selectedDay === day ? 'bg-gray-800' : ''}`}
           >
-            <span className={`text-4xl font-light leading-none ${
+            <span className={`text-2xl font-light leading-none ${
               isToday(day) ? 'text-green-400 font-medium' : 'text-gray-400'
             }`}>{day}</span>
             {evByDay[day] && (
