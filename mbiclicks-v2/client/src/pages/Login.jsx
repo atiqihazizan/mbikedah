@@ -24,7 +24,8 @@ function MiniCalendar() {
   const today = new Date()
   const year  = today.getFullYear()
   const month = today.getMonth() + 1
-  const [events, setEvents] = useState([])
+  const [events,      setEvents]      = useState([])
+  const [selectedDay, setSelectedDay] = useState(null)
 
   useEffect(() => {
     api.get(`/events/public?year=${year}&month=${month}`)
@@ -48,6 +49,13 @@ function MiniCalendar() {
 
   const isToday = (day) => day === today.getDate()
 
+  function handleDayClick(day) {
+    if (!evByDay[day]) return
+    setSelectedDay(selectedDay === day ? null : day)
+  }
+
+  const selectedEvents = selectedDay ? (evByDay[selectedDay] ?? []) : []
+
   return (
     <div className="flex flex-col flex-1">
       {/* Header bulan — static sahaja */}
@@ -62,19 +70,25 @@ function MiniCalendar() {
         ))}
       </div>
 
-      {/* Grid hari — flex-1 supaya isi ruang yang ada */}
+      {/* Grid hari */}
       <div className="grid grid-cols-7 flex-1" style={{ gridAutoRows: '1fr' }}>
         {cells.map((day, idx) => !day ? (
           <div key={`e-${idx}`} />
         ) : (
-          <div key={day} className="flex flex-col items-center justify-center">
+          <div
+            key={day}
+            onClick={() => handleDayClick(day)}
+            className={`flex flex-col items-center justify-center transition-colors rounded-lg ${
+              evByDay[day] ? 'cursor-pointer hover:bg-gray-800' : ''
+            } ${selectedDay === day ? 'bg-gray-800' : ''}`}
+          >
             <span className={`text-lg w-11 h-11 flex items-center justify-center rounded-full leading-none font-medium ${
               isToday(day) ? 'bg-green-600 text-white font-semibold' : 'text-gray-400'
             }`}>{day}</span>
             {evByDay[day] && (
               <div className="flex gap-0.5 mt-0.5">
                 {evByDay[day].slice(0, 3).map((ev, i) => (
-                  <div key={i} className={`w-1 h-1 rounded-full ${COLOR_DOT[ev.color] ?? 'bg-blue-400'}`} />
+                  <div key={i} className={`w-1.5 h-1.5 rounded-full ${COLOR_DOT[ev.color] ?? 'bg-blue-400'}`} />
                 ))}
               </div>
             )}
@@ -82,24 +96,29 @@ function MiniCalendar() {
         ))}
       </div>
 
-      {/* Legend acara bulan ini */}
-      {events.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-800 space-y-2">
-          {events.slice(0, 4).map((ev) => (
-            <div key={ev.id} className="flex items-start gap-2">
-              <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${COLOR_DOT[ev.color] ?? 'bg-blue-400'}`} />
+      {/* Panel event — muncul bila klik hari */}
+      {selectedDay && selectedEvents.length > 0 && (
+        <div className="mt-3 border-t border-gray-800 pt-3 space-y-2">
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">
+            {selectedDay} {MONTHS_MY[month - 1]} {year}
+          </p>
+          {selectedEvents.map((ev) => (
+            <div key={ev.id} className="flex gap-2.5 bg-gray-800 rounded-lg p-3">
+              <div className={`w-1 rounded-full shrink-0 self-stretch ${COLOR_DOT[ev.color] ?? 'bg-blue-400'}`} />
               <div className="min-w-0">
-                <p className="text-xs text-gray-300 leading-snug line-clamp-1">{ev.title}</p>
-                <p className="text-[10px] text-gray-600 mt-0.5">
-                  {new Date(ev.startAt).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short' })}
-                  {!ev.isAllDay && ' · ' + new Date(ev.startAt).toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                </p>
+                <p className="text-sm text-gray-100 font-medium leading-snug">{ev.title}</p>
+                {!ev.isAllDay && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {new Date(ev.startAt).toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                    {' – '}
+                    {new Date(ev.endAt).toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </p>
+                )}
+                {ev.isAllDay && <p className="text-xs text-gray-400 mt-1">Sepanjang hari</p>}
+                {ev.location && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ev.location}</p>}
               </div>
             </div>
           ))}
-          {events.length > 4 && (
-            <p className="text-[10px] text-gray-600">+{events.length - 4} acara lagi</p>
-          )}
         </div>
       )}
     </div>
