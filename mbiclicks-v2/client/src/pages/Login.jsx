@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Bell, IdCard, Lock, ArrowLeft, CalendarDays } from 'lucide-react'
+import { Bell, IdCard, Lock, ArrowLeft, CalendarDays, X } from 'lucide-react'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/auth'
 import { Spinner } from '@/components/ui'
@@ -51,7 +51,7 @@ function MiniCalendar() {
 
   function handleDayClick(day) {
     if (!evByDay[day]) return
-    setSelectedDay(selectedDay === day ? null : day)
+    setSelectedDay(day)
   }
 
   const selectedEvents = selectedDay ? (evByDay[selectedDay] ?? []) : []
@@ -66,7 +66,7 @@ function MiniCalendar() {
       {/* Header hari */}
       <div className="grid grid-cols-7 mb-1">
         {DAYS_MY.map((d) => (
-          <div key={d} className="text-[30px] text-center text-base text-gray-500 font-semibold py-2">{d}</div>
+          <div key={d} className="text-2xl text-center text-base text-gray-500 font-semibold py-2">{d}</div>
         ))}
       </div>
 
@@ -80,9 +80,9 @@ function MiniCalendar() {
             onClick={() => handleDayClick(day)}
             className={`flex flex-col items-center justify-center transition-colors rounded-lg ${
               evByDay[day] ? 'cursor-pointer hover:bg-gray-800' : ''
-            } ${selectedDay === day ? 'bg-gray-800' : ''}`}
+            }`}
           >
-            <span className={`text-2xl font-light leading-none ${
+            <span className={`text-lg font-light leading-none ${
               isToday(day) ? 'text-green-400 font-medium' : 'text-gray-400'
             }`}>{day}</span>
             {evByDay[day] && (
@@ -96,29 +96,53 @@ function MiniCalendar() {
         ))}
       </div>
 
-      {/* Panel event — muncul bila klik hari */}
+      {/* Dialog popup event */}
       {selectedDay && selectedEvents.length > 0 && (
-        <div className="mt-3 border-t border-gray-800 pt-3 space-y-2">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">
-            {selectedDay} {MONTHS_MY[month - 1]} {year}
-          </p>
-          {selectedEvents.map((ev) => (
-            <div key={ev.id} className="flex gap-2.5 bg-gray-800 rounded-lg p-3">
-              <div className={`w-1 rounded-full shrink-0 self-stretch ${COLOR_DOT[ev.color] ?? 'bg-blue-400'}`} />
-              <div className="min-w-0">
-                <p className="text-sm text-gray-100 font-medium leading-snug">{ev.title}</p>
-                {!ev.isAllDay && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    {new Date(ev.startAt).toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                    {' – '}
-                    {new Date(ev.endAt).toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                  </p>
-                )}
-                {ev.isAllDay && <p className="text-xs text-gray-400 mt-1">Sepanjang hari</p>}
-                {ev.location && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ev.location}</p>}
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setSelectedDay(null)}
+        >
+          <div
+            className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header dialog */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-blue-400" />
+                <p className="text-sm font-semibold text-gray-100">
+                  {selectedDay} {MONTHS_MY[month - 1]} {year}
+                </p>
               </div>
+              <button
+                onClick={() => setSelectedDay(null)}
+                className="text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          ))}
+            {/* Senarai event */}
+            <div className="p-4 space-y-2 max-h-72 overflow-y-auto">
+              {selectedEvents.map((ev) => (
+                <div key={ev.id} className="flex gap-3 bg-gray-800 rounded-xl p-3">
+                  <div className={`w-1 rounded-full shrink-0 self-stretch ${COLOR_DOT[ev.color] ?? 'bg-blue-400'}`} />
+                  <div className="min-w-0">
+                    <p className="text-sm text-gray-100 font-medium leading-snug">{ev.title}</p>
+                    {ev.isAllDay
+                      ? <p className="text-xs text-gray-400 mt-1">Sepanjang hari</p>
+                      : (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {new Date(ev.startAt).toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                          {' – '}
+                          {new Date(ev.endAt).toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                        </p>
+                      )}
+                    {ev.location && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ev.location}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
