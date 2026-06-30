@@ -376,6 +376,7 @@ enum BillingStatus {
   REJECTED
   RETURNED
   PAID
+  CLOSED
 }
 
 model BillingItem {
@@ -420,6 +421,7 @@ enum ApprovalAction {
   RETURN
   VERIFY
   PAY
+  CLOSE
 }
 
 model BillingPayment {

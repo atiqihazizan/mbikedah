@@ -2,7 +2,8 @@ import { z } from 'zod'
 import prisma from '../lib/prisma.js'
 import { logActivity } from '../utils/activityLog.js'
 
-const PAYABLE_STATUSES = ['APPROVED', 'PARTIAL_PAID']
+const PAYABLE_STATUSES  = ['APPROVED', 'PARTIAL_PAID']
+const CLOSEABLE_STATUSES = ['APPROVED', 'PARTIAL_PAID']
 
 // ─── GET senarai bayaran untuk satu billing ───────────────────────────────────
 export async function listPayments(req, res, next) {
@@ -193,5 +194,49 @@ export async function payPhase(req, res, next) {
     })
 
     res.json({ message: `Fasa ${payment.phase} berjaya ditandakan sebagai dibayar`, status: newStatus })
+  } catch (err) { next(err) }
+}
+
+// ─── POST tutup kes (paranormal close) ───────────────────────────────────────
+const closeSchema = z.object({
+  reason: z.string().min(1, 'Sebab penutupan wajib diisi').max(500),
+})
+
+export async function closeBilling(req, res, next) {
+  try {
+    const id   = parseInt(req.params.id)
+    const body = closeSchema.parse(req.body)
+
+    const billing = await prisma.billing.findFirst({
+      where: { id, isDeleted: false },
+      select: { id: true, refNo: true, status: true },
+    })
+    if (!billing) return res.status(404).json({ message: 'Permohonan tidak dijumpai' })
+    if (!CLOSEABLE_STATUSES.includes(billing.status)) {
+      return res.status(400).json({ message: 'Permohonan tidak boleh ditutup pada peringkat ini' })
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.billing.update({ where: { id }, data: { status: 'CLOSED' } })
+      await tx.billingApproval.create({
+        data: {
+          billingId:  id,
+          step:       'CLOSE',
+          actorId:    req.user.id,
+          action:     'CLOSE',
+          fromStatus: billing.status,
+          toStatus:   'CLOSED',
+          remarks:    body.reason,
+        },
+      })
+    })
+
+    await logActivity({
+      userId: req.user.id, userName: req.user.name,
+      action: 'CLOSE', module: 'billing',
+      targetId: id, detail: `${billing.refNo} → CLOSED: ${body.reason}`, req,
+    })
+
+    res.json({ message: 'Permohonan berjaya ditutup', status: 'CLOSED' })
   } catch (err) { next(err) }
 }

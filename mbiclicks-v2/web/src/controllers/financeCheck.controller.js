@@ -4,11 +4,13 @@ import { logActivity } from '../utils/activityLog.js'
 
 const YEAR = new Date().getFullYear()
 
-const PENDING_STATUSES = [
+// Belum ada bayaran — tertangguh penuh
+const PURE_PENDING = [
   'PENDING_HOD', 'PENDING_CEO', 'PENDING_FINANCE_CHECK',
   'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL', 'PENDING_CEO_FINAL',
-  'APPROVED', 'PARTIAL_PAID',
 ]
+// Sudah diluluskan — tertangguh = baki belum bayar sahaja
+const PAYABLE_STATUSES = ['APPROVED', 'PARTIAL_PAID']
 
 // budgetYear cached — sama sepanjang process lifecycle
 let _cachedBudgetYearId = null
@@ -19,31 +21,32 @@ async function getBudgetYearId() {
   return _cachedBudgetYearId
 }
 
-// ─── Helper: baki bajet bagi satu accNo (semua queries parallel) ─────────────
+// ─── Helper: baki bajet bagi satu accNo ──────────────────────────────────────
 async function getBudgetBalance(accNo, excludeBillingId) {
   if (!accNo) return null
 
-  const [budgetYearId, actualResult, tertangguhResult] = await Promise.all([
+  const excl = excludeBillingId ? { id: { not: excludeBillingId } } : {}
+
+  const [budgetYearId, actualResult, purePendingResult, payableBillings] = await Promise.all([
     getBudgetYearId(),
-    prisma.actualData.aggregate({
-      where: { accNo, year: YEAR },
+    // Belanja sebenar dari AutoCount
+    prisma.actualData.aggregate({ where: { accNo, year: YEAR }, _sum: { amount: true } }),
+    // Tertangguh penuh — belum ada bayaran langsung
+    prisma.billingItem.aggregate({
+      where: { accNo, isDeleted: false, billing: { status: { in: PURE_PENDING }, isDeleted: false, ...excl } },
       _sum: { amount: true },
     }),
-    prisma.billingItem.aggregate({
-      where: {
-        accNo,
-        isDeleted: false,
-        billing: {
-          status: { in: PENDING_STATUSES },
-          isDeleted: false,
-          ...(excludeBillingId ? { id: { not: excludeBillingId } } : {}),
-        },
+    // Diluluskan — kira baki belum bayar sahaja (proportional per accNo)
+    prisma.billing.findMany({
+      where: { status: { in: PAYABLE_STATUSES }, isDeleted: false, items: { some: { accNo, isDeleted: false } }, ...excl },
+      include: {
+        items:    { where: { isDeleted: false } },
+        payments: { where: { paidAt: { not: null } } },
       },
-      _sum: { amount: true },
     }),
   ])
 
-  // Peruntukan — versi terkini (ADJ2 > ADJ1 > ORIGINAL) secara parallel
+  // Kira peruntukan (ADJ2 > ADJ1 > ORIGINAL)
   let peruntukan = 0
   if (budgetYearId) {
     const lines = await prisma.budgetLine.findMany({
@@ -55,8 +58,21 @@ async function getBudgetBalance(accNo, excludeBillingId) {
     if (lines[0]) peruntukan = parseFloat(lines[0].total)
   }
 
-  const belanja    = parseFloat(actualResult._sum.amount ?? 0)
-  const tertangguh = parseFloat(tertangguhResult._sum.amount ?? 0)
+  // Untuk setiap billing APPROVED/PARTIAL_PAID: agihkan bayaran & baki secara proportional
+  let paidBelanja      = 0
+  let payableTertangguh = 0
+  for (const billing of payableBillings) {
+    const billingTotal = billing.items.reduce((s, i) => s + Number(i.amount), 0)
+    if (billingTotal === 0) continue
+    const paidTotal    = billing.payments.reduce((s, p) => s + Number(p.amount), 0)
+    const accNoTotal   = billing.items.filter(i => i.accNo === accNo).reduce((s, i) => s + Number(i.amount), 0)
+    const ratio        = accNoTotal / billingTotal
+    paidBelanja        += paidTotal * ratio
+    payableTertangguh  += (billingTotal - paidTotal) * ratio
+  }
+
+  const belanja    = parseFloat(actualResult._sum.amount ?? 0) + paidBelanja
+  const tertangguh = parseFloat(purePendingResult._sum.amount ?? 0) + payableTertangguh
   const baki       = peruntukan - belanja - tertangguh
 
   return { accNo, peruntukan, belanja, tertangguh, baki }

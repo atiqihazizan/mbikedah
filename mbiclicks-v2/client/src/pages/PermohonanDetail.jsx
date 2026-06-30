@@ -13,6 +13,60 @@ import api from '@/lib/api'
 import PaymentModal from '@/components/PaymentModal'
 import PaymentProgress from '@/components/PaymentProgress'
 
+function CloseKesDialog({ billing, onClose, onConfirm, isPending }) {
+  const [reason, setReason] = useState('')
+  const paid = (billing?.payments ?? []).filter(p => p.paidAt).reduce((s, p) => s + parseFloat(p.amount), 0)
+  const remaining = parseFloat(billing?.totalAmount ?? 0) - paid
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!reason.trim()) return
+    onConfirm(reason.trim())
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <XCircle className="w-4 h-4 text-red-500" /> Tutup Kes
+          </h3>
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100"><X className="w-4 h-4" /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm space-y-1">
+            {paid > 0 && (
+              <div className="flex justify-between text-amber-800">
+                <span>Sudah dibayar</span>
+                <span className="font-medium">RM {paid.toLocaleString('ms-MY', { minimumFractionDigits: 2 })}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-red-700 font-medium">
+              <span>Baki tidak akan dibayar</span>
+              <span>RM {remaining.toLocaleString('ms-MY', { minimumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Sebab Penutupan <span className="text-red-500">*</span></label>
+            <textarea
+              rows={3} value={reason} onChange={e => setReason(e.target.value)}
+              placeholder="Contoh: Kerja tidak disiapkan, kontrak dibatalkan..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+              required
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
+            <Button type="submit" disabled={isPending || !reason.trim()} className="bg-red-600 hover:bg-red-700 text-white">
+              {isPending ? <Spinner size="sm" /> : 'Sahkan Tutup Kes'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 const EMPTY_ITEM   = { accNo: '', description: '', invoiceNo: '', qty: 1, unitCost: '' }
 const EMPTY_VENDOR = { code: '', name: '', type: 'VENDOR', email: '', phone: '', address: '', bankName: '', bankAcc: '', accNo: '' }
 
@@ -296,6 +350,7 @@ export default function PermohonanDetail() {
   const canFinAct  = isFinance && ['PENDING_FINANCE_CHECK', 'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL'].includes(billing?.status)
   const canFinAppr = ['finance_hod', 'admin'].includes(roleSlug) && billing?.status === 'PENDING_FINANCE_APPROVAL'
   const canPay     = isFinance && ['APPROVED', 'PARTIAL_PAID'].includes(billing?.status)
+  const canClose   = isFinance && ['APPROVED', 'PARTIAL_PAID'].includes(billing?.status)
   const showActions = canHodAct || canFinAct || canFinAppr
 
   // Mutations
@@ -326,6 +381,12 @@ export default function PermohonanDetail() {
     mutationFn: ({ action, remarks }) => billingApi.action(id, action, { remarks }),
     onSuccess:  () => { qc.invalidateQueries({ queryKey: ['billing', id] }); qc.invalidateQueries({ queryKey: ['billings'] }); toast.success('Tindakan berjaya'); setDialog(null) },
     onError:    (e) => toast.error(e.response?.data?.message ?? 'Gagal'),
+  })
+
+  const closeMut = useMutation({
+    mutationFn: (reason) => billingApi.close(id, { reason }),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['billing', id] }); qc.invalidateQueries({ queryKey: ['billings'] }); toast.success('Permohonan berjaya ditutup'); setDialog(null) },
+    onError:    (e) => toast.error(e.response?.data?.message ?? 'Gagal menutup permohonan'),
   })
 
 
@@ -409,8 +470,8 @@ console.log(id, billing);
   if (id && error?.response?.status === 403) return null
   if (id && !billing)  return <div className="p-10 text-center text-gray-400">Permohonan tidak dijumpai</div>
 
-  // Lock mode: REJECTED, PAID (tidak boleh edit)
-  const isLocked = billing && ['REJECTED', 'PAID', 'PARTIAL_PAID'].includes(billing.status)
+  // Lock mode: REJECTED, PAID, CLOSED (tidak boleh edit)
+  const isLocked = billing && ['REJECTED', 'PAID', 'PARTIAL_PAID', 'CLOSED'].includes(billing.status)
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -452,6 +513,11 @@ console.log(id, billing);
           {!editMode && canPay && (
             <Button onClick={() => setDialog({ type: 'pay' })} className="bg-teal-600 hover:bg-teal-700 text-white">
               <CreditCard className="w-4 h-4 mr-1.5" /> Rekod Bayaran
+            </Button>
+          )}
+          {!editMode && canClose && (
+            <Button onClick={() => setDialog({ type: 'close' })} variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
+              <XCircle className="w-4 h-4 mr-1.5" /> Tutup Kes
             </Button>
           )}
         </div>
@@ -782,7 +848,11 @@ console.log(id, billing);
         {isLocked && (
           <section className="bg-gray-50 border border-gray-200 rounded-lg p-5 text-center">
             <p className="text-sm text-gray-600">
-              {billing.status === 'REJECTED' ? 'Permohonan ini telah ditolak dan tidak boleh diubah.' : 'Permohonan ini telah dibayar dan ditutup.'}
+              {billing.status === 'REJECTED'
+                ? 'Permohonan ini telah ditolak dan tidak boleh diubah.'
+                : billing.status === 'CLOSED'
+                ? 'Permohonan ini telah ditutup. Lihat sejarah kelulusan untuk maklumat penutupan.'
+                : 'Permohonan ini telah dibayar dan ditutup.'}
             </p>
           </section>
         )}
@@ -801,6 +871,14 @@ console.log(id, billing);
           billing={billing}
           queryKey={['billing', id]}
           onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.type === 'close' && (
+        <CloseKesDialog
+          billing={billing}
+          onClose={() => setDialog(null)}
+          onConfirm={(reason) => closeMut.mutate(reason)}
+          isPending={closeMut.isPending}
         />
       )}
       <VendorModal

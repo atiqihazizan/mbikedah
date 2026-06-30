@@ -390,34 +390,87 @@ export async function getActiveBelanja(req, res, next) {
       }
     }
 
-    // Ambil jumlah item permohonan diluluskan untuk tahun ini (per billingItem.accNo)
-    const approvedItems = await prisma.billingItem.findMany({
+    const yearStart = new Date(activeYear.year, 0, 1)
+    const yearEnd   = new Date(activeYear.year + 1, 0, 1)
+    const PURE_PENDING = [
+      'PENDING_HOD', 'PENDING_CEO', 'PENDING_FINANCE_CHECK',
+      'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL', 'PENDING_CEO_FINAL',
+    ]
+
+    // Bayaran yang sudah dibayar (PARTIAL_PAID/PAID/CLOSED) — agihkan proportional per accNo
+    const paidBillings = await prisma.billing.findMany({
       where: {
         isDeleted: false,
-        accNo: { not: null },
-        billing: {
-          status: { in: ['APPROVED', 'PAID'] },
-          createdAt: {
-            gte: new Date(activeYear.year, 0, 1),
-            lt:  new Date(activeYear.year + 1, 0, 1),
-          },
-        },
+        status: { in: ['PARTIAL_PAID', 'PAID', 'CLOSED'] },
+        createdAt: { gte: yearStart, lt: yearEnd },
+        payments: { some: { paidAt: { not: null } } },
+      },
+      include: {
+        items:    { where: { isDeleted: false, accNo: { not: null } } },
+        payments: { where: { paidAt: { not: null } } },
+      },
+    }).catch(() => [])
+
+    const spentMap = new Map()
+    for (const billing of paidBillings) {
+      const billingTotal = billing.items.reduce((s, i) => s + Number(i.amount), 0)
+      if (billingTotal === 0) continue
+      const paidTotal = billing.payments.reduce((s, p) => s + Number(p.amount), 0)
+      for (const item of billing.items) {
+        if (!item.accNo) continue
+        const itemPaid = paidTotal * (Number(item.amount) / billingTotal)
+        spentMap.set(item.accNo, (spentMap.get(item.accNo) ?? 0) + itemPaid)
+      }
+    }
+
+    // Tertangguh 1: PURE_PENDING — jumlah penuh
+    const pendingItems = await prisma.billingItem.findMany({
+      where: {
+        isDeleted: false, accNo: { not: null },
+        billing: { status: { in: PURE_PENDING }, isDeleted: false, createdAt: { gte: yearStart, lt: yearEnd } },
       },
       select: { accNo: true, amount: true },
     }).catch(() => [])
 
-    const spentMap = new Map()
-    for (const item of approvedItems) {
+    const pendingMap = new Map()
+    for (const item of pendingItems) {
       if (!item.accNo) continue
-      spentMap.set(item.accNo, (spentMap.get(item.accNo) ?? 0) + Number(item.amount))
+      pendingMap.set(item.accNo, (pendingMap.get(item.accNo) ?? 0) + Number(item.amount))
+    }
+
+    // Tertangguh 2: APPROVED/PARTIAL_PAID — baki belum bayar sahaja
+    const payableBillings = await prisma.billing.findMany({
+      where: {
+        isDeleted: false,
+        status: { in: ['APPROVED', 'PARTIAL_PAID'] },
+        createdAt: { gte: yearStart, lt: yearEnd },
+      },
+      include: {
+        items:    { where: { isDeleted: false, accNo: { not: null } } },
+        payments: { where: { paidAt: { not: null } } },
+      },
+    }).catch(() => [])
+
+    const remainingMap = new Map()
+    for (const billing of payableBillings) {
+      const billingTotal = billing.items.reduce((s, i) => s + Number(i.amount), 0)
+      if (billingTotal === 0) continue
+      const paidTotal  = billing.payments.reduce((s, p) => s + Number(p.amount), 0)
+      const remaining  = billingTotal - paidTotal
+      for (const item of billing.items) {
+        if (!item.accNo) continue
+        const itemRemaining = remaining * (Number(item.amount) / billingTotal)
+        remainingMap.set(item.accNo, (remainingMap.get(item.accNo) ?? 0) + itemRemaining)
+      }
     }
 
     const lines = Array.from(latestMap.values())
       .filter((l) => l.account.accType === 'BELANJA')
       .map((l) => {
-        const peruntukan = Number(l.total)
-        const digunakan  = spentMap.get(l.accNo) ?? 0
-        const baki       = peruntukan - digunakan
+        const peruntukan  = Number(l.total)
+        const digunakan   = spentMap.get(l.accNo) ?? 0
+        const tertangguh  = (pendingMap.get(l.accNo) ?? 0) + (remainingMap.get(l.accNo) ?? 0)
+        const baki        = peruntukan - digunakan - tertangguh
         return {
           accNo:      l.accNo,
           name:       l.account.name,
@@ -425,6 +478,7 @@ export async function getActiveBelanja(req, res, next) {
           parentAccNo: l.account.parentAccNo,
           peruntukan,
           digunakan,
+          tertangguh,
           baki,
         }
       })
@@ -490,22 +544,29 @@ export async function getReport(req, res, next) {
       if (monthName) actualMonthMap.get(a.accNo)[monthName] += Number(a.amount)
     }
 
-    // Item permohonan diluluskan — hingga bulan semasa (per billingItem.accNo)
-    const approvedItems = await prisma.billingItem.findMany({
+    // Bayaran dibuat dalam app — hanya jumlah yang sudah dibayar, proportional per accNo
+    const paidBillingsReport = await prisma.billing.findMany({
       where: {
         isDeleted: false,
-        accNo: { not: null },
-        billing: {
-          status: { in: ['APPROVED', 'PAID'] },
-          createdAt: { gte: new Date(budgetYear.year, 0, 1), lt: cutoffDate },
-        },
+        status: { in: ['PARTIAL_PAID', 'PAID', 'CLOSED'] },
+        createdAt: { gte: new Date(budgetYear.year, 0, 1), lt: cutoffDate },
+        payments: { some: { paidAt: { not: null } } },
       },
-      select: { accNo: true, amount: true },
+      include: {
+        items:    { where: { isDeleted: false, accNo: { not: null } } },
+        payments: { where: { paidAt: { not: null } } },
+      },
     }).catch(() => [])
     const spentMap = new Map()
-    for (const item of approvedItems) {
-      if (!item.accNo) continue
-      spentMap.set(item.accNo, (spentMap.get(item.accNo) ?? 0) + Number(item.amount))
+    for (const billing of paidBillingsReport) {
+      const billingTotal = billing.items.reduce((s, i) => s + Number(i.amount), 0)
+      if (billingTotal === 0) continue
+      const paidTotal = billing.payments.reduce((s, p) => s + Number(p.amount), 0)
+      for (const item of billing.items) {
+        if (!item.accNo) continue
+        const itemPaid = paidTotal * (Number(item.amount) / billingTotal)
+        spentMap.set(item.accNo, (spentMap.get(item.accNo) ?? 0) + itemPaid)
+      }
     }
 
     const zeroMonths = monthFields.reduce((o, m) => ({ ...o, [m]: 0 }), {})

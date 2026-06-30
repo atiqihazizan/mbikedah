@@ -12,6 +12,7 @@ export const billingApi = {
   pay:          (id, body) => api.post(`/billings/${id}/payments`, body).then(r => r.data),
   payPhase:     (id, phaseId, body) => api.patch(`/billings/${id}/payments/${phaseId}`, body).then(r => r.data),
   listPayments: (id) => api.get(`/billings/${id}/payments`).then(r => r.data),
+  close:        (id, body) => api.post(`/billings/${id}/close`, body).then(r => r.data),
   uploadAtt:    (id, file) => {
     const fd = new FormData()
     fd.append('file', file)
@@ -39,6 +40,7 @@ export const BILLING_STATUS = {
   APPROVED:                 { label: 'Diluluskan',          color: 'green'  },
   PARTIAL_PAID:             { label: 'Bayaran Ansuran',     color: 'cyan'   },
   PAID:                     { label: 'Selesai Dibayar',     color: 'teal'   },
+  CLOSED:                   { label: 'Ditutup',             color: 'gray'   },
   REJECTED:                 { label: 'Ditolak',             color: 'red'    },
   RETURNED:                 { label: 'Dikembalikan',        color: 'orange' },
 }
@@ -55,5 +57,6 @@ export const STATUS_TABS = [
   { key: 'APPROVED',               label: 'Diluluskan'         },
   { key: 'PARTIAL_PAID',           label: 'Bayaran Ansuran'    },
   { key: 'PAID',                   label: 'Selesai Dibayar'    },
+  { key: 'CLOSED',                 label: 'Ditutup'            },
   { key: 'REJECTED',               label: 'Ditolak'            },
 ]
