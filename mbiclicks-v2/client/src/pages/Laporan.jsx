@@ -754,40 +754,25 @@ export default function Laporan() {
         </div>
       </div>
 
-      {/* ── Tabs ── */}
-      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
-        {SHEETS.map((s, i) => (
-          <button
-            key={s.id}
-            onClick={() => setActiveSheet(s.id)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-              activeSheet === s.id
-                ? 'border-purple-500 text-purple-700'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
-            }`}
-          >
-            <span className={`w-5 h-5 rounded text-[11px] font-bold flex items-center justify-center ${
-              activeSheet === s.id ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'
-            }`}>{i + 1}</span>
-            {s.label}
-          </button>
-        ))}
-        {/* Custom layout tabs */}
-        {layouts.map((l) => (
-          <button
-            key={`layout-${l.id}`}
-            onClick={() => setActiveSheet(`layout-${l.id}`)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-              activeSheet === `layout-${l.id}`
-                ? 'border-purple-500 text-purple-700'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
-            }`}
-          >
-            <LayoutTemplate size={13} className={activeSheet === `layout-${l.id}` ? 'text-purple-600' : 'text-gray-400'} />
-            {l.name}
-          </button>
-        ))}
-      </div>
+      {/* Custom layout tabs sahaja — static sheets sudah dalam sidebar */}
+      {layouts.length > 0 && (
+        <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
+          {layouts.map((l) => (
+            <button
+              key={`layout-${l.id}`}
+              onClick={() => setActiveSheet(`layout-${l.id}`)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                activeSheet === `layout-${l.id}`
+                  ? 'border-purple-500 text-purple-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              <LayoutTemplate size={13} className={activeSheet === `layout-${l.id}` ? 'text-purple-600' : 'text-gray-400'} />
+              {l.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Content ── */}
       {yearsLoading || reportLoading ? (
