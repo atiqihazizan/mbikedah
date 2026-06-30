@@ -16,7 +16,6 @@ const navItems = [
 
 const financeOnlyItems = [
   { to: '/bajet',      icon: PiggyBank, label: 'Bajet'      },
-  { to: '/laporan',    icon: BarChart3, label: 'Laporan'    },
   { to: '/akaun',      icon: BookOpen,  label: 'Kod Akaun'  },
   { to: '/akaun-bank', icon: Landmark,  label: 'Akaun Bank' },
 ]
