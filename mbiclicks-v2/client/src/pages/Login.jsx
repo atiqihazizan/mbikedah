@@ -59,14 +59,14 @@ function MiniCalendar() {
   return (
     <div className="flex flex-col flex-1">
       {/* Header bulan — static sahaja */}
-      <div className="flex items-center justify-center mb-3">
-        <span className="text-base font-medium text-gray-300">{MONTHS_MY[month - 1]} {year}</span>
+      <div className="flex items-center justify-center mb-4">
+        <span className="text-2xl font-semibold text-gray-200">{MONTHS_MY[month - 1]} {year}</span>
       </div>
 
       {/* Header hari */}
       <div className="grid grid-cols-7 mb-1">
         {DAYS_MY.map((d) => (
-          <div key={d} className="text-center text-sm text-gray-500 font-semibold py-2">{d}</div>
+          <div key={d} className="text-center text-base text-gray-500 font-semibold py-2">{d}</div>
         ))}
       </div>
 
