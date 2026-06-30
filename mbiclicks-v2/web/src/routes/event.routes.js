@@ -68,13 +68,25 @@ router.get('/calendar.ics', async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
-// GET /public — acara awam akan datang (tanpa auth, untuk halaman login)
+// GET /public — acara awam (tanpa auth, untuk halaman login)
+// Tanpa params: upcoming events; dengan ?year=&month=: events untuk bulan tersebut
 router.get('/public', async (req, res, next) => {
   try {
+    const { year, month } = req.query
+    let where = { isPublic: true }
+
+    if (year && month) {
+      const start = new Date(parseInt(year), parseInt(month) - 1, 1)
+      const end   = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59)
+      where.startAt = { gte: start, lte: end }
+    } else {
+      where.endAt = { gte: new Date() }
+    }
+
     const events = await prisma.event.findMany({
-      where: { isPublic: true, endAt: { gte: new Date() } },
+      where,
       orderBy: { startAt: 'asc' },
-      take: 8,
+      take: 100,
       select: { id: true, title: true, startAt: true, endAt: true, isAllDay: true, location: true, color: true },
     })
     res.json({ data: events })

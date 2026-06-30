@@ -1,31 +1,140 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Bell, IdCard, Lock, ArrowLeft, CalendarDays, MapPin } from 'lucide-react'
+import { Bell, IdCard, Lock, ArrowLeft, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/auth'
 import { Spinner } from '@/components/ui'
 import { ORG_NAME } from '@/lib/constants'
 
+const DAYS_MY   = ['Ahd', 'Isn', 'Sel', 'Rab', 'Kha', 'Jum', 'Sab']
+const MONTHS_MY = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember']
+
+const COLOR_DOT = {
+  blue:   'bg-blue-400',
+  green:  'bg-green-400',
+  red:    'bg-red-400',
+  orange: 'bg-orange-400',
+  purple: 'bg-purple-400',
+  pink:   'bg-pink-400',
+}
+
+// ─── Mini kalendar read-only ──────────────────────────────────────────────────
+function MiniCalendar() {
+  const today = new Date()
+  const [vd, setVd]       = useState({ year: today.getFullYear(), month: today.getMonth() + 1 })
+  const [events, setEvents] = useState([])
+
+  useEffect(() => {
+    api.get(`/events/public?year=${vd.year}&month=${vd.month}`)
+      .then((r) => setEvents(r.data.data ?? []))
+      .catch(() => {})
+  }, [vd.year, vd.month])
+
+  const firstDay    = new Date(vd.year, vd.month - 1, 1).getDay()
+  const daysInMonth = new Date(vd.year, vd.month, 0).getDate()
+  const cells       = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
+
+  const evByDay = {}
+  events.forEach((ev) => {
+    const d = new Date(ev.startAt)
+    if (d.getFullYear() === vd.year && d.getMonth() + 1 === vd.month) {
+      const day = d.getDate()
+      if (!evByDay[day]) evByDay[day] = []
+      evByDay[day].push(ev)
+    }
+  })
+
+  const isToday = (day) =>
+    day === today.getDate() && vd.month === today.getMonth() + 1 && vd.year === today.getFullYear()
+
+  function prevMonth() {
+    setVd(({ year, month }) => month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 })
+  }
+  function nextMonth() {
+    setVd(({ year, month }) => month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 })
+  }
+
+  return (
+    <div>
+      {/* Nav bulan */}
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={prevMonth} className="p-1 text-gray-600 hover:text-gray-300 transition-colors">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <span className="text-sm font-medium text-gray-300">{MONTHS_MY[vd.month - 1]} {vd.year}</span>
+        <button onClick={nextMonth} className="p-1 text-gray-600 hover:text-gray-300 transition-colors">
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Header hari */}
+      <div className="grid grid-cols-7 mb-1">
+        {DAYS_MY.map((d) => (
+          <div key={d} className="text-center text-[10px] text-gray-600 font-medium pb-1">{d}</div>
+        ))}
+      </div>
+
+      {/* Grid hari */}
+      <div className="grid grid-cols-7">
+        {cells.map((day, idx) => !day ? (
+          <div key={`e-${idx}`} className="h-9" />
+        ) : (
+          <div key={day} className="h-9 flex flex-col items-center pt-0.5">
+            <span className={`text-xs w-6 h-6 flex items-center justify-center rounded-full leading-none ${
+              isToday(day) ? 'bg-green-600 text-white font-semibold' : 'text-gray-500'
+            }`}>{day}</span>
+            {evByDay[day] && (
+              <div className="flex gap-0.5 mt-0.5">
+                {evByDay[day].slice(0, 3).map((ev, i) => (
+                  <div key={i} className={`w-1 h-1 rounded-full ${COLOR_DOT[ev.color] ?? 'bg-blue-400'}`} />
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Legend acara bulan ini */}
+      {events.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-800 space-y-2">
+          {events.slice(0, 4).map((ev) => (
+            <div key={ev.id} className="flex items-start gap-2">
+              <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${COLOR_DOT[ev.color] ?? 'bg-blue-400'}`} />
+              <div className="min-w-0">
+                <p className="text-xs text-gray-300 leading-snug line-clamp-1">{ev.title}</p>
+                <p className="text-[10px] text-gray-600 mt-0.5">
+                  {new Date(ev.startAt).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short' })}
+                  {!ev.isAllDay && ' · ' + new Date(ev.startAt).toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                </p>
+              </div>
+            </div>
+          ))}
+          {events.length > 4 && (
+            <p className="text-[10px] text-gray-600">+{events.length - 4} acara lagi</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Halaman Login ────────────────────────────────────────────────────────────
 export default function Login() {
   const navigate  = useNavigate()
   const setAuth   = useAuthStore((s) => s.setAuth)
   const pwdRef    = useRef(null)
 
-  const [step,      setStep]      = useState(1)
-  const [staffNo,   setStaffNo]   = useState('')
-  const [password,  setPassword]  = useState('')
-  const [loading,   setLoading]   = useState(false)
-  const [errors,    setErrors]    = useState({})
+  const [step,     setStep]     = useState(1)
+  const [staffNo,  setStaffNo]  = useState('')
+  const [password, setPassword] = useState('')
+  const [loading,  setLoading]  = useState(false)
+  const [errors,   setErrors]   = useState({})
   const [pekeliling, setPekeliling] = useState([])
-  const [events,     setEvents]     = useState([])
 
   useEffect(() => {
     api.get('/circular/public?limit=8')
       .then((r) => setPekeliling(r.data.data ?? []))
-      .catch(() => {})
-    api.get('/events/public')
-      .then((r) => setEvents(r.data.data ?? []))
       .catch(() => {})
   }, [])
 
@@ -79,13 +188,6 @@ export default function Login() {
     setStep(1)
     setPassword('')
     setErrors({})
-  }
-
-  function fmtDate(dateStr, isAllDay) {
-    const d = new Date(dateStr)
-    if (isAllDay) return d.toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' })
-    return d.toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' }) +
-      ' · ' + d.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit' })
   }
 
   return (
@@ -211,7 +313,7 @@ export default function Login() {
         </p>
       </div>
 
-      {/* Right panel — pekeliling + acara, grid 2 col pada xl, stack pada lg */}
+      {/* Right panel — pekeliling + kalendar mini, grid 2 col pada xl, stack pada lg */}
       <div className="hidden lg:grid lg:grid-cols-1 xl:grid-cols-2 flex-1 bg-gray-900 overflow-hidden">
 
         {/* Bahagian Pekeliling */}
@@ -224,7 +326,7 @@ export default function Login() {
           {pekeliling.length === 0 ? (
             <p className="text-gray-600 text-sm">Tiada pekeliling semasa.</p>
           ) : (
-            <div className="space-y-0">
+            <div>
               {pekeliling.map((p, i) => (
                 <div key={p.id} className="flex gap-3 items-start py-2.5 border-b border-gray-800 last:border-0">
                   <span className="text-gray-600 text-xs font-mono mt-0.5 shrink-0 w-5 text-right">{i + 1}.</span>
@@ -245,31 +347,14 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Bahagian Acara Akan Datang */}
+        {/* Bahagian Kalendar Mini */}
         <div className="flex flex-col p-8 overflow-y-auto">
           <div className="flex items-center gap-2 mb-5">
             <CalendarDays className="w-4 h-4 text-blue-400" />
-            <p className="text-blue-400 text-xs font-semibold uppercase tracking-widest">Acara Akan Datang</p>
+            <p className="text-blue-400 text-xs font-semibold uppercase tracking-widest">Kalendar Acara</p>
           </div>
 
-          {events.length === 0 ? (
-            <p className="text-gray-600 text-sm">Tiada acara akan datang.</p>
-          ) : (
-            <div className="space-y-0">
-              {events.map((ev) => (
-                <div key={ev.id} className="py-2.5 border-b border-gray-800 last:border-0">
-                  <p className="text-gray-200 text-sm leading-snug line-clamp-2">{ev.title}</p>
-                  <p className="text-gray-500 text-xs mt-1">{fmtDate(ev.startAt, ev.isAllDay)}</p>
-                  {ev.location && (
-                    <p className="flex items-center gap-1 text-gray-600 text-xs mt-0.5">
-                      <MapPin className="w-3 h-3 shrink-0" />
-                      <span className="line-clamp-1">{ev.location}</span>
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          <MiniCalendar />
         </div>
 
       </div>
