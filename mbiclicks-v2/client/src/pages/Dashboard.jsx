@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { FileText, Bell, Calendar, BarChart3, Clock, CheckCircle, XCircle, AlertCircle, ArrowRight, ChevronRight, Users, Building2 } from 'lucide-react'
+import { FileText, Bell, Calendar, BarChart3, Clock, CheckCircle, XCircle, AlertCircle, ArrowRight, ChevronRight, Users, Building2, CalendarDays } from 'lucide-react'
 // Building2 kekal untuk PendingApprovalsList (CEO view)
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { Button } from '@/components/ui'
 import api from '@/lib/api'
+import MiniCalendar from '@/components/MiniCalendar'
 
 const hour = new Date().getHours()
 const greeting = hour < 12 ? 'Selamat Pagi' : hour < 18 ? 'Selamat Tengah Hari' : 'Selamat Petang'
@@ -298,41 +299,56 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Pekeliling Terkini */}
-            <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-900 text-sm">Pekeliling Terkini</h2>
-                <Link to="/pekeliling" className="text-xs text-green-600 hover:text-green-700 font-medium flex items-center gap-1">
-                  Lihat semua <ArrowRight size={12} />
-                </Link>
+            {/* Kolum kanan — Pekeliling + Kalendar */}
+            <div className="lg:col-span-2 flex flex-col gap-5">
+
+              {/* Pekeliling Terkini — auto height */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-900 text-sm">Pekeliling Terkini</h2>
+                  <Link to="/pekeliling" className="text-xs text-green-600 hover:text-green-700 font-medium flex items-center gap-1">
+                    Lihat semua <ArrowRight size={12} />
+                  </Link>
+                </div>
+                {pekelilingList.length === 0 ? (
+                  <div className="py-12 text-center text-gray-400 text-sm">
+                    <Bell className="mx-auto mb-2 text-gray-300" size={28} />
+                    Tiada pekeliling
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-50">
+                    {pekelilingList.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => navigate(`/pekeliling/${c.id}`)}
+                        className="w-full px-5 py-3.5 hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0 mt-1.5" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug">{c.title}</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {c.createdAt ? new Date(c.createdAt).toLocaleDateString('ms-MY') : '—'}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {pekelilingList.length === 0 ? (
-                <div className="py-12 text-center text-gray-400 text-sm">
-                  <Bell className="mx-auto mb-2 text-gray-300" size={28} />
-                  Tiada pekeliling
+              {/* Kalendar Acara — fill remaining height */}
+              <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col min-h-0 overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100 shrink-0">
+                  <CalendarDays className="w-4 h-4 text-blue-500" />
+                  <h2 className="font-semibold text-gray-900 text-sm">Kalendar Acara</h2>
                 </div>
-              ) : (
-                <div className="divide-y divide-gray-50">
-                  {pekelilingList.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => navigate(`/pekeliling/${c.id}`)}
-                      className="w-full px-5 py-3.5 hover:bg-gray-50 transition-colors text-left"
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0 mt-1.5" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug">{c.title}</p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {c.createdAt ? new Date(c.createdAt).toLocaleDateString('ms-MY') : '—'}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                <div className="flex-1 flex flex-col min-h-0 p-4">
+                  <MiniCalendar endpoint="/events/public" theme="light" />
                 </div>
-              )}
+              </div>
+
             </div>
           </div>
         </div>
