@@ -1,36 +1,38 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Bell, IdCard, Lock, ArrowLeft } from 'lucide-react'
+import { Bell, IdCard, Lock, ArrowLeft, CalendarDays, MapPin } from 'lucide-react'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/auth'
 import { Spinner } from '@/components/ui'
-import { ORG_NAME, APP_NAME, APP_TAGLINE } from '@/lib/constants'
+import { ORG_NAME } from '@/lib/constants'
 
 export default function Login() {
   const navigate  = useNavigate()
   const setAuth   = useAuthStore((s) => s.setAuth)
   const pwdRef    = useRef(null)
 
-  const [step,      setStep]      = useState(1)          // 1 = staffNo, 2 = password
+  const [step,      setStep]      = useState(1)
   const [staffNo,   setStaffNo]   = useState('')
   const [password,  setPassword]  = useState('')
   const [loading,   setLoading]   = useState(false)
   const [errors,    setErrors]    = useState({})
   const [pekeliling, setPekeliling] = useState([])
+  const [events,     setEvents]     = useState([])
 
   useEffect(() => {
-    api.get('/circular/public?limit=10')
+    api.get('/circular/public?limit=8')
       .then((r) => setPekeliling(r.data.data ?? []))
+      .catch(() => {})
+    api.get('/events/public')
+      .then((r) => setEvents(r.data.data ?? []))
       .catch(() => {})
   }, [])
 
-  // Fokus ke field password bila step 2 muncul
   useEffect(() => {
     if (step === 2) pwdRef.current?.focus()
   }, [step])
 
-  // Step 1 — check staffNo
   async function handleCheckStaff(e) {
     e.preventDefault()
     const sn = staffNo.trim().toUpperCase()
@@ -42,7 +44,6 @@ export default function Login() {
       if (res.data.requirePassword) {
         setStep(2)
       } else {
-        // Bukan admin — terus login
         const login = await api.post('/auth/login', { staffNo: sn })
         setAuth(login.data.user, login.data.accessToken, login.data.refreshToken)
         navigate('/dashboard')
@@ -54,7 +55,6 @@ export default function Login() {
     }
   }
 
-  // Step 2 — verify password (admin)
   async function handleLogin(e) {
     e.preventDefault()
     if (!password) { setErrors({ password: 'Kata laluan diperlukan' }); return }
@@ -81,160 +81,197 @@ export default function Login() {
     setErrors({})
   }
 
+  function fmtDate(dateStr, isAllDay) {
+    const d = new Date(dateStr)
+    if (isAllDay) return d.toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' })
+    return d.toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' }) +
+      ' · ' + d.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit' })
+  }
+
   return (
     <div className="h-screen flex bg-gray-50 overflow-hidden">
 
-      {/* Left panel — form */}
-      <div className="lg:w-[480px] xl:w-[520px] shrink-0 flex items-center justify-center p-4 sm:p-8 bg-gray-50">
-        <div className="w-full max-w-[420px]">
+      {/* Left panel — logo atas, form tengah */}
+      <div className="lg:w-[440px] xl:w-[480px] shrink-0 flex flex-col bg-gray-50">
 
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-8">
-            <img src="/logo.png" alt="MBI Logo" className="h-10 w-auto object-contain" />
-            <div>
-              <p className="font-semibold text-gray-900 text-sm">{APP_NAME}</p>
-              <p className="text-gray-400 text-xs">{APP_TAGLINE}</p>
-            </div>
-          </div>
+        {/* Logo — atas, tengah, besar */}
+        <div className="flex justify-center pt-10 pb-4">
+          <img src="/logo.png" alt="MBI Logo" className="h-20 w-auto object-contain" />
+        </div>
 
-          {/* Step 1 — No. Staf */}
-          {step === 1 && (
-            <>
-              <div className="mb-7">
-                <h1 className="text-2xl font-bold text-gray-900">Log Masuk</h1>
-                <p className="text-gray-500 text-sm mt-1">Masukkan no. staf anda untuk log masuk</p>
-              </div>
+        {/* Form — tengah */}
+        <div className="flex-1 flex items-center justify-center px-6 sm:px-10">
+          <div className="w-full max-w-[360px]">
 
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <form onSubmit={handleCheckStaff} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">No. Staf</label>
-                    <div className="relative">
-                      <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        type="text"
-                        placeholder="Contoh: 0032 atau C0021"
-                        value={staffNo}
-                        onChange={(e) => { setStaffNo(e.target.value); setErrors({}) }}
-                        autoFocus
-                        className={`block w-full rounded-lg border pl-9 pr-3 py-2.5 text-sm text-gray-900
-                          placeholder:text-gray-400 transition-colors uppercase tracking-widest
-                          focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500
-                          ${errors.staffNo ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'}`}
-                      />
+            {step === 1 && (
+              <>
+                <div className="mb-7 text-center">
+                  <h1 className="text-2xl font-bold text-gray-900">Log Masuk</h1>
+                  <p className="text-gray-500 text-sm mt-1">Masukkan no. staf anda untuk log masuk</p>
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                  <form onSubmit={handleCheckStaff} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">No. Staf</label>
+                      <div className="relative">
+                        <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input
+                          type="text"
+                          placeholder="Contoh: 0032 atau C0021"
+                          value={staffNo}
+                          onChange={(e) => { setStaffNo(e.target.value); setErrors({}) }}
+                          autoFocus
+                          className={`block w-full rounded-lg border pl-9 pr-3 py-2.5 text-sm text-gray-900
+                            placeholder:text-gray-400 transition-colors uppercase tracking-widest
+                            focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500
+                            ${errors.staffNo ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'}`}
+                        />
+                      </div>
+                      {errors.staffNo && <p className="text-xs text-red-600 mt-1">{errors.staffNo}</p>}
                     </div>
-                    {errors.staffNo && <p className="text-xs text-red-600 mt-1">{errors.staffNo}</p>}
-                  </div>
 
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5
+                        text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-700
+                        focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
+                        disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading && <Spinner size={15} />}
+                      Seterusnya
+                    </button>
+                  </form>
+                </div>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <div className="mb-7">
                   <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5
-                      text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-700
-                      focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
-                      disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleBack}
+                    className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-4 transition-colors"
                   >
-                    {loading && <Spinner size={15} />}
-                    Seterusnya
+                    <ArrowLeft className="w-4 h-4" /> Kembali
                   </button>
-                </form>
-              </div>
-            </>
-          )}
-
-          {/* Step 2 — Password (admin sahaja) */}
-          {step === 2 && (
-            <>
-              <div className="mb-7">
-                <button
-                  onClick={handleBack}
-                  className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-4 transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4" /> Kembali
-                </button>
-                <h1 className="text-2xl font-bold text-gray-900">Kata Laluan Admin</h1>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-3 py-1">
-                    <IdCard className="w-3.5 h-3.5 text-gray-500" />
-                    <span className="text-xs font-mono font-medium text-gray-700 tracking-widest">
-                      {staffNo.trim().toUpperCase()}
-                    </span>
+                  <h1 className="text-2xl font-bold text-gray-900">Kata Laluan Admin</h1>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-3 py-1">
+                      <IdCard className="w-3.5 h-3.5 text-gray-500" />
+                      <span className="text-xs font-mono font-medium text-gray-700 tracking-widest">
+                        {staffNo.trim().toUpperCase()}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kata Laluan</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        ref={pwdRef}
-                        type="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => { setPassword(e.target.value); setErrors({}) }}
-                        className={`block w-full rounded-lg border pl-9 pr-3 py-2.5 text-sm text-gray-900
-                          placeholder:text-gray-400 transition-colors
-                          focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500
-                          ${errors.password ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'}`}
-                      />
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Kata Laluan</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input
+                          ref={pwdRef}
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => { setPassword(e.target.value); setErrors({}) }}
+                          className={`block w-full rounded-lg border pl-9 pr-3 py-2.5 text-sm text-gray-900
+                            placeholder:text-gray-400 transition-colors
+                            focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500
+                            ${errors.password ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'}`}
+                        />
+                      </div>
+                      {errors.password && <p className="text-xs text-red-600 mt-1">{errors.password}</p>}
                     </div>
-                    {errors.password && <p className="text-xs text-red-600 mt-1">{errors.password}</p>}
-                  </div>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5
-                      text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-700
-                      focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
-                      disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading && <Spinner size={15} />}
-                    Log Masuk
-                  </button>
-                </form>
-              </div>
-            </>
-          )}
-
-          <p className="text-center text-xs text-gray-400 mt-6">
-            {ORG_NAME} &copy; {new Date().getFullYear()}
-          </p>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5
+                        text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-700
+                        focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
+                        disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading && <Spinner size={15} />}
+                      Log Masuk
+                    </button>
+                  </form>
+                </div>
+              </>
+            )}
+          </div>
         </div>
+
+        <p className="text-center text-xs text-gray-400 py-4">
+          {ORG_NAME} &copy; {new Date().getFullYear()}
+        </p>
       </div>
 
-      {/* Right panel — pekeliling */}
-      <div className="hidden lg:flex flex-1 flex-col p-10 bg-gray-900 overflow-y-auto">
-        <div className="flex items-center gap-2 mb-6">
-          <Bell className="w-4 h-4 text-green-500" />
-          <p className="text-green-400 text-xs font-semibold uppercase tracking-widest">Pekeliling Terkini</p>
+      {/* Right panel — pekeliling + acara, grid 2 col pada xl, stack pada lg */}
+      <div className="hidden lg:grid lg:grid-cols-1 xl:grid-cols-2 flex-1 bg-gray-900 overflow-hidden">
+
+        {/* Bahagian Pekeliling */}
+        <div className="flex flex-col p-8 overflow-y-auto border-b border-gray-800 xl:border-b-0 xl:border-r xl:border-gray-800">
+          <div className="flex items-center gap-2 mb-5">
+            <Bell className="w-4 h-4 text-green-500" />
+            <p className="text-green-400 text-xs font-semibold uppercase tracking-widest">Pekeliling Terkini</p>
+          </div>
+
+          {pekeliling.length === 0 ? (
+            <p className="text-gray-600 text-sm">Tiada pekeliling semasa.</p>
+          ) : (
+            <div className="space-y-0">
+              {pekeliling.map((p, i) => (
+                <div key={p.id} className="flex gap-3 items-start py-2.5 border-b border-gray-800 last:border-0">
+                  <span className="text-gray-600 text-xs font-mono mt-0.5 shrink-0 w-5 text-right">{i + 1}.</span>
+                  <div className="min-w-0">
+                    <p className="text-gray-200 text-sm leading-snug line-clamp-2">{p.title}</p>
+                    <p className="text-gray-500 text-xs mt-1">
+                      {new Date(p.issuedAt).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {p.department?.name && ` · ${p.department.name}`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="text-gray-700 text-xs mt-auto pt-6">
+            &copy; {new Date().getFullYear()} {ORG_NAME}
+          </p>
         </div>
 
-        {pekeliling.length === 0 ? (
-          <p className="text-gray-600 text-sm">Tiada pekeliling semasa.</p>
-        ) : (
-          <div className="space-y-2">
-            {pekeliling.map((p, i) => (
-              <div key={p.id} className="flex gap-3 items-start py-2.5 border-b border-gray-800 last:border-0">
-                <span className="text-gray-600 text-xs font-mono mt-0.5 shrink-0 w-5 text-right">{i + 1}.</span>
-                <div className="min-w-0">
-                  <p className="text-gray-200 text-sm leading-snug line-clamp-2">{p.title}</p>
-                  <p className="text-gray-500 text-xs mt-1">
-                    {new Date(p.issuedAt).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    {p.department?.name && ` · ${p.department.name}`}
-                  </p>
-                </div>
-              </div>
-            ))}
+        {/* Bahagian Acara Akan Datang */}
+        <div className="flex flex-col p-8 overflow-y-auto">
+          <div className="flex items-center gap-2 mb-5">
+            <CalendarDays className="w-4 h-4 text-blue-400" />
+            <p className="text-blue-400 text-xs font-semibold uppercase tracking-widest">Acara Akan Datang</p>
           </div>
-        )}
 
-        <p className="text-gray-600 text-xs mt-auto pt-8">
-          &copy; {new Date().getFullYear()} {ORG_NAME}
-        </p>
+          {events.length === 0 ? (
+            <p className="text-gray-600 text-sm">Tiada acara akan datang.</p>
+          ) : (
+            <div className="space-y-0">
+              {events.map((ev) => (
+                <div key={ev.id} className="py-2.5 border-b border-gray-800 last:border-0">
+                  <p className="text-gray-200 text-sm leading-snug line-clamp-2">{ev.title}</p>
+                  <p className="text-gray-500 text-xs mt-1">{fmtDate(ev.startAt, ev.isAllDay)}</p>
+                  {ev.location && (
+                    <p className="flex items-center gap-1 text-gray-600 text-xs mt-0.5">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="line-clamp-1">{ev.location}</span>
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   )

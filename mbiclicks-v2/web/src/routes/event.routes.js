@@ -68,6 +68,19 @@ router.get('/calendar.ics', async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
+// GET /public — acara awam akan datang (tanpa auth, untuk halaman login)
+router.get('/public', async (req, res, next) => {
+  try {
+    const events = await prisma.event.findMany({
+      where: { isPublic: true, endAt: { gte: new Date() } },
+      orderBy: { startAt: 'asc' },
+      take: 8,
+      select: { id: true, title: true, startAt: true, endAt: true, isAllDay: true, location: true, color: true },
+    })
+    res.json({ data: events })
+  } catch (err) { next(err) }
+})
+
 router.use(authenticate)
 
 // GET /subscribe-token — jana token calendar feed untuk user semasa (tahan 1 tahun)
