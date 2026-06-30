@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Bell, IdCard, Lock, ArrowLeft, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Bell, IdCard, Lock, ArrowLeft, CalendarDays } from 'lucide-react'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/auth'
 import { Spinner } from '@/components/ui'
@@ -22,50 +22,37 @@ const COLOR_DOT = {
 // ─── Mini kalendar read-only ──────────────────────────────────────────────────
 function MiniCalendar() {
   const today = new Date()
-  const [vd, setVd]       = useState({ year: today.getFullYear(), month: today.getMonth() + 1 })
+  const year  = today.getFullYear()
+  const month = today.getMonth() + 1
   const [events, setEvents] = useState([])
 
   useEffect(() => {
-    api.get(`/events/public?year=${vd.year}&month=${vd.month}`)
+    api.get(`/events/public?year=${year}&month=${month}`)
       .then((r) => setEvents(r.data.data ?? []))
       .catch(() => {})
-  }, [vd.year, vd.month])
+  }, [])
 
-  const firstDay    = new Date(vd.year, vd.month - 1, 1).getDay()
-  const daysInMonth = new Date(vd.year, vd.month, 0).getDate()
+  const firstDay    = new Date(year, month - 1, 1).getDay()
+  const daysInMonth = new Date(year, month, 0).getDate()
   const cells       = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
 
   const evByDay = {}
   events.forEach((ev) => {
     const d = new Date(ev.startAt)
-    if (d.getFullYear() === vd.year && d.getMonth() + 1 === vd.month) {
+    if (d.getFullYear() === year && d.getMonth() + 1 === month) {
       const day = d.getDate()
       if (!evByDay[day]) evByDay[day] = []
       evByDay[day].push(ev)
     }
   })
 
-  const isToday = (day) =>
-    day === today.getDate() && vd.month === today.getMonth() + 1 && vd.year === today.getFullYear()
-
-  function prevMonth() {
-    setVd(({ year, month }) => month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 })
-  }
-  function nextMonth() {
-    setVd(({ year, month }) => month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 })
-  }
+  const isToday = (day) => day === today.getDate()
 
   return (
     <div className="flex flex-col flex-1">
-      {/* Nav bulan */}
-      <div className="flex items-center justify-between mb-3">
-        <button onClick={prevMonth} className="p-1 text-gray-600 hover:text-gray-300 transition-colors">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <span className="text-base font-medium text-gray-300">{MONTHS_MY[vd.month - 1]} {vd.year}</span>
-        <button onClick={nextMonth} className="p-1 text-gray-600 hover:text-gray-300 transition-colors">
-          <ChevronRight className="w-5 h-5" />
-        </button>
+      {/* Header bulan — static sahaja */}
+      <div className="flex items-center justify-center mb-3">
+        <span className="text-base font-medium text-gray-300">{MONTHS_MY[month - 1]} {year}</span>
       </div>
 
       {/* Header hari */}
