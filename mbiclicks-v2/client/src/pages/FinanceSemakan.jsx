@@ -220,7 +220,7 @@ export default function FinanceSemakan() {
               </span>
             </div>
             <p className="text-sm text-gray-500 mt-0.5">
-              Dikemukakan oleh {billing.applicant?.name} · {billing.department?.name} · {fmtDate(billing.createdAt)}
+              Dihantar oleh {billing.applicant?.name} · {billing.department?.name} · {fmtDate(billing.createdAt)}
             </p>
           </div>
         </div>

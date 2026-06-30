@@ -99,7 +99,7 @@ function StatusBadge({ status }) {
 
 const STEP_LABELS = { SUBMIT: 'Pemohon', HOD: 'Ketua Jabatan', FINANCE_CHECK: 'Semakan Kewangan',
   FINANCE_VERIFY: 'Pengesahan Kewangan', FINANCE_APPROVAL: 'Kelulusan Kewangan', PAYMENT: 'Pembayaran' }
-const ACTION_LABELS = { SUBMIT: 'Dikemukakan', APPROVE: 'Diluluskan', VERIFY: 'Disahkan',
+const ACTION_LABELS = { SUBMIT: 'Dihantar', APPROVE: 'Diluluskan', VERIFY: 'Disahkan',
   REJECT: 'Ditolak', RETURN: 'Dikembalikan', PAY: 'Dibayar' }
 const ACTION_COLOR = { SUBMIT: 'text-blue-600', APPROVE: 'text-green-600', VERIFY: 'text-green-600',
   REJECT: 'text-red-600', RETURN: 'text-orange-600', PAY: 'text-teal-600' }
@@ -356,7 +356,7 @@ export default function PermohonanDetail() {
   // Mutations
   const submitMut = useMutation({
     mutationFn: () => billingApi.submit(id, {}),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['billing', id] }); qc.invalidateQueries({ queryKey: ['billings'] }); toast.success('Permohonan dikemukakan'); setEditMode(false) },
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['billing', id] }); qc.invalidateQueries({ queryKey: ['billings'] }); toast.success('Permohonan dihantar'); setEditMode(false) },
     onError:    (e) => toast.error(e.response?.data?.message ?? 'Gagal'),
   })
 
@@ -507,7 +507,7 @@ console.log(id, billing);
           {!editMode && canEdit && (billing.status === 'DRAFT' || billing.status === 'RETURNED') && (
             <Button onClick={() => submitMut.mutate()} disabled={submitMut.isPending}>
               {submitMut.isPending ? <Spinner className="w-4 h-4 mr-1.5" /> : <Send className="w-4 h-4 mr-1.5" />}
-              Kemukakan
+              Hantar
             </Button>
           )}
           {!editMode && canPay && (
@@ -579,9 +579,9 @@ console.log(id, billing);
                         {opt.raw?.type === 'STAFF'
                           ? <User2 className="w-3.5 h-3.5 text-purple-400 mt-0.5 shrink-0" />
                           : <Building2 className="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0" />}
-                        <div>
-                          <div className="font-medium">{opt.label}</div>
-                          {opt.sub && <div className="text-xs text-gray-400 mt-0.5">{opt.sub}</div>}
+                        <div className="overflow-hidden">
+                          <div className="font-medium truncate">{opt.label}</div>
+                          {opt.sub && <div className="text-xs text-gray-400 mt-0.5 truncate">{opt.sub}</div>}
                         </div>
                       </div>
                     )}
@@ -668,7 +668,10 @@ console.log(id, billing);
                         placeholder="—"
                         clearable
                         renderOption={opt => (
-                          <div><span className="font-mono text-xs text-gray-500 mr-2">{opt.value}</span><span>{opt.sub}</span></div>
+                          <div className='ml-3'>
+                            <div className="font-mono text-xs text-gray-500">{opt.value}</div>
+                            <div className="text-xs truncate">{opt.sub}</div>
+                          </div>
                         )}
                       />
                     ) : (
