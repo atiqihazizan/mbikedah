@@ -37,13 +37,12 @@ function buildPermohonanSubs({ isHod, isCeo, isFinance }) {
   if (isCeo)
     items.push({ status: 'PENDING_CEO', label: 'Ketua Eksekutif' })
 
-  // Finance hanya nampak status personal (bukan workflow kelulusan — ada section lain)
   if (!isFinance) {
-    items.push({ status: 'APPROVED',  label: 'Diluluskan'    })
-    items.push({ status: 'PAID',      label: 'Selesai Dibayar' })
-    items.push({ status: 'CLOSED',    label: 'Ditutup'       })
+    items.push({ status: 'APPROVED', label: 'Diluluskan' })
+    items.push({ status: 'CLOSED',   label: 'Ditutup'    })
   }
-  items.push({ status: 'REJECTED', label: 'Ditolak' })
+  items.push({ status: 'PAID',     label: 'Selesai Dibayar' })
+  items.push({ status: 'REJECTED', label: 'Ditolak'         })
   return items
 }
 
@@ -61,6 +60,7 @@ function buildKelulusanSubs({ isFinanceHod }) {
     { status: 'APPROVED',     label: 'Diluluskan'      },
     { status: 'PARTIAL_PAID', label: 'Bayaran Ansuran' },
     { status: 'PAID',         label: 'Selesai Dibayar' },
+    { status: 'REJECTED',     label: 'Ditolak'         },
   )
   return items
 }
