@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Eye, FileText } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
-import { billingApi, STATUS_TABS, BILLING_STATUS } from '@/lib/billing'
+import { billingApi, BILLING_STATUS } from '@/lib/billing'
 import { Button, Spinner } from '@/components/ui'
 
 function fmtDate(d) {
@@ -35,13 +35,16 @@ function StatusBadge({ status }) {
 export default function Permohonan() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const [tab, setTab] = useState('')
+  const [searchParams] = useSearchParams()
+  const tab  = searchParams.get('status') ?? ''
   const [page, setPage] = useState(1)
 
   const roleSlug = user?.role?.slug
   const isHod = ['hod', 'finance_hod', 'admin'].includes(roleSlug)
   const isFinance = ['finance', 'finance_hod', 'admin'].includes(roleSlug)
   const isCeo = ['ceo', 'admin'].includes(roleSlug)
+
+  useEffect(() => { setPage(1) }, [tab])
 
   const { data, isLoading } = useQuery({
     queryKey: ['billings', tab, page],
@@ -51,18 +54,6 @@ export default function Permohonan() {
   const rows = data?.data ?? []
   const total = data?.total ?? 0
   const totalPages = data?.totalPages ?? 1
-
-  const visibleTabs = STATUS_TABS.filter(t => {
-    const hideForNonFinance = ['PENDING_FINANCE_CHECK', 'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL'].includes(t.key)
-    const hideForNonHod = ['PENDING_HOD'].includes(t.key)
-    const hideForNonCeo = ['PENDING_CEO', 'PENDING_CEO_FINAL'].includes(t.key)
-
-    if (isFinance) return true
-    if (hideForNonFinance) return false
-    if (!isHod && hideForNonHod) return false
-    if (!isCeo && hideForNonCeo) return false
-    return true
-  })
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto">
@@ -75,22 +66,6 @@ export default function Permohonan() {
         <Button onClick={() => navigate('/permohonan/baru')} className="flex items-center gap-2">
           <Plus className="w-4 h-4" /> Permohonan Baru
         </Button>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-gray-200 overflow-x-auto">
-        {visibleTabs.map(t => (
-          <button
-            key={t.key}
-            onClick={() => { setTab(t.key); setPage(1) }}
-            className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
-              ${tab === t.key
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            {t.label}
-          </button>
-        ))}
       </div>
 
       {/* Table */}
