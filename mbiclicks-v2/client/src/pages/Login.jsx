@@ -354,8 +354,8 @@ export default function Login() {
         </div>
 
         {/* Bahagian Kalendar Mini */}
-        <div className="flex flex-col p-8 overflow-y-auto">
-          <div className="flex items-center gap-2 mb-5">
+        <div className="flex flex-col p-8 min-h-0 overflow-hidden">
+          <div className="flex items-center gap-2 mb-5 shrink-0">
             <CalendarDays className="w-4 h-4 text-blue-400" />
             <p className="text-blue-400 text-xs font-semibold uppercase tracking-widest">Kalendar Acara</p>
           </div>
