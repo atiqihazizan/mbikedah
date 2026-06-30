@@ -56,32 +56,32 @@ function MiniCalendar() {
   }
 
   return (
-    <div>
+    <div className="flex flex-col flex-1">
       {/* Nav bulan */}
       <div className="flex items-center justify-between mb-3">
         <button onClick={prevMonth} className="p-1 text-gray-600 hover:text-gray-300 transition-colors">
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
-        <span className="text-sm font-medium text-gray-300">{MONTHS_MY[vd.month - 1]} {vd.year}</span>
+        <span className="text-base font-medium text-gray-300">{MONTHS_MY[vd.month - 1]} {vd.year}</span>
         <button onClick={nextMonth} className="p-1 text-gray-600 hover:text-gray-300 transition-colors">
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
       {/* Header hari */}
-      <div className="grid grid-cols-7 mb-2">
+      <div className="grid grid-cols-7 mb-1">
         {DAYS_MY.map((d) => (
-          <div key={d} className="text-center text-sm text-gray-500 font-semibold pb-2">{d}</div>
+          <div key={d} className="text-center text-sm text-gray-500 font-semibold py-2">{d}</div>
         ))}
       </div>
 
-      {/* Grid hari */}
-      <div className="grid grid-cols-7">
+      {/* Grid hari — flex-1 supaya isi ruang yang ada */}
+      <div className="grid grid-cols-7 flex-1" style={{ gridAutoRows: '1fr' }}>
         {cells.map((day, idx) => !day ? (
-          <div key={`e-${idx}`} className="h-14" />
+          <div key={`e-${idx}`} />
         ) : (
-          <div key={day} className="h-14 flex flex-col items-center pt-1">
-            <span className={`text-base w-10 h-10 flex items-center justify-center rounded-full leading-none font-medium ${
+          <div key={day} className="flex flex-col items-center justify-center">
+            <span className={`text-lg w-11 h-11 flex items-center justify-center rounded-full leading-none font-medium ${
               isToday(day) ? 'bg-green-600 text-white font-semibold' : 'text-gray-400'
             }`}>{day}</span>
             {evByDay[day] && (
@@ -348,7 +348,7 @@ export default function Login() {
         </div>
 
         {/* Bahagian Kalendar Mini */}
-        <div className="flex flex-col p-8 overflow-y-auto">
+        <div className="flex flex-col flex-1 p-8 overflow-y-auto">
           <div className="flex items-center gap-2 mb-5">
             <CalendarDays className="w-4 h-4 text-blue-400" />
             <p className="text-blue-400 text-xs font-semibold uppercase tracking-widest">Kalendar Acara</p>
