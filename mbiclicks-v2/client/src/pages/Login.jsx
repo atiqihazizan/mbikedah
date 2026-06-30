@@ -224,7 +224,7 @@ export default function Login() {
     <div className="h-screen flex bg-gray-50 overflow-hidden">
 
       {/* Left panel — logo atas, form tengah */}
-      <div className="lg:w-[440px] xl:w-[480px] shrink-0 flex flex-col bg-gray-50">
+      <div className="w-full lg:w-[440px] xl:w-[480px] shrink-0 flex flex-col bg-gray-50">
 
         {/* Logo — atas, tengah, besar */}
         <div className="flex justify-center pt-10 pb-4">
