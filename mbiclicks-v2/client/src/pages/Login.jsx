@@ -71,18 +71,18 @@ function MiniCalendar() {
       {/* Header hari */}
       <div className="grid grid-cols-7 mb-1">
         {DAYS_MY.map((d) => (
-          <div key={d} className="text-center text-[10px] text-gray-600 font-medium pb-1">{d}</div>
+          <div key={d} className="text-center text-xs text-gray-500 font-semibold pb-2">{d}</div>
         ))}
       </div>
 
       {/* Grid hari */}
       <div className="grid grid-cols-7">
         {cells.map((day, idx) => !day ? (
-          <div key={`e-${idx}`} className="h-9" />
+          <div key={`e-${idx}`} className="h-11" />
         ) : (
-          <div key={day} className="h-9 flex flex-col items-center pt-0.5">
-            <span className={`text-xs w-6 h-6 flex items-center justify-center rounded-full leading-none ${
-              isToday(day) ? 'bg-green-600 text-white font-semibold' : 'text-gray-500'
+          <div key={day} className="h-11 flex flex-col items-center pt-1">
+            <span className={`text-sm w-8 h-8 flex items-center justify-center rounded-full leading-none font-medium ${
+              isToday(day) ? 'bg-green-600 text-white font-semibold' : 'text-gray-400'
             }`}>{day}</span>
             {evByDay[day] && (
               <div className="flex gap-0.5 mt-0.5">
