@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import prisma from '../lib/prisma.js'
 import { logActivity } from '../utils/activityLog.js'
+import { recalcActualCache, extractAccNos } from '../utils/budgetCache.js'
 
 const PAYABLE_STATUSES  = ['APPROVED', 'PARTIAL_PAID']
 const CLOSEABLE_STATUSES = ['APPROVED', 'PARTIAL_PAID']
@@ -136,6 +137,20 @@ export async function recordPayment(req, res, next) {
       targetId: id, detail: `${billing.refNo} → ${newStatus} (RM ${newTotalPaid.toFixed(2)} / RM ${totalAmount.toFixed(2)})`, req,
     })
 
+    // Refresh cache actual untuk setiap accNo yang terlibat
+    const paidPayments = newPayments.filter(p => p.paidAt)
+    if (paidPayments.length > 0) {
+      const items  = await prisma.billingItem.findMany({
+        where: { billingId: id, isDeleted: false, accNo: { not: null } },
+        select: { accNo: true },
+      })
+      const accNos    = extractAccNos(items)
+      const paidDate  = paidPayments[0].paidAt
+      const year      = paidDate.getFullYear()
+      const month     = paidDate.getMonth() + 1
+      await Promise.all(accNos.map(accNo => recalcActualCache(accNo, year, month)))
+    }
+
     res.json({ message: isFullyPaid ? 'Bayaran penuh berjaya direkodkan' : 'Bayaran ansuran berjaya direkodkan', status: newStatus })
   } catch (err) { next(err) }
 }
@@ -192,6 +207,15 @@ export async function payPhase(req, res, next) {
         },
       })
     })
+
+    // Refresh cache actual untuk setiap accNo yang terlibat
+    const items = await prisma.billingItem.findMany({
+      where: { billingId, isDeleted: false, accNo: { not: null } },
+      select: { accNo: true },
+    })
+    const accNos = extractAccNos(items)
+    const now    = new Date()
+    await Promise.all(accNos.map(accNo => recalcActualCache(accNo, now.getFullYear(), now.getMonth() + 1)))
 
     res.json({ message: `Fasa ${payment.phase} berjaya ditandakan sebagai dibayar`, status: newStatus })
   } catch (err) { next(err) }

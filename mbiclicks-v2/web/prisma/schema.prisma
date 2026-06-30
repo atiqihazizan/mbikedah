@@ -165,10 +165,11 @@ model Account {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  budgetLines  BudgetLine[]
-  billingItems BillingItem[]
-  actualData   ActualData[]
-  vendors      Vendor[]      @relation("VendorAccount")
+  budgetLines        BudgetLine[]
+  billingItems       BillingItem[]
+  actualData         ActualData[]
+  vendors            Vendor[]             @relation("VendorAccount")
+  budgetMonthlyCache BudgetMonthlyCache[]
 
   @@map("accounts")
 }
@@ -283,6 +284,22 @@ model BudgetAdjustment {
   remarks      String?    @db.Text
 
   @@map("budget_adjustments")
+}
+
+// ─── BUDGET MONTHLY CACHE ─────────────────────────────────────────────────────
+
+model BudgetMonthlyCache {
+  id               Int      @id @default(autoincrement())
+  accNo            String   @map("acc_no") @db.VarChar(20)
+  account          Account  @relation(fields: [accNo], references: [accNo])
+  year             Int
+  month            Int
+  amountPermohonan Decimal  @default(0) @map("amount_permohonan") @db.Decimal(15, 2)
+  amountActual     Decimal  @default(0) @map("amount_actual") @db.Decimal(15, 2)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([accNo, year, month])
+  @@map("budget_monthly_cache")
 }
 
 // ─── ACTUAL DATA (synced from AutoCount) ─────────────────────────────────────

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import prisma from '../lib/prisma.js'
 import { logActivity } from '../utils/activityLog.js'
+import { recalcPermohonanCache, extractAccNos } from '../utils/budgetCache.js'
 
 // ─── Workflow map (dynamic — bergantung pada workflowType & jumlah) ───────────
 // workflowType=HOD  → pemohon adalah HOD, CEO gantikan PENDING_HOD & PENDING_FINANCE_APPROVAL
@@ -404,6 +405,19 @@ export async function workflowAction(req, res, next) {
     })
 
     await logActivity({ userId: req.user.id, userName: req.user.name, action, module: 'billing', targetId: id, detail: `${billing.refNo} → ${toStatus}`, req })
+
+    // Refresh cache permohonan jika status bertukar ke/dari APPROVED
+    if (toStatus === 'APPROVED' || billing.status === 'APPROVED') {
+      const items = await prisma.billingItem.findMany({
+        where: { billingId: id, isDeleted: false, accNo: { not: null } },
+        select: { accNo: true },
+      })
+      const accNos = extractAccNos(items)
+      const year   = billing.createdAt.getFullYear()
+      const month  = billing.createdAt.getMonth() + 1
+      await Promise.all(accNos.map(accNo => recalcPermohonanCache(accNo, year, month)))
+    }
+
     res.json({ data })
   } catch (err) { next(err) }
 }
