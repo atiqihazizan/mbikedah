@@ -1,12 +1,18 @@
+import { useState, useEffect } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Bell,
-  Calendar, BarChart3, Settings, ChevronRight, LogOut, BookOpen, PiggyBank, Landmark,
-  ClipboardCheck,
+  Calendar, BarChart3, Settings, ChevronDown, LogOut, BookOpen, PiggyBank, Landmark,
+  ClipboardCheck, ChevronRight,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/api'
 import { APP_NAME, APP_TAGLINE } from '@/lib/constants'
+
+const KELULUSAN_STATUSES = new Set([
+  'PENDING_FINANCE_CHECK','PENDING_FINANCE_VERIFY','PENDING_FINANCE_APPROVAL',
+  'PENDING_CEO_FINAL','PARTIAL_PAID',
+])
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard',  module: 'dashboard' },
@@ -103,6 +109,25 @@ export default function Sidebar({ open, onClose }) {
   const laporan = useSubActive('/laporan', 'sheet', 'ringkasan')
   const tetapan = useSubActive('/tetapan', 'tab', 'pengguna')
 
+  // Auto-detect section aktif berdasarkan URL
+  const detectSection = () => {
+    const path   = location.pathname
+    const status = new URLSearchParams(location.search).get('status') ?? ''
+    if (path === '/laporan') return 'laporan'
+    if (path === '/tetapan') return 'tetapan'
+    if (path === '/permohonan') return KELULUSAN_STATUSES.has(status) ? 'kelulusan' : 'permohonan'
+    return null
+  }
+
+  const [openSection, setOpenSection] = useState(detectSection)
+
+  useEffect(() => {
+    const s = detectSection()
+    if (s) setOpenSection(s)
+  }, [location.pathname, location.search])
+
+  const toggleSection = (name) => setOpenSection((prev) => prev === name ? null : name)
+
   const permohonanSubs = buildPermohonanSubs({ isHod, isCeo, isFinance })
   const kelulusanSubs  = buildKelulusanSubs({ isFinanceHod })
 
@@ -192,15 +217,21 @@ export default function Sidebar({ open, onClose }) {
         {/* Permohonan + sub-menu */}
         {can('billing') && (
           <>
-            <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-default ${perm.isOn ? 'text-white' : 'text-gray-400'}`}>
-              <FileText className={`w-4 h-4 flex-shrink-0 ${perm.isOn ? 'text-green-400' : 'text-gray-500'}`} />
-              <span className="flex-1 font-medium">Permohonan</span>
-            </div>
-            <div className="space-y-0.5 mb-1">
-              {permohonanSubs.map((item) => (
-                <SubMenuItem key={item.status} to={perm.make(item.status)} label={item.label} isActive={perm.check(item.status)} onClose={onClose} />
-              ))}
-            </div>
+            <button
+              onClick={() => toggleSection('permohonan')}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${perm.isOn && openSection === 'permohonan' ? 'text-white' : 'text-gray-400'}`}
+            >
+              <FileText className={`w-4 h-4 flex-shrink-0 ${perm.isOn && openSection === 'permohonan' ? 'text-green-400' : 'text-gray-500'}`} />
+              <span className="flex-1 font-medium text-left">Permohonan</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openSection === 'permohonan' ? 'rotate-0' : '-rotate-90'}`} />
+            </button>
+            {openSection === 'permohonan' && (
+              <div className="space-y-0.5 mb-1">
+                {permohonanSubs.map((item) => (
+                  <SubMenuItem key={item.status} to={perm.make(item.status)} label={item.label} isActive={perm.check(item.status)} onClose={onClose} />
+                ))}
+              </div>
+            )}
           </>
         )}
 
@@ -212,15 +243,21 @@ export default function Sidebar({ open, onClose }) {
             </div>
 
             {/* Kelulusan sub-menu */}
-            <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-default ${perm.isOn ? 'text-white' : 'text-gray-400'}`}>
-              <ClipboardCheck className={`w-4 h-4 flex-shrink-0 ${perm.isOn ? 'text-blue-400' : 'text-gray-500'}`} />
-              <span className="flex-1 font-medium">Kelulusan</span>
-            </div>
-            <div className="space-y-0.5 mb-1">
-              {kelulusanSubs.map((item) => (
-                <SubMenuItem key={`k-${item.status}`} to={perm.make(item.status)} label={item.label} isActive={perm.check(item.status)} onClose={onClose} />
-              ))}
-            </div>
+            <button
+              onClick={() => toggleSection('kelulusan')}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${perm.isOn && openSection === 'kelulusan' ? 'text-white' : 'text-gray-400'}`}
+            >
+              <ClipboardCheck className={`w-4 h-4 flex-shrink-0 ${perm.isOn && openSection === 'kelulusan' ? 'text-blue-400' : 'text-gray-500'}`} />
+              <span className="flex-1 font-medium text-left">Kelulusan</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openSection === 'kelulusan' ? 'rotate-0' : '-rotate-90'}`} />
+            </button>
+            {openSection === 'kelulusan' && (
+              <div className="space-y-0.5 mb-1">
+                {kelulusanSubs.map((item) => (
+                  <SubMenuItem key={`k-${item.status}`} to={perm.make(item.status)} label={item.label} isActive={perm.check(item.status)} onClose={onClose} />
+                ))}
+              </div>
+            )}
 
             {/* Bajet & Akaun */}
             {financeOnlyItems.map((item) => (
@@ -242,15 +279,21 @@ export default function Sidebar({ open, onClose }) {
             ))}
 
             {/* Laporan sub-menu */}
-            <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-default ${laporan.isOn ? 'text-white' : 'text-gray-400'}`}>
+            <button
+              onClick={() => toggleSection('laporan')}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${laporan.isOn ? 'text-white' : 'text-gray-400'}`}
+            >
               <BarChart3 className={`w-4 h-4 flex-shrink-0 ${laporan.isOn ? 'text-green-400' : 'text-gray-500'}`} />
-              <span className="flex-1 font-medium">Laporan</span>
-            </div>
-            <div className="space-y-0.5 mb-1">
-              {LAPORAN_SUBS.map((item) => (
-                <SubMenuItem key={item.val} to={laporan.make(item.val)} label={item.label} isActive={laporan.check(item.val)} onClose={onClose} />
-              ))}
-            </div>
+              <span className="flex-1 font-medium text-left">Laporan</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openSection === 'laporan' ? 'rotate-0' : '-rotate-90'}`} />
+            </button>
+            {openSection === 'laporan' && (
+              <div className="space-y-0.5 mb-1">
+                {LAPORAN_SUBS.map((item) => (
+                  <SubMenuItem key={item.val} to={laporan.make(item.val)} label={item.label} isActive={laporan.check(item.val)} onClose={onClose} />
+                ))}
+              </div>
+            )}
           </>
         )}
 
@@ -260,15 +303,21 @@ export default function Sidebar({ open, onClose }) {
             <div className="pt-3 pb-1">
               <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest px-3">Admin</p>
             </div>
-            <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-default ${tetapan.isOn ? 'text-white' : 'text-gray-400'}`}>
+            <button
+              onClick={() => toggleSection('tetapan')}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${tetapan.isOn ? 'text-white' : 'text-gray-400'}`}
+            >
               <Settings className={`w-4 h-4 flex-shrink-0 ${tetapan.isOn ? 'text-green-400' : 'text-gray-500'}`} />
-              <span className="flex-1 font-medium">Tetapan</span>
-            </div>
-            <div className="space-y-0.5">
-              {TETAPAN_SUBS.map((item) => (
-                <SubMenuItem key={item.val} to={tetapan.make(item.val)} label={item.label} isActive={tetapan.check(item.val)} onClose={onClose} />
-              ))}
-            </div>
+              <span className="flex-1 font-medium text-left">Tetapan</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openSection === 'tetapan' ? 'rotate-0' : '-rotate-90'}`} />
+            </button>
+            {openSection === 'tetapan' && (
+              <div className="space-y-0.5">
+                {TETAPAN_SUBS.map((item) => (
+                  <SubMenuItem key={item.val} to={tetapan.make(item.val)} label={item.label} isActive={tetapan.check(item.val)} onClose={onClose} />
+                ))}
+              </div>
+            )}
           </>
         )}
       </nav>
