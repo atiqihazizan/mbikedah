@@ -390,23 +390,26 @@ export async function getActiveBelanja(req, res, next) {
       }
     }
 
-    // Ambil jumlah permohonan diluluskan untuk tahun ini (BELANJA sahaja)
-    const approved = await prisma.billing.findMany({
+    // Ambil jumlah item permohonan diluluskan untuk tahun ini (per billingItem.accNo)
+    const approvedItems = await prisma.billingItem.findMany({
       where: {
-        status: { in: ['APPROVED', 'PAID'] },
-        createdAt: {
-          gte: new Date(activeYear.year, 0, 1),
-          lt:  new Date(activeYear.year + 1, 0, 1),
-        },
+        isDeleted: false,
         accNo: { not: null },
+        billing: {
+          status: { in: ['APPROVED', 'PAID'] },
+          createdAt: {
+            gte: new Date(activeYear.year, 0, 1),
+            lt:  new Date(activeYear.year + 1, 0, 1),
+          },
+        },
       },
       select: { accNo: true, amount: true },
     }).catch(() => [])
 
     const spentMap = new Map()
-    for (const b of approved) {
-      if (!b.accNo) continue
-      spentMap.set(b.accNo, (spentMap.get(b.accNo) ?? 0) + Number(b.amount))
+    for (const item of approvedItems) {
+      if (!item.accNo) continue
+      spentMap.set(item.accNo, (spentMap.get(item.accNo) ?? 0) + Number(item.amount))
     }
 
     const lines = Array.from(latestMap.values())
@@ -487,18 +490,22 @@ export async function getReport(req, res, next) {
       if (monthName) actualMonthMap.get(a.accNo)[monthName] += Number(a.amount)
     }
 
-    // Permohonan diluluskan — hingga bulan semasa
-    const approved = await prisma.billing.findMany({
+    // Item permohonan diluluskan — hingga bulan semasa (per billingItem.accNo)
+    const approvedItems = await prisma.billingItem.findMany({
       where: {
-        status: { in: ['APPROVED', 'PAID'] },
-        createdAt: { gte: new Date(budgetYear.year, 0, 1), lt: cutoffDate },
+        isDeleted: false,
         accNo: { not: null },
+        billing: {
+          status: { in: ['APPROVED', 'PAID'] },
+          createdAt: { gte: new Date(budgetYear.year, 0, 1), lt: cutoffDate },
+        },
       },
       select: { accNo: true, amount: true },
     }).catch(() => [])
     const spentMap = new Map()
-    for (const b of approved) {
-      if (!b.accNo) spentMap.set(b.accNo, (spentMap.get(b.accNo) ?? 0) + Number(b.amount))
+    for (const item of approvedItems) {
+      if (!item.accNo) continue
+      spentMap.set(item.accNo, (spentMap.get(item.accNo) ?? 0) + Number(item.amount))
     }
 
     const zeroMonths = monthFields.reduce((o, m) => ({ ...o, [m]: 0 }), {})
