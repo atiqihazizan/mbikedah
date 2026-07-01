@@ -373,6 +373,12 @@ function SheetSubAkaun({ lines, budgetYear, type, currentMonth }) {
   const tdR    = `${tdBase} text-right font-mono`
   const tdG    = `${tdR} text-gray-400`
 
+  // Sticky kolum kiri — offset: Bil=0, Kod=36px, Perihal=136px (36+100)
+  const W1 = 36, W2 = 100
+  const stickyBil     = 'sticky left-0 z-10'
+  const stickyKod     = `sticky z-10` // left set via style
+  const stickyPerihal = `sticky z-10 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.08)]` // shadow separator
+
   function MonthCells({ accNo }) {
     return (
       <>
@@ -417,9 +423,9 @@ function SheetSubAkaun({ lines, budgetYear, type, currentMonth }) {
       if (n.level === 0) {
         rows.push(
           <tr key={n.accNo} className="bg-orange-50">
-            <td className={`${tdBase} font-bold text-orange-800`}>{label}</td>
-            <td className={`${tdBase} font-mono text-orange-700`}>{n.accNo}</td>
-            <td className={`${tdBase} font-bold text-orange-800`}>{n.name.trim()}</td>
+            <td className={`${tdBase} font-bold text-orange-800 ${stickyBil} bg-orange-50`}>{label}</td>
+            <td className={`${tdBase} font-mono text-orange-700 ${stickyKod} bg-orange-50`} style={{ left: W1 }}>{n.accNo}</td>
+            <td className={`${tdBase} font-bold text-orange-800 ${stickyPerihal} bg-orange-50`} style={{ left: W1 + W2 }}>{n.name.trim()}</td>
             <TotalCells accNo={n.accNo} cls="font-bold text-orange-800" />
           </tr>
         )
@@ -427,9 +433,9 @@ function SheetSubAkaun({ lines, budgetYear, type, currentMonth }) {
       } else if (hasKids) {
         rows.push(
           <tr key={n.accNo} className="bg-gray-50">
-            <td className={`${tdBase} font-semibold text-gray-700`} style={{ paddingLeft: 6 + indent }}>{label}</td>
-            <td className={`${tdBase} font-mono text-gray-500`}>{n.accNo}</td>
-            <td className={`${tdBase} font-semibold text-gray-700`} style={{ paddingLeft: 6 + indent }}>{n.name.trim()}</td>
+            <td className={`${tdBase} font-semibold text-gray-700 ${stickyBil} bg-gray-50`} style={{ paddingLeft: 6 + indent }}>{label}</td>
+            <td className={`${tdBase} font-mono text-gray-500 ${stickyKod} bg-gray-50`} style={{ left: W1 }}>{n.accNo}</td>
+            <td className={`${tdBase} font-semibold text-gray-700 ${stickyPerihal} bg-gray-50`} style={{ left: W1 + W2, paddingLeft: 6 + indent }}>{n.name.trim()}</td>
             <TotalCells accNo={n.accNo} cls="font-semibold text-gray-700" />
           </tr>
         )
@@ -437,9 +443,9 @@ function SheetSubAkaun({ lines, budgetYear, type, currentMonth }) {
       } else {
         rows.push(
           <tr key={n.accNo} className="hover:bg-gray-50">
-            <td className={tdBase} style={{ paddingLeft: 6 + indent }}>{label}</td>
-            <td className={`${tdBase} font-mono text-gray-500`}>{n.accNo}</td>
-            <td className={tdBase} style={{ paddingLeft: 6 + indent }}>{n.name.trim()}</td>
+            <td className={`${tdBase} ${stickyBil} bg-white`} style={{ paddingLeft: 6 + indent }}>{label}</td>
+            <td className={`${tdBase} font-mono text-gray-500 ${stickyKod} bg-white`} style={{ left: W1 }}>{n.accNo}</td>
+            <td className={`${tdBase} ${stickyPerihal} bg-white`} style={{ left: W1 + W2, paddingLeft: 6 + indent }}>{n.name.trim()}</td>
             <MonthCells accNo={n.accNo} />
           </tr>
         )
@@ -454,11 +460,11 @@ function SheetSubAkaun({ lines, budgetYear, type, currentMonth }) {
   const gtAM = (m) => topNodes.reduce((s, n) => s + sumAM(n.accNo, m), 0)
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200">
-      <table className="w-full text-[11px]" style={{ minWidth: 900 + ytdMonth * 160 + bajetOnlyM * 80 }}>
-        <thead>
+    <div className="overflow-auto rounded-xl border border-gray-200" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+      <table className="w-full text-[11px] border-collapse" style={{ minWidth: 900 + ytdMonth * 160 + bajetOnlyM * 80 }}>
+        <thead className="sticky top-0 z-20">
           <tr>
-            <th colSpan={3} className={thBase}></th>
+            <th colSpan={3} className={`${thBase} sticky left-0 z-30`}></th>
             <th colSpan={2} className={`${thC} bg-blue-50 border-x-2 border-blue-300`}>
               Sehingga {MLABEL[ytdMonth - 1]} {budgetYear?.year}
             </th>
@@ -470,9 +476,9 @@ function SheetSubAkaun({ lines, budgetYear, type, currentMonth }) {
             ))}
           </tr>
           <tr>
-            <th className={thBase} style={{ width: 36 }}>Bil</th>
-            <th className={thBase} style={{ width: 100 }}>Kod Akaun</th>
-            <th className={`${thBase} text-left`} style={{ minWidth: 200 }}>Perihal</th>
+            <th className={`${thBase} sticky left-0 z-30`} style={{ width: W1 }}>Bil</th>
+            <th className={`${thBase} sticky z-30`} style={{ width: W2, left: W1 }}>Kod Akaun</th>
+            <th className={`${thBase} text-left sticky z-30 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.08)]`} style={{ minWidth: 200, left: W1 + W2 }}>Perihal</th>
             <th className={`${thR} bg-blue-50`} style={{ width: 100 }}>Bajet (RM)</th>
             <th className={`${thR} bg-blue-50`} style={{ width: 100 }}>Sebenar (RM)</th>
             {MKEYS.slice(0, ytdMonth).map((m) => (
@@ -489,7 +495,9 @@ function SheetSubAkaun({ lines, budgetYear, type, currentMonth }) {
         <tbody>
           {renderNodes(topNodes)}
           <tr className="bg-orange-100 border-t-2 border-orange-400 font-bold">
-            <td colSpan={3} className="px-2 py-2 text-xs font-bold text-orange-900">JUMLAH KESELURUHAN {label}</td>
+            <td className={`px-2 py-2 text-xs font-bold text-orange-900 ${stickyBil} bg-orange-100`}></td>
+            <td className={`px-1.5 py-2 text-xs font-bold text-orange-900 ${stickyKod} bg-orange-100`} style={{ left: W1 }}></td>
+            <td className={`px-2 py-2 text-xs font-bold text-orange-900 ${stickyPerihal} bg-orange-100`} style={{ left: W1 + W2 }}>JUMLAH KESELURUHAN {label}</td>
             <td className="px-1.5 py-2 text-right font-mono text-xs font-bold text-orange-900">{fmtRMFull(gtBajet)}</td>
             <td className="px-1.5 py-2 text-right font-mono text-xs font-bold text-orange-900">{fmtRMFull(gtActual)}</td>
             {MKEYS.slice(0, ytdMonth).map((m) => (

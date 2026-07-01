@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Bell,
@@ -29,24 +29,31 @@ const financeOnlyItems = [
 // Sub-menu Permohonan Aktif ikut role
 function buildPermohonanSubs({ isHod, isCeo, isFinance }) {
   const items = [
-    { status: '',      label: 'Semua' },
+    // { status: '',      label: 'Semua' },
     { status: 'DRAFT', label: 'Draf'  },
   ]
   if (isHod)       items.push({ status: 'PENDING_HOD', label: 'Ketua Jabatan' })
   if (isCeo)       items.push({ status: 'PENDING_CEO', label: 'Ketua Eksekutif' })
   if (!isFinance)  items.push({ status: 'APPROVED',    label: 'Diluluskan' })
-  return items
+
+  
+  // return items
+  return items.concat([
+    { status: 'PARTIAL_PAID', label: 'Bayaran Ansuran' },
+    { status: 'PAID',         label: 'Selesai Dibayar' },
+    { status: 'REJECTED',     label: 'Ditolak'         },
+  ])
 }
 
 // Sub-menu Sejarah
-function buildSejarahSubs() {
-  return [
-    { status: '',         label: 'Semua Sejarah'   },
-    { status: 'PAID',     label: 'Selesai Dibayar' },
-    { status: 'REJECTED', label: 'Ditolak'         },
-    { status: 'CLOSED',   label: 'Ditutup'         },
-  ]
-}
+// function buildSejarahSubs() {
+//   return [
+//     // { status: '',         label: 'Semua Sejarah'   },
+//     { status: 'PAID',     label: 'Selesai Dibayar' },
+//     { status: 'REJECTED', label: 'Ditolak'         },
+//     { status: 'CLOSED',   label: 'Ditutup'         },
+//   ]
+// }
 
 // Sub-menu Kelulusan untuk finance
 function buildKelulusanSubs({ isFinanceHod }) {
@@ -59,10 +66,10 @@ function buildKelulusanSubs({ isFinanceHod }) {
     items.push({ status: 'PENDING_CEO_FINAL', label: 'Kelulusan Muktamad' })
 
   items.push(
-    { status: 'APPROVED',     label: 'Diluluskan'      },
-    { status: 'PARTIAL_PAID', label: 'Bayaran Ansuran' },
-    { status: 'PAID',         label: 'Selesai Dibayar' },
-    { status: 'REJECTED',     label: 'Ditolak'         },
+    // { status: 'APPROVED',     label: 'Diluluskan'      },
+    // { status: 'PARTIAL_PAID', label: 'Bayaran Ansuran' },
+    // { status: 'PAID',         label: 'Selesai Dibayar' },
+    // { status: 'REJECTED',     label: 'Ditolak'         },
   )
   return items
 }
@@ -112,29 +119,13 @@ export default function Sidebar({ open, onClose }) {
   const laporan = useSubActive('/laporan', 'sheet', 'ringkasan')
   const tetapan = useSubActive('/tetapan', 'tab', 'pengguna')
 
-  // Auto-detect section aktif berdasarkan URL
-  const detectSection = () => {
-    const path   = location.pathname
-    const status = new URLSearchParams(location.search).get('status') ?? ''
-    if (path === '/laporan') return 'laporan'
-    if (path === '/tetapan') return 'tetapan'
-    if (path === '/permohonan/sejarah') return 'sejarah'
-    if (path === '/permohonan') return KELULUSAN_STATUSES.has(status) ? 'kelulusan' : 'permohonan'
-    return null
-  }
-
-  const [openSection, setOpenSection] = useState(detectSection)
-
-  useEffect(() => {
-    const s = detectSection()
-    if (s) setOpenSection(s)
-  }, [location.pathname, location.search])
+  const [openSection, setOpenSection] = useState(null)
 
   const toggleSection = (name) => setOpenSection((prev) => prev === name ? null : name)
 
   const permohonanSubs = buildPermohonanSubs({ isHod, isCeo, isFinance })
   const kelulusanSubs  = buildKelulusanSubs({ isFinanceHod })
-  const sejarahSubs    = buildSejarahSubs()
+  // const sejarahSubs    = buildSejarahSubs()
 
   const LAPORAN_SUBS = [
     { val: 'ringkasan',  label: 'Ringkasan'               },
@@ -239,7 +230,7 @@ export default function Sidebar({ open, onClose }) {
             )}
 
             {/* Sejarah sub-menu */}
-            <button
+            {/* <button
               onClick={() => toggleSection('sejarah')}
               className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${sejarah.isOn ? 'text-white' : 'text-gray-400'}`}
             >
@@ -253,7 +244,7 @@ export default function Sidebar({ open, onClose }) {
                   <SubMenuItem key={`sj-${item.status}`} to={sejarah.make(item.status)} label={item.label} isActive={sejarah.check(item.status)} onClose={onClose} />
                 ))}
               </div>
-            )}
+            )} */}
           </>
         )}
 

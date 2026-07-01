@@ -78,8 +78,8 @@ export function buildAktifScope(user, statusFilter) {
   const own = { applicantId: user.id, status: statusClause }
 
   if (role === 'hod') {
-    if (sf && sf !== 'PENDING_HOD') return { isDeleted: false, ...own }
-    return { isDeleted: false, OR: [own, { departmentId: user.departmentId, status: 'PENDING_HOD' }] }
+    if (sf === 'PENDING_HOD') return { isDeleted: false, departmentId: user.departmentId, status: 'PENDING_HOD' }
+    return { isDeleted: false, ...own }
   }
 
   if (role === 'ceo') {
@@ -122,16 +122,7 @@ export function buildSejarahScope(user, statusFilter) {
     return { isDeleted: false, status: statusClause }
   }
 
-  // HOD → own + jabatan sendiri
-  if (role === 'hod') {
-    return {
-      isDeleted: false,
-      status: statusClause,
-      OR: [{ applicantId: user.id }, { departmentId: user.departmentId }],
-    }
-  }
-
-  // Staff → own sahaja
+  // HOD & Staff → own sahaja
   return { isDeleted: false, applicantId: user.id, status: statusClause }
 }
 
@@ -328,7 +319,7 @@ export async function getBilling(req, res, next) {
     const role    = req.user.role?.slug
     const isOwner = data.applicantId === req.user.id
     const isAdmin = role === 'admin'
-    const isHod   = ['hod', 'finance_hod'].includes(role) && data.departmentId === req.user.departmentId
+    const isHod   = role === 'finance_hod' && data.departmentId === req.user.departmentId
     const isCeo   = role === 'ceo'
     const isFinance = ['finance', 'finance_hod'].includes(role)
 

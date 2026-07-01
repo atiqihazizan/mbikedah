@@ -22,7 +22,7 @@ export default function PermohonanCeo() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['billing-ceo', id],
-    queryFn: () => billingApi.get(`/billings/${id}/ceo`).then(r => r.data),
+    queryFn: () => billingApi.ceoReview(id),
     retry: (count, err) => err?.response?.status !== 403 && err?.response?.status !== 404 && count < 2,
   })
 

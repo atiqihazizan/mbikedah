@@ -23,7 +23,7 @@ export default function PermohonanHod() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['billing-hod', id],
-    queryFn: () => billingApi.get(`/billings/${id}/hod`).then(r => r.data),
+    queryFn: () => billingApi.hodReview(id),
     retry: (count, err) => err?.response?.status !== 403 && err?.response?.status !== 404 && count < 2,
   })
 

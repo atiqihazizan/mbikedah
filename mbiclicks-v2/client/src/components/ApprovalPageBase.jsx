@@ -70,6 +70,7 @@ function ActionDialog({ action, onClose, onSubmit, isLoading }) {
 // ─── ApprovalPageBase — reusable page layout ────────────────────────────────
 export default function ApprovalPageBase({ billing, isLoading, title, actions = ['APPROVE', 'RETURN', 'REJECT'], onAction, isActionDisabled = false }) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [action, setAction] = useState(null)
 
   const actionMut = useMutation({
@@ -77,7 +78,9 @@ export default function ApprovalPageBase({ billing, isLoading, title, actions = 
     onSuccess: () => {
       toast.success('Tindakan berjaya')
       setAction(null)
-      setTimeout(() => navigate('/permohonan'), 1500)
+      queryClient.invalidateQueries({ queryKey: ['billings-aktif'] })
+      queryClient.invalidateQueries({ queryKey: ['billings-sejarah'] })
+      setTimeout(() => navigate('/permohonan'), 800)
     },
     onError: (e) => toast.error(e.response?.data?.message ?? 'Gagal'),
   })
@@ -248,25 +251,25 @@ export default function ApprovalPageBase({ billing, isLoading, title, actions = 
       {!isActionDisabled && (
         <div className="flex gap-3 bg-gray-50 p-6 rounded-lg border border-gray-200">
           {actions.includes('APPROVE') && (
-            <button onClick={() => setAction('APPROVE')}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg">
+            <button onClick={() => setAction('APPROVE')} disabled={actionMut.isPending || actionMut.isSuccess}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
               <CheckCircle className="w-4 h-4" /> Luluskan
             </button>
           )}
           {actions.includes('RETURN') && (
-            <button onClick={() => setAction('RETURN')}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg">
+            <button onClick={() => setAction('RETURN')} disabled={actionMut.isPending || actionMut.isSuccess}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
               <RotateCcw className="w-4 h-4" /> Kembalikan
             </button>
           )}
           {actions.includes('REJECT') && (
-            <button onClick={() => setAction('REJECT')}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg">
+            <button onClick={() => setAction('REJECT')} disabled={actionMut.isPending || actionMut.isSuccess}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
               <XCircle className="w-4 h-4" /> Tolak
             </button>
           )}
-          <button onClick={() => navigate('/permohonan')}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-100 text-sm font-medium rounded-lg">
+          <button onClick={() => navigate('/permohonan')} disabled={actionMut.isPending || actionMut.isSuccess}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-100 text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
             Tutup
           </button>
         </div>

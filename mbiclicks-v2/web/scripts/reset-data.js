@@ -57,6 +57,19 @@ async function main() {
   const event = await prisma.event.deleteMany()
   console.log(`   ✓ Acara Kalendar     : ${event.count} rekod dipadam`)
 
+  // 5. Reset AUTO_INCREMENT
+  const tables = [
+    'notifications',
+    'billings', 'billing_items', 'billing_approvals', 'billing_payments', 'billing_attachments',
+    'circulars', 'circular_reads',
+    'events', 'event_invitees',
+    'budget_monthly_cache',
+  ]
+  for (const t of tables) {
+    await prisma.$executeRawUnsafe(`ALTER TABLE \`${t}\` AUTO_INCREMENT = 1`)
+  }
+  console.log(`   ✓ AUTO_INCREMENT      : ${tables.length} table direset`)
+
   console.log('\n✅ Selesai. Bajet telah dipulihkan secara automatik.\n')
 }
 
