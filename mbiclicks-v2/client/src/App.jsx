@@ -16,6 +16,7 @@ import AkaunBank from '@/pages/AkaunBank'
 import Kalendar from '@/pages/Kalendar'
 import LaporanLayout from '@/pages/LaporanLayout'
 import Permohonan from '@/pages/Permohonan'
+import PermohonanSejarah from '@/pages/PermohonanSejarah'
 import PermohonanDetail from '@/pages/PermohonanDetail'
 import PermohonanHod from '@/pages/PermohonanHod'
 import PermohonanCeo from '@/pages/PermohonanCeo'
@@ -68,6 +69,7 @@ export default function App() {
           {/* Semua user yang log masuk */}
           <Route element={<DashboardLayout />}>
             <Route path="/permohonan" element={<Permohonan />} />
+            <Route path="/permohonan/sejarah" element={<PermohonanSejarah />} />
             <Route path="/permohonan/baru" element={<PermohonanDetail />} />
             <Route path="/permohonan/:id/hod" element={<PermohonanHod />} />
             <Route path="/permohonan/:id/ceo" element={<PermohonanCeo />} />

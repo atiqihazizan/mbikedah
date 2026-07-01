@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, Bell,
   Calendar, BarChart3, Settings, ChevronDown, LogOut, BookOpen, PiggyBank, Landmark,
-  ClipboardCheck, ChevronRight,
+  ClipboardCheck, ChevronRight, History,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/api'
@@ -26,24 +26,26 @@ const financeOnlyItems = [
   { to: '/akaun-bank', icon: Landmark,  label: 'Akaun Bank' },
 ]
 
-// Sub-menu Permohonan ikut role
+// Sub-menu Permohonan Aktif ikut role
 function buildPermohonanSubs({ isHod, isCeo, isFinance }) {
   const items = [
-    { status: '',         label: 'Semua'          },
-    { status: 'DRAFT',    label: 'Draf'           },
+    { status: '',      label: 'Semua' },
+    { status: 'DRAFT', label: 'Draf'  },
   ]
-  if (isHod)
-    items.push({ status: 'PENDING_HOD', label: 'Ketua Jabatan' })
-  if (isCeo)
-    items.push({ status: 'PENDING_CEO', label: 'Ketua Eksekutif' })
-
-  if (!isFinance) {
-    items.push({ status: 'APPROVED', label: 'Diluluskan' })
-    items.push({ status: 'CLOSED',   label: 'Ditutup'    })
-  }
-  items.push({ status: 'PAID',     label: 'Selesai Dibayar' })
-  items.push({ status: 'REJECTED', label: 'Ditolak'         })
+  if (isHod)       items.push({ status: 'PENDING_HOD', label: 'Ketua Jabatan' })
+  if (isCeo)       items.push({ status: 'PENDING_CEO', label: 'Ketua Eksekutif' })
+  if (!isFinance)  items.push({ status: 'APPROVED',    label: 'Diluluskan' })
   return items
+}
+
+// Sub-menu Sejarah
+function buildSejarahSubs() {
+  return [
+    { status: '',         label: 'Semua Sejarah'   },
+    { status: 'PAID',     label: 'Selesai Dibayar' },
+    { status: 'REJECTED', label: 'Ditolak'         },
+    { status: 'CLOSED',   label: 'Ditutup'         },
+  ]
 }
 
 // Sub-menu Kelulusan untuk finance
@@ -106,6 +108,7 @@ export default function Sidebar({ open, onClose }) {
   const isCeo        = hasRole('ceo', 'admin')
 
   const perm    = useSubActive('/permohonan', 'status', '')
+  const sejarah = useSubActive('/permohonan/sejarah', 'status', '')
   const laporan = useSubActive('/laporan', 'sheet', 'ringkasan')
   const tetapan = useSubActive('/tetapan', 'tab', 'pengguna')
 
@@ -115,6 +118,7 @@ export default function Sidebar({ open, onClose }) {
     const status = new URLSearchParams(location.search).get('status') ?? ''
     if (path === '/laporan') return 'laporan'
     if (path === '/tetapan') return 'tetapan'
+    if (path === '/permohonan/sejarah') return 'sejarah'
     if (path === '/permohonan') return KELULUSAN_STATUSES.has(status) ? 'kelulusan' : 'permohonan'
     return null
   }
@@ -130,6 +134,7 @@ export default function Sidebar({ open, onClose }) {
 
   const permohonanSubs = buildPermohonanSubs({ isHod, isCeo, isFinance })
   const kelulusanSubs  = buildKelulusanSubs({ isFinanceHod })
+  const sejarahSubs    = buildSejarahSubs()
 
   const LAPORAN_SUBS = [
     { val: 'ringkasan',  label: 'Ringkasan'               },
@@ -229,6 +234,23 @@ export default function Sidebar({ open, onClose }) {
               <div className="space-y-0.5 mb-1">
                 {permohonanSubs.map((item) => (
                   <SubMenuItem key={item.status} to={perm.make(item.status)} label={item.label} isActive={perm.check(item.status)} onClose={onClose} />
+                ))}
+              </div>
+            )}
+
+            {/* Sejarah sub-menu */}
+            <button
+              onClick={() => toggleSection('sejarah')}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${sejarah.isOn ? 'text-white' : 'text-gray-400'}`}
+            >
+              <History className={`w-4 h-4 flex-shrink-0 ${sejarah.isOn ? 'text-green-400' : 'text-gray-500'}`} />
+              <span className="flex-1 font-medium text-left">Sejarah</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openSection === 'sejarah' ? 'rotate-0' : '-rotate-90'}`} />
+            </button>
+            {openSection === 'sejarah' && (
+              <div className="space-y-0.5 mb-1">
+                {sejarahSubs.map((item) => (
+                  <SubMenuItem key={`sj-${item.status}`} to={sejarah.make(item.status)} label={item.label} isActive={sejarah.check(item.status)} onClose={onClose} />
                 ))}
               </div>
             )}

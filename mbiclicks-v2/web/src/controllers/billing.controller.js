@@ -58,16 +58,84 @@ function getStepConfig(billing) {
   }
 }
 
-// ─── Helper: scope permohonan mengikut role ───────────────────────────────────
-// Setiap role SENTIASA nampak permohonan SENDIRI (semua status) sebagai pemohon.
-// Tambahan mengikut role:
-//   staff       : permohonan sendiri sahaja
-//   hod         : + jabatan sendiri PENDING_HOD
-//   ceo         : + semua PENDING_CEO / PENDING_CEO_FINAL
-//   finance     : + semua CHECK/VERIFY/APPROVAL/APPROVED/PARTIAL_PAID
-//   finance_hod : + jabatan PENDING_HOD + semua PENDING_FINANCE_APPROVAL/PENDING_CEO_FINAL
-//   admin       : semua, tiada had
+// ─── Status constants ─────────────────────────────────────────────────────────
+const AKTIF_STATUSES = [
+  'DRAFT', 'RETURNED',
+  'PENDING_HOD', 'PENDING_CEO',
+  'PENDING_FINANCE_CHECK', 'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL',
+  'PENDING_CEO_FINAL', 'APPROVED', 'PARTIAL_PAID',
+]
+const SEJARAH_STATUSES = ['PAID', 'REJECTED', 'CLOSED']
 
+// ─── Scope: permohonan aktif (dalam proses) ───────────────────────────────────
+export function buildAktifScope(user, statusFilter) {
+  const role = user.role?.slug
+  const sf   = statusFilter && AKTIF_STATUSES.includes(statusFilter) ? statusFilter : null
+  const statusClause = sf ? sf : { in: AKTIF_STATUSES }
+
+  if (role === 'admin') return { isDeleted: false, status: statusClause }
+
+  const own = { applicantId: user.id, status: statusClause }
+
+  if (role === 'hod') {
+    if (sf && sf !== 'PENDING_HOD') return { isDeleted: false, ...own }
+    return { isDeleted: false, OR: [own, { departmentId: user.departmentId, status: 'PENDING_HOD' }] }
+  }
+
+  if (role === 'ceo') {
+    const ceoSt = ['PENDING_CEO', 'PENDING_CEO_FINAL']
+    if (sf && !ceoSt.includes(sf)) return { isDeleted: false, ...own }
+    return { isDeleted: false, OR: [own, { status: sf ?? { in: ceoSt } }] }
+  }
+
+  if (role === 'finance') {
+    const finSt = ['PENDING_FINANCE_CHECK', 'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL', 'APPROVED', 'PARTIAL_PAID']
+    if (sf && !finSt.includes(sf)) return { isDeleted: false, ...own }
+    return { isDeleted: false, OR: [own, { status: sf ?? { in: finSt } }] }
+  }
+
+  if (role === 'finance_hod') {
+    const finHodSt = ['PENDING_FINANCE_CHECK', 'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL', 'PENDING_CEO_FINAL']
+    if (!sf) {
+      return {
+        isDeleted: false,
+        OR: [own, { departmentId: user.departmentId, status: 'PENDING_HOD' }, { status: { in: finHodSt } }],
+      }
+    }
+    if (sf === 'PENDING_HOD') return { isDeleted: false, OR: [own, { departmentId: user.departmentId, status: 'PENDING_HOD' }] }
+    if (finHodSt.includes(sf)) return { isDeleted: false, OR: [own, { status: sf }] }
+    return { isDeleted: false, ...own }
+  }
+
+  // staff & lain-lain: own sahaja
+  return { isDeleted: false, ...own }
+}
+
+// ─── Scope: sejarah (siap — PAID, REJECTED, CLOSED) ──────────────────────────
+export function buildSejarahScope(user, statusFilter) {
+  const role = user.role?.slug
+  const sf   = statusFilter && SEJARAH_STATUSES.includes(statusFilter) ? statusFilter : null
+  const statusClause = sf ? sf : { in: SEJARAH_STATUSES }
+
+  // Finance, Finance_HOD, CEO, Admin → semua rekod
+  if (['admin', 'ceo', 'finance', 'finance_hod'].includes(role)) {
+    return { isDeleted: false, status: statusClause }
+  }
+
+  // HOD → own + jabatan sendiri
+  if (role === 'hod') {
+    return {
+      isDeleted: false,
+      status: statusClause,
+      OR: [{ applicantId: user.id }, { departmentId: user.departmentId }],
+    }
+  }
+
+  // Staff → own sahaja
+  return { isDeleted: false, applicantId: user.id, status: statusClause }
+}
+
+// ─── Helper: scope permohonan mengikut role (legacy — dikekalkan untuk /api/billing/) ──
 const FINANCE_SCOPE    = ['PENDING_FINANCE_CHECK', 'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL', 'APPROVED', 'PARTIAL_PAID']
 const FIN_HOD_APPROVAL = ['PENDING_FINANCE_APPROVAL', 'PENDING_CEO_FINAL']
 
@@ -172,7 +240,44 @@ const billingSchema = z.object({
   items:       z.array(itemSchema).min(1),
 })
 
-// ─── List ─────────────────────────────────────────────────────────────────────
+// ─── List Aktif ───────────────────────────────────────────────────────────────
+const LIST_INCLUDE = {
+  applicant:  { select: { id: true, name: true, staffNo: true } },
+  department: { select: { id: true, name: true } },
+  vendor:     { select: { id: true, name: true } },
+  _count:     { select: { attachments: { where: { isDeleted: false } }, items: { where: { isDeleted: false } } } },
+}
+
+export async function listAktif(req, res, next) {
+  try {
+    const { status, page = 1, limit = 20 } = req.query
+    const pg  = Math.max(1, parseInt(page))
+    const lim = Math.min(100, parseInt(limit) || 20)
+    const where = buildAktifScope(req.user, status || null)
+    const [total, data] = await Promise.all([
+      prisma.billing.count({ where }),
+      prisma.billing.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (pg - 1) * lim, take: lim, include: LIST_INCLUDE }),
+    ])
+    res.json({ data, total, page: pg, totalPages: Math.ceil(total / lim) })
+  } catch (err) { next(err) }
+}
+
+// ─── List Sejarah ─────────────────────────────────────────────────────────────
+export async function listSejarah(req, res, next) {
+  try {
+    const { status, page = 1, limit = 20 } = req.query
+    const pg  = Math.max(1, parseInt(page))
+    const lim = Math.min(100, parseInt(limit) || 20)
+    const where = buildSejarahScope(req.user, status || null)
+    const [total, data] = await Promise.all([
+      prisma.billing.count({ where }),
+      prisma.billing.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (pg - 1) * lim, take: lim, include: LIST_INCLUDE }),
+    ])
+    res.json({ data, total, page: pg, totalPages: Math.ceil(total / lim) })
+  } catch (err) { next(err) }
+}
+
+// ─── List (legacy) ────────────────────────────────────────────────────────────
 export async function listBillings(req, res, next) {
   try {
     const { status, page = 1, limit = 20 } = req.query
@@ -220,11 +325,15 @@ export async function getBilling(req, res, next) {
     })
     if (!data) return res.status(404).json({ message: 'Permohonan tidak dijumpai' })
 
-    // Hanya pemohon sendiri atau admin — role lain ada page action masing-masing
     const role    = req.user.role?.slug
     const isOwner = data.applicantId === req.user.id
-    if (!isOwner && role !== 'admin')
-      return res.status(403).json({ message: 'Tiada kebenaran' })
+    const isAdmin = role === 'admin'
+    const isHod   = ['hod', 'finance_hod'].includes(role) && data.departmentId === req.user.departmentId
+    const isCeo   = role === 'ceo'
+    const isFinance = ['finance', 'finance_hod'].includes(role)
+
+    const canView = isOwner || isAdmin || isHod || isCeo || isFinance
+    if (!canView) return res.status(403).json({ message: 'Tiada kebenaran' })
 
     res.json({ data })
   } catch (err) { next(err) }

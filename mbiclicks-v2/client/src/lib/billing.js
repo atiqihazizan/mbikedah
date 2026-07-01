@@ -2,6 +2,8 @@ import api from './api'
 
 export const billingApi = {
   list:         (params) => api.get('/billings', { params }).then(r => r.data),
+  listAktif:    (params) => api.get('/billings/aktif', { params }).then(r => r.data),
+  listSejarah:  (params) => api.get('/billings/sejarah', { params }).then(r => r.data),
   get:          (id)     => api.get(`/billings/${id}`).then(r => r.data),
   getReview:    (id)     => api.get(`/billings/${id}/review`).then(r => r.data),
   create:       (body)   => api.post('/billings', body).then(r => r.data),

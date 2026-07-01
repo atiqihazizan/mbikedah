@@ -47,8 +47,8 @@ export default function Permohonan() {
   useEffect(() => { setPage(1) }, [tab])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['billings', tab, page],
-    queryFn: () => billingApi.list({ status: tab || undefined, page, limit: 20 }),
+    queryKey: ['billings-aktif', tab, page],
+    queryFn: () => billingApi.listAktif({ status: tab || undefined, page, limit: 20 }),
   })
 
   const rows = data?.data ?? []
