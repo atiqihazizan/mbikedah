@@ -605,65 +605,6 @@ export async function getBillingReview(req, res, next) {
   } catch (err) { next(err) }
 }
 
-// ─── View endpoint — backend-driven UI ───────────────────────────────────────
-// GET /billings/:id/view
-// Return: { billing, display, timeline, actions }
-export async function getBillingView(req, res, next) {
-  try {
-    const id      = parseInt(req.params.id)
-    const role    = req.user.role?.slug
-
-    const billing = await prisma.billing.findFirst({
-      where:   { id, isDeleted: false },
-      include: {
-        applicant:   { select: { id: true, name: true, staffNo: true, position: { select: { name: true } } } },
-        department:  { select: { id: true, name: true } },
-        vendor:      { select: { id: true, name: true, type: true, bankName: true, bankAcc: true } },
-        payingBank:  true,
-        items:       { where: { isDeleted: false }, select: { id: true, accNo: true, description: true, invoiceNo: true, qty: true, unitCost: true, amount: true }, orderBy: { id: 'asc' } },
-        approvals:   { include: { actor: { select: { id: true, name: true, position: { select: { name: true } } } } }, orderBy: { actionedAt: 'asc' } },
-        attachments: { where: { isDeleted: false }, include: { uploadedBy: { select: { id: true, name: true } } }, orderBy: { uploadedAt: 'desc' } },
-        paidBy:      { select: { id: true, name: true } },
-        payments:    { include: { paidBy: { select: { id: true, name: true } } }, orderBy: { phase: 'asc' } },
-      },
-    })
-
-    if (!billing) return res.status(404).json({ message: 'Permohonan tidak dijumpai' })
-
-    // Semak kebenaran
-    const isOwner   = billing.applicantId === req.user.id
-    const isAdmin   = role === 'admin'
-    const isHod     = role === 'finance_hod' && billing.departmentId === req.user.departmentId
-    const isCeo     = role === 'ceo'
-    const isFinance = ['finance', 'finance_hod'].includes(role)
-    const canView   = isOwner || isAdmin || isHod || isCeo || isFinance || role === 'hod'
-    if (!canView) return res.status(403).json({ message: 'Tiada kebenaran' })
-
-    // Display info untuk status semasa
-    const display = STATUS_DISPLAY[billing.status] ?? { label: billing.status, color: 'gray', icon: '❓' }
-
-    // Timeline — sejarah tindakan yang lebih kemas
-    const timeline = billing.approvals.map(a => ({
-      id:         a.id,
-      step:       a.step,
-      action:     a.action,
-      fromStatus: a.fromStatus,
-      toStatus:   a.toStatus,
-      remarks:    a.remarks,
-      actionedAt: a.actionedAt,
-      actor: {
-        name:     a.actor?.name,
-        position: a.actor?.position?.name,
-      },
-    }))
-
-    // Actions yang boleh dilakukan oleh user semasa
-    const actions = computeActions(billing, role)
-
-    res.json({ billing, display, timeline, actions })
-  } catch (err) { next(err) }
-}
-
 // ─── Delete DRAFT ─────────────────────────────────────────────────────────────
 export async function deleteBilling(req, res, next) {
   try {

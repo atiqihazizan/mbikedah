@@ -6,7 +6,6 @@ export const billingApi = {
   listSejarah:  (params) => api.get('/billings/sejarah', { params }).then(r => r.data),
   get:          (id)     => api.get(`/billings/${id}`).then(r => r.data),
   getReview:    (id)     => api.get(`/billings/${id}/review`).then(r => r.data),
-  getView:      (id)     => api.get(`/billings/${id}/view`).then(r => r.data),
   hodReview:    (id)     => api.get(`/billings/${id}/hod`).then(r => r.data),
   ceoReview:    (id)     => api.get(`/billings/${id}/ceo`).then(r => r.data),
   create:       (body)   => api.post('/billings', body).then(r => r.data),
@@ -50,18 +49,3 @@ export const BILLING_STATUS = {
   RETURNED:                 { label: 'Dikembalikan',        color: 'orange' },
 }
 
-export const STATUS_TABS = [
-  { key: '',                       label: 'Semua'              },
-  { key: 'DRAFT',                  label: 'Draf'               },
-  { key: 'PENDING_HOD',            label: 'Ketua Jabatan'      },
-  { key: 'PENDING_CEO',            label: 'Ketua Eksekutif'    },
-  { key: 'PENDING_FINANCE_CHECK',  label: 'Semakan'            },
-  { key: 'PENDING_FINANCE_VERIFY', label: 'Pengesahan'         },
-  { key: 'PENDING_FINANCE_APPROVAL', label: 'Kelulusan'        },
-  { key: 'PENDING_CEO_FINAL',      label: 'Kelulusan Muktamad' },
-  { key: 'APPROVED',               label: 'Diluluskan'         },
-  { key: 'PARTIAL_PAID',           label: 'Bayaran Ansuran'    },
-  { key: 'PAID',                   label: 'Selesai Dibayar'    },
-  { key: 'CLOSED',                 label: 'Ditutup'            },
-  { key: 'REJECTED',               label: 'Ditolak'            },
-]
