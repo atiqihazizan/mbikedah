@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle, XCircle, RotateCcw, Download, ArrowLeft } from 'lucide-react'
@@ -26,6 +26,12 @@ export default function ApprovalQueue() {
   const queryClient = useQueryClient()
   const { user }    = useAuthStore()
   const [pendingAction, setPendingAction] = useState(null)
+
+  const APPROVER_ROLES = ['hod', 'finance_hod', 'finance', 'ceo', 'admin']
+  useEffect(() => {
+    const role = user?.role?.slug
+    if (role && !APPROVER_ROLES.includes(role)) navigate(`/permohonan/${id}`, { replace: true })
+  }, [user, id, navigate])
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['billing-view', id],

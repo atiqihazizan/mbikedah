@@ -72,7 +72,7 @@ export default function MiniCalendar({ endpoint = '/events/public', theme = 'dar
           <div
             key={day}
             onClick={() => evByDay[day] && setSelectedDay(day)}
-            className={`flex flex-col items-center justify-center transition-colors rounded-lg ${
+            className={`flex flex-col items-center justify-center transition-colors rounded-lg p-4 ${
               evByDay[day]
                 ? isDark ? 'cursor-pointer hover:bg-gray-800' : 'cursor-pointer hover:bg-gray-100'
                 : ''

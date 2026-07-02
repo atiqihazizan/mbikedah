@@ -94,7 +94,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
             {/* Pekeliling */}
-            <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <h2 className="font-semibold text-gray-900 text-sm">Pekeliling Terkini</h2>
                 <Link to="/pekeliling" className="text-xs text-green-600 hover:text-green-700 font-medium flex items-center gap-1">
@@ -125,7 +125,7 @@ export default function Dashboard() {
             </div>
 
             {/* Kalendar */}
-            <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+            <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
               <div className="px-5 py-4 border-b border-gray-100 shrink-0">
                 <h2 className="font-semibold text-gray-900 text-sm">Kalendar Acara</h2>
               </div>
