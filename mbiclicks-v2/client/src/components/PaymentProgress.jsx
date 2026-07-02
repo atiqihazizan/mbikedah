@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { CheckCircle2, Clock, CreditCard } from 'lucide-react'
 import { toast } from 'sonner'
-import { billingApi } from '@/lib/billing'
+import { BillingService } from '@/billing/services/BillingService'
 import { Button, Spinner } from '@/components/ui'
 
 function fmtRM(v) {
@@ -20,13 +20,13 @@ function PayPhaseDialog({ billingId, phase, onClose, queryKey }) {
   const [remarks, setRemarks] = useState('')
 
   const mut = useMutation({
-    mutationFn: () => billingApi.payPhase(billingId, phase.id, { paymentRef: paymentRef || null, remarks: remarks || null }),
+    mutationFn: () => BillingService.payPhase(billingId, phase.id, { paymentRef: paymentRef || null, remarks: remarks || null }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey })
       toast.success(`Fasa ${phase.phase} berjaya ditandakan sebagai dibayar`)
       onClose()
     },
-    onError: (e) => toast.error(e.response?.data?.message ?? 'Gagal kemaskini'),
+    onError: (e) => toast.error(e.message ?? 'Gagal kemaskini'),
   })
 
   return (

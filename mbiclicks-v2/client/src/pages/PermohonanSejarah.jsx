@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, History } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
-import { billingApi, BILLING_STATUS } from '@/lib/billing'
+import { BILLING_STATUS } from '@/lib/billing'
+import { BillingService } from '@/billing/services/BillingService'
 import { Button, Spinner } from '@/components/ui'
 
 function fmtDate(d) {
@@ -43,10 +44,10 @@ export default function PermohonanSejarah() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['billings-sejarah', tab, page],
-    queryFn:  () => billingApi.listSejarah({ status: tab || undefined, page, limit: 20 }),
+    queryFn:  ({ signal }) => BillingService.listSejarah({ status: tab || undefined, page, limit: 20 }, { signal }),
   })
 
-  const rows       = data?.data ?? []
+  const rows       = data?.items ?? []
   const total      = data?.total ?? 0
   const totalPages = data?.totalPages ?? 1
 

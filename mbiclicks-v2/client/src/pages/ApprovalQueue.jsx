@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle, XCircle, RotateCcw, Download, AlertCircle, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
-import { billingApi } from '@/lib/billing'
+import { BillingService } from '@/billing/services/BillingService'
 import { useAuthStore } from '@/store/auth'
 import { Button, Spinner } from '@/components/ui'
 import { TaskViewModel } from '@/billing/viewmodels'
@@ -97,11 +97,11 @@ export default function ApprovalQueue() {
   // GET /billings/:id → { billing, workflow, payments, approvalHistory }
   const { data, isLoading, isError } = useQuery({
     queryKey: ['billing-view', id],
-    queryFn:  () => billingApi.get(id),
+    queryFn:  ({ signal }) => BillingService.get(id, { signal }),
   })
 
   const actionMut = useMutation({
-    mutationFn: ({ action, remarks }) => billingApi.action(id, action, { remarks }),
+    mutationFn: ({ action, remarks }) => BillingService.action(id, action, { remarks }),
     onSuccess: () => {
       toast.success('Tindakan berjaya')
       setPendingAction(null)
@@ -109,7 +109,7 @@ export default function ApprovalQueue() {
       queryClient.invalidateQueries({ queryKey: ['billings-sejarah'] })
       setTimeout(() => navigate('/permohonan'), 800)
     },
-    onError: (e) => toast.error(e.response?.data?.message ?? 'Gagal'),
+    onError: (e) => toast.error(e.message ?? 'Gagal'),
   })
 
   if (isLoading) {
@@ -284,7 +284,7 @@ export default function ApprovalQueue() {
                   <p className="text-sm font-medium text-gray-900">{att.originalName}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{(att.size / 1024).toFixed(0)} KB • {fmtDate(att.uploadedAt)}</p>
                 </div>
-                <a href={billingApi.downloadUrl(billing.id, att.id)}
+                <a href={BillingService.downloadUrl(billing.id, att.id)}
                   className="p-2 text-blue-600 hover:bg-blue-50 rounded" target="_blank" rel="noreferrer">
                   <Download className="w-4 h-4" />
                 </a>

@@ -1,13 +1,13 @@
 import api from './api'
 
 export const billingApi = {
-  list:         (params) => api.get('/billings', { params }).then(r => r.data),
-  listAktif:    (params) => api.get('/billings/aktif', { params }).then(r => r.data),
-  listSejarah:  (params) => api.get('/billings/sejarah', { params }).then(r => r.data),
-  get:          (id)     => api.get(`/billings/${id}`).then(r => r.data),
-  getReview:    (id)     => api.get(`/billings/${id}/review`).then(r => r.data),
-  hodReview:    (id)     => api.get(`/billings/${id}/hod`).then(r => r.data),
-  ceoReview:    (id)     => api.get(`/billings/${id}/ceo`).then(r => r.data),
+  list:         (params, opt = {}) => api.get('/billings', { params, ...opt }).then(r => r.data),
+  listAktif:    (params, opt = {}) => api.get('/billings/aktif', { params, ...opt }).then(r => r.data),
+  listSejarah:  (params, opt = {}) => api.get('/billings/sejarah', { params, ...opt }).then(r => r.data),
+  get:          (id, opt = {})     => api.get(`/billings/${id}`, opt).then(r => r.data),
+  getReview:    (id, opt = {})     => api.get(`/billings/${id}/review`, opt).then(r => r.data),
+  hodReview:    (id, opt = {})     => api.get(`/billings/${id}/hod`, opt).then(r => r.data),
+  ceoReview:    (id, opt = {})     => api.get(`/billings/${id}/ceo`, opt).then(r => r.data),
   create:       (body)   => api.post('/billings', body).then(r => r.data),
   update:       (id, body) => api.put(`/billings/${id}`, body).then(r => r.data),
   delete:       (id)     => api.delete(`/billings/${id}`).then(r => r.data),

@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { CheckCircle, XCircle, RotateCcw, Download, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button, Spinner } from '@/components/ui'
-import { billingApi, BILLING_STATUS } from '@/lib/billing'
+import { BILLING_STATUS } from '@/lib/billing'
+import { BillingService } from '@/billing/services/BillingService'
 
 function fmtDate(d) {
   if (!d) return '—'
@@ -74,7 +75,7 @@ export default function ApprovalPageBase({ billing, isLoading, title, actions = 
   const [action, setAction] = useState(null)
 
   const actionMut = useMutation({
-    mutationFn: ({ action, remarks }) => billingApi.action(billing.id, action, { remarks }),
+    mutationFn: ({ action, remarks }) => BillingService.action(billing.id, action, { remarks }),
     onSuccess: () => {
       toast.success('Tindakan berjaya')
       setAction(null)
@@ -82,7 +83,7 @@ export default function ApprovalPageBase({ billing, isLoading, title, actions = 
       queryClient.invalidateQueries({ queryKey: ['billings-sejarah'] })
       setTimeout(() => navigate('/permohonan'), 800)
     },
-    onError: (e) => toast.error(e.response?.data?.message ?? 'Gagal'),
+    onError: (e) => toast.error(e.message ?? 'Gagal'),
   })
 
   if (isLoading) {

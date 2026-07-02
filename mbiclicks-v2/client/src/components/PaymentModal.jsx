@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { billingApi } from '@/lib/billing'
+import { BillingService } from '@/billing/services/BillingService'
 import { Button, Spinner } from '@/components/ui'
 
 function fmtRM(v) {
@@ -28,13 +28,13 @@ export default function PaymentModal({ billing, onClose, queryKey }) {
   const phasesExceed = phasesTotal > remaining + 0.005
 
   const mut = useMutation({
-    mutationFn: (body) => billingApi.pay(billing.id, body),
+    mutationFn: (body) => BillingService.pay(billing.id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey })
       toast.success(type === 'FULL' ? 'Bayaran penuh berjaya direkodkan' : 'Bayaran ansuran berjaya direkodkan')
       onClose()
     },
-    onError: (e) => toast.error(e.response?.data?.message ?? 'Gagal merekodkan bayaran'),
+    onError: (e) => toast.error(e.message ?? 'Gagal merekodkan bayaran'),
   })
 
   function handleSubmit(e) {

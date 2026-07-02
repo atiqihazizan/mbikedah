@@ -6,7 +6,7 @@ import {
   ChevronLeft, Send, CheckCircle, XCircle, RotateCcw, FileText, Download,
   Trash2, Upload, X, Plus, Pencil, Building2, User2, CreditCard,
 } from 'lucide-react'
-import { billingApi, vendorApi } from '@/lib/billing'
+import { BillingService } from '@/billing/services/BillingService'
 import { useAuthStore } from '@/store/auth'
 import { Button, Input, Label, Spinner, SearchableSelect } from '@/components/ui'
 import api from '@/lib/api'
@@ -167,14 +167,14 @@ function VendorModal({ open, initial, accounts, onClose, onSaved }) {
   const isEdit = !!initial?.id
 
   const mut = useMutation({
-    mutationFn: (body) => isEdit ? vendorApi.update(initial.id, body) : vendorApi.create(body),
+    mutationFn: (body) => isEdit ? BillingService.updateVendor(initial.id, body) : BillingService.createVendor(body),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['vendors', 'active'] })
       toast.success(isEdit ? 'Maklumat dikemaskini' : 'Penerima baru ditambah')
       onSaved(res.data)
       onClose()
     },
-    onError: (e) => toast.error(e.response?.data?.message ?? 'Gagal menyimpan'),
+    onError: (e) => toast.error(e.message ?? 'Gagal menyimpan'),
   })
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -303,14 +303,14 @@ export default function PermohonanDetail() {
   // Data — GET /billings/:id returns { billing, workflow, payments, approvalHistory }
   const { data, isLoading, error } = useQuery({
     queryKey: ['billing', id],
-    queryFn:  () => billingApi.get(id),
+    queryFn:  ({ signal }) => BillingService.get(id, { signal }),
     enabled:  !!id,
-    retry:    (count, err) => err?.response?.status !== 403 && count < 2,
+    retry:    (count, err) => err?.status !== 403 && count < 2,
   })
 
   const { data: vendorData } = useQuery({
     queryKey: ['vendors', 'active'],
-    queryFn:  () => vendorApi.list({ status: 'active', limit: 500 }),
+    queryFn:  ({ signal }) => BillingService.listVendors({ status: 'active', limit: 500 }, { signal }),
   })
 
   const { data: accountData } = useQuery({
@@ -320,7 +320,7 @@ export default function PermohonanDetail() {
 
   // Destructure API contract
   const { billing, workflow, payments = [], approvalHistory = [] } = data ?? {}
-  const vendors  = vendorData?.data ?? []
+  const vendors  = vendorData?.items ?? []
   const accounts = accountData?.data ?? []
 
   // ── ViewModels (ADR-008: React membaca vm.x sahaja) ──────────────────────────
@@ -349,17 +349,17 @@ export default function PermohonanDetail() {
 
   // Mutations
   const submitMut = useMutation({
-    mutationFn: () => billingApi.submit(id, {}),
+    mutationFn: () => BillingService.submit(id),
     onSuccess:  () => { qc.invalidateQueries({ queryKey: ['billing', id] }); qc.invalidateQueries({ queryKey: ['billings'] }); toast.success('Permohonan dihantar'); setEditMode(false) },
-    onError:    (e) => toast.error(e.response?.data?.message ?? 'Gagal'),
+    onError:    (e) => toast.error(e.message ?? 'Gagal'),
   })
 
   const saveMut = useMutation({
-    mutationFn: (body) => id ? billingApi.update(id, body) : billingApi.create(body),
+    mutationFn: (body) => id ? BillingService.update(id, body) : BillingService.create(body),
     onSuccess: async (res) => {
       const billingId = id || res.data?.id
       for (const f of files) {
-        try { await billingApi.uploadAtt(billingId, f) } catch {}
+        try { await BillingService.uploadAtt(billingId, f) } catch {}
       }
       qc.invalidateQueries({ queryKey: ['billing', billingId] })
       qc.invalidateQueries({ queryKey: ['billings'] })
@@ -368,23 +368,23 @@ export default function PermohonanDetail() {
       setEditMode(false)
       setFiles([])
     },
-    onError: (e) => toast.error(e.response?.data?.message ?? 'Gagal menyimpan'),
+    onError: (e) => toast.error(e.message ?? 'Gagal menyimpan'),
   })
 
   const actionMut = useMutation({
-    mutationFn: ({ action, remarks }) => billingApi.action(id, action, { remarks }),
+    mutationFn: ({ action, remarks }) => BillingService.action(id, action, { remarks }),
     onSuccess:  () => { qc.invalidateQueries({ queryKey: ['billing', id] }); qc.invalidateQueries({ queryKey: ['billings'] }); toast.success('Tindakan berjaya'); setDialog(null) },
-    onError:    (e) => toast.error(e.response?.data?.message ?? 'Gagal'),
+    onError:    (e) => toast.error(e.message ?? 'Gagal'),
   })
 
   const closeMut = useMutation({
-    mutationFn: (reason) => billingApi.close(id, { reason }),
+    mutationFn: (reason) => BillingService.close(id, { reason }),
     onSuccess:  () => { qc.invalidateQueries({ queryKey: ['billing', id] }); qc.invalidateQueries({ queryKey: ['billings'] }); toast.success('Permohonan berjaya ditutup'); setDialog(null) },
-    onError:    (e) => toast.error(e.response?.data?.message ?? 'Gagal menutup permohonan'),
+    onError:    (e) => toast.error(e.message ?? 'Gagal menutup permohonan'),
   })
 
   const deleteAttMut = useMutation({
-    mutationFn: (attId) => billingApi.deleteAtt(id, attId),
+    mutationFn: (attId) => BillingService.deleteAtt(id, attId),
     onSuccess:  (_, attId) => setAttachments(prev => prev.filter(a => a.id !== attId)),
     onError:    () => toast.error('Gagal memadam lampiran'),
   })
@@ -721,7 +721,7 @@ export default function PermohonanDetail() {
               {!editMode && billing?.attachments?.map(att => (
                 <div key={att.id} className="flex items-center gap-2 text-sm bg-gray-50 rounded px-3 py-2">
                   <FileText className="w-4 h-4 text-gray-400 shrink-0" />
-                  <a href={billingApi.downloadUrl(id, att.id)} target="_blank" rel="noreferrer"
+                  <a href={BillingService.downloadUrl(id, att.id)} target="_blank" rel="noreferrer"
                     className="text-blue-600 hover:underline truncate flex-1">{att.originalName}</a>
                   <span className="text-xs text-gray-400">{(att.size / 1024).toFixed(0)} KB</span>
                 </div>
@@ -729,7 +729,7 @@ export default function PermohonanDetail() {
               {editMode && attachments.map(att => (
                 <div key={att.id} className="flex items-center gap-2 text-sm bg-gray-50 rounded px-3 py-2">
                   <FileText className="w-4 h-4 text-gray-400 shrink-0" />
-                  <a href={billingApi.downloadUrl(id, att.id)} target="_blank" rel="noreferrer"
+                  <a href={BillingService.downloadUrl(id, att.id)} target="_blank" rel="noreferrer"
                     className="text-blue-600 hover:underline truncate flex-1">{att.originalName}</a>
                   <span className="text-xs text-gray-400">{(att.size / 1024).toFixed(0)} KB</span>
                   <button onClick={() => deleteAttMut.mutate(att.id)} className="text-gray-300 hover:text-red-500">
