@@ -6,6 +6,7 @@ export const billingApi = {
   listSejarah:  (params) => api.get('/billings/sejarah', { params }).then(r => r.data),
   get:          (id)     => api.get(`/billings/${id}`).then(r => r.data),
   getReview:    (id)     => api.get(`/billings/${id}/review`).then(r => r.data),
+  getView:      (id)     => api.get(`/billings/${id}/view`).then(r => r.data),
   hodReview:    (id)     => api.get(`/billings/${id}/hod`).then(r => r.data),
   ceoReview:    (id)     => api.get(`/billings/${id}/ceo`).then(r => r.data),
   create:       (body)   => api.post('/billings', body).then(r => r.data),

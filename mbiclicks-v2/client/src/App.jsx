@@ -20,6 +20,7 @@ import PermohonanSejarah from '@/pages/PermohonanSejarah'
 import PermohonanDetail from '@/pages/PermohonanDetail'
 import PermohonanHod from '@/pages/PermohonanHod'
 import PermohonanCeo from '@/pages/PermohonanCeo'
+import ApprovalQueue from '@/pages/ApprovalQueue'
 import FinanceSemakan from '@/pages/FinanceSemakan'
 import FinancePengesahan from '@/pages/FinancePengesahan'
 import FinanceKelulusan from '@/pages/FinanceKelulusan'
@@ -71,6 +72,7 @@ export default function App() {
             <Route path="/permohonan" element={<Permohonan />} />
             <Route path="/permohonan/sejarah" element={<PermohonanSejarah />} />
             <Route path="/permohonan/baru" element={<PermohonanDetail />} />
+            <Route path="/permohonan/:id/tindakan" element={<ApprovalQueue />} />
             <Route path="/permohonan/:id/hod" element={<PermohonanHod />} />
             <Route path="/permohonan/:id/ceo" element={<PermohonanCeo />} />
             <Route path="/permohonan/:id/semakan-kewangan" element={<FinanceSemakan />} />

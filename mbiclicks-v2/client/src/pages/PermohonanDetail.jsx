@@ -6,17 +6,45 @@ import {
   ChevronLeft, Send, CheckCircle, XCircle, RotateCcw, FileText, Download,
   Trash2, Upload, X, Plus, Pencil, Building2, User2, CreditCard,
 } from 'lucide-react'
-import { billingApi, vendorApi, BILLING_STATUS } from '@/lib/billing'
+import { billingApi, vendorApi } from '@/lib/billing'
 import { useAuthStore } from '@/store/auth'
 import { Button, Input, Label, Spinner, SearchableSelect } from '@/components/ui'
 import api from '@/lib/api'
 import PaymentModal from '@/components/PaymentModal'
 import PaymentProgress from '@/components/PaymentProgress'
+import { ApplicationViewModel, TaskViewModel, PaymentViewModel } from '@/billing/viewmodels'
 
-function CloseKesDialog({ billing, onClose, onConfirm, isPending }) {
+// ─── Status badge menggunakan vm.display (ADR-008) ───────────────────────────
+const STATUS_COLOR = {
+  gray:   'bg-gray-100 text-gray-700',   yellow: 'bg-yellow-100 text-yellow-800',
+  blue:   'bg-blue-100 text-blue-700',   indigo: 'bg-indigo-100 text-indigo-700',
+  purple: 'bg-purple-100 text-purple-700', green: 'bg-green-100 text-green-700',
+  teal:   'bg-teal-100 text-teal-700',   red:    'bg-red-100 text-red-700',
+  orange: 'bg-orange-100 text-orange-700',
+}
+
+function VmStatusBadge({ display }) {
+  if (!display) return null
+  const cls = STATUS_COLOR[display.color] ?? STATUS_COLOR.gray
+  return (
+    <span className={`px-3 py-1 rounded-full text-xs font-medium ${cls}`}>
+      {display.badge}
+    </span>
+  )
+}
+
+const STEP_LABELS = { SUBMIT: 'Pemohon', HOD: 'Ketua Jabatan', FINANCE_CHECK: 'Semakan Kewangan',
+  FINANCE_VERIFY: 'Pengesahan Kewangan', FINANCE_APPROVAL: 'Kelulusan Kewangan', PAYMENT: 'Pembayaran' }
+const ACTION_LABELS = { SUBMIT: 'Dihantar', APPROVE: 'Diluluskan', VERIFY: 'Disahkan',
+  REJECT: 'Ditolak', RETURN: 'Dikembalikan', PAY: 'Dibayar' }
+const ACTION_COLOR = { SUBMIT: 'text-blue-600', APPROVE: 'text-green-600', VERIFY: 'text-green-600',
+  REJECT: 'text-red-600', RETURN: 'text-orange-600', PAY: 'text-teal-600' }
+
+// ─── Modal tutup kes (menggunakan PaymentViewModel) ──────────────────────────
+function CloseKesDialog({ payVm, billing, onClose, onConfirm, isPending }) {
   const [reason, setReason] = useState('')
-  const paid = (billing?.payments ?? []).filter(p => p.paidAt).reduce((s, p) => s + parseFloat(p.amount), 0)
-  const remaining = parseFloat(billing?.totalAmount ?? 0) - paid
+  const paid      = payVm?.paymentSummary?.paidAmount ?? 0
+  const remaining = payVm?.paymentSummary?.balanceAmount ?? parseFloat(billing?.totalAmount ?? 0)
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -81,28 +109,51 @@ function fmtRM(v) {
   return 'RM ' + (parseFloat(v) || 0).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function StatusBadge({ status }) {
-  const cfg = BILLING_STATUS[status] ?? { label: status, color: 'gray' }
-  const colorMap = {
-    gray: 'bg-gray-100 text-gray-700', amber: 'bg-amber-100 text-amber-700',
-    blue: 'bg-blue-100 text-blue-700', indigo: 'bg-indigo-100 text-indigo-700',
-    purple: 'bg-purple-100 text-purple-700', green: 'bg-green-100 text-green-700',
-    teal: 'bg-teal-100 text-teal-700', red: 'bg-red-100 text-red-700',
-    orange: 'bg-orange-100 text-orange-700',
-  }
+// ─── Modal tindakan kelulusan ─────────────────────────────────────────────────
+function ActionDialog({ open, action, onClose, onConfirm, isPending }) {
+  const [remarks, setRemarks] = useState('')
+  if (!open) return null
+
+  const cfg = {
+    APPROVE: { title: 'Luluskan Permohonan', color: 'bg-green-600 hover:bg-green-700', icon: <CheckCircle className="w-5 h-5" /> },
+    REJECT:  { title: 'Tolak Permohonan',    color: 'bg-red-600 hover:bg-red-700',   icon: <XCircle className="w-5 h-5" /> },
+    RETURN:  { title: 'Kembalikan Permohonan', color: 'bg-orange-600 hover:bg-orange-700', icon: <RotateCcw className="w-5 h-5" /> },
+  }[action] ?? {}
+
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-medium ${colorMap[cfg.color] ?? colorMap.gray}`}>
-      {cfg.label}
-    </span>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <span className={`${action === 'APPROVE' ? 'text-green-600' : action === 'REJECT' ? 'text-red-600' : 'text-orange-600'}`}>
+            {cfg.icon}
+          </span>
+          <h3 className="text-base font-semibold text-gray-900">{cfg.title}</h3>
+        </div>
+        <div className="mb-4">
+          <Label>Ulasan {action !== 'APPROVE' && <span className="text-red-500">*</span>}</Label>
+          <textarea
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mt-1"
+            rows={3}
+            placeholder={action === 'APPROVE' ? 'Ulasan (optional)...' : 'Nyatakan sebab...'}
+            value={remarks}
+            onChange={e => setRemarks(e.target.value)}
+          />
+        </div>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={onClose}>Batal</Button>
+          <button
+            disabled={isPending || (action !== 'APPROVE' && !remarks.trim())}
+            onClick={() => onConfirm(remarks)}
+            className={`px-4 py-2 rounded-lg text-white text-sm font-medium flex items-center gap-2 disabled:opacity-50 ${cfg.color}`}
+          >
+            {isPending && <Spinner className="w-4 h-4" />}
+            Sahkan
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
-
-const STEP_LABELS = { SUBMIT: 'Pemohon', HOD: 'Ketua Jabatan', FINANCE_CHECK: 'Semakan Kewangan',
-  FINANCE_VERIFY: 'Pengesahan Kewangan', FINANCE_APPROVAL: 'Kelulusan Kewangan', PAYMENT: 'Pembayaran' }
-const ACTION_LABELS = { SUBMIT: 'Dihantar', APPROVE: 'Diluluskan', VERIFY: 'Disahkan',
-  REJECT: 'Ditolak', RETURN: 'Dikembalikan', PAY: 'Dibayar' }
-const ACTION_COLOR = { SUBMIT: 'text-blue-600', APPROVE: 'text-green-600', VERIFY: 'text-green-600',
-  REJECT: 'text-red-600', RETURN: 'text-orange-600', PAY: 'text-teal-600' }
 
 // ─── Modal tambah/edit penerima ───────────────────────────────────────────────
 function VendorModal({ open, initial, accounts, onClose, onSaved }) {
@@ -169,7 +220,6 @@ function VendorModal({ open, initial, accounts, onClose, onSaved }) {
               ))}
             </div>
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Kod <span className="text-red-500">*</span></Label>
@@ -192,7 +242,6 @@ function VendorModal({ open, initial, accounts, onClose, onSaved }) {
                 onChange={e => set('email', e.target.value)} />
             </div>
           </div>
-
           <div className="border-t border-gray-100 pt-3">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Maklumat Bank</p>
             <div className="grid grid-cols-2 gap-3">
@@ -208,7 +257,6 @@ function VendorModal({ open, initial, accounts, onClose, onSaved }) {
               </div>
             </div>
           </div>
-
           <div className="border-t border-gray-100 pt-3">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Pautan Kod Akaun</p>
             <p className="text-xs text-gray-400 mb-3">Diisi automatik dalam borang permohonan apabila penerima ini dipilih.</p>
@@ -223,7 +271,6 @@ function VendorModal({ open, initial, accounts, onClose, onSaved }) {
               )}
             />
           </div>
-
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
             <Button type="submit" disabled={mut.isPending}>
@@ -237,76 +284,27 @@ function VendorModal({ open, initial, accounts, onClose, onSaved }) {
   )
 }
 
-// ─── Modal tindakan kelulusan ────────────────────────────────────────────────
-function ActionDialog({ open, action, onClose, onConfirm, isPending }) {
-  const [remarks, setRemarks] = useState('')
-  if (!open) return null
-
-  const cfg = {
-    APPROVE: { title: 'Luluskan Permohonan', color: 'bg-green-600 hover:bg-green-700', icon: <CheckCircle className="w-5 h-5" /> },
-    REJECT:  { title: 'Tolak Permohonan',    color: 'bg-red-600 hover:bg-red-700',   icon: <XCircle className="w-5 h-5" /> },
-    RETURN:  { title: 'Kembalikan Permohonan', color: 'bg-orange-600 hover:bg-orange-700', icon: <RotateCcw className="w-5 h-5" /> },
-  }[action] ?? {}
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <span className={`${action === 'APPROVE' ? 'text-green-600' : action === 'REJECT' ? 'text-red-600' : 'text-orange-600'}`}>
-            {cfg.icon}
-          </span>
-          <h3 className="text-base font-semibold text-gray-900">{cfg.title}</h3>
-        </div>
-        <div className="mb-4">
-          <Label>Ulasan {action !== 'APPROVE' && <span className="text-red-500">*</span>}</Label>
-          <textarea
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mt-1"
-            rows={3}
-            placeholder={action === 'APPROVE' ? 'Ulasan (optional)...' : 'Nyatakan sebab...'}
-            value={remarks}
-            onChange={e => setRemarks(e.target.value)}
-          />
-        </div>
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose}>Batal</Button>
-          <button
-            disabled={isPending || (action !== 'APPROVE' && !remarks.trim())}
-            onClick={() => onConfirm(remarks)}
-            className={`px-4 py-2 rounded-lg text-white text-sm font-medium flex items-center gap-2 disabled:opacity-50 ${cfg.color}`}
-          >
-            {isPending && <Spinner className="w-4 h-4" />}
-            Sahkan
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-
-
-// ─── Page Utama ──────────────────────────────────────────────────────────────
+// ─── Page Utama ───────────────────────────────────────────────────────────────
 export default function PermohonanDetail() {
   const { id }     = useParams()
   const navigate   = useNavigate()
   const qc         = useQueryClient()
   const { user }   = useAuthStore()
 
-  const [editMode, setEditMode]     = useState(!id) // Auto edit mode jika create baru
-  const [dialog, setDialog]         = useState(null)
+  const [editMode, setEditMode]       = useState(!id)
+  const [dialog, setDialog]           = useState(null)
   const [vendorModal, setVendorModal] = useState(null)
 
-  // Form state (hanya untuk edit mode)
-  const [form, setForm]             = useState({ vendorId: '', projectNo: '', description: '' })
-  const [items, setItems]           = useState([{ ...EMPTY_ITEM }])
-  const [files, setFiles]           = useState([])
+  const [form, setForm]               = useState({ vendorId: '', projectNo: '', description: '' })
+  const [items, setItems]             = useState([{ ...EMPTY_ITEM }])
+  const [files, setFiles]             = useState([])
   const [attachments, setAttachments] = useState([])
 
-  // Data
+  // Data — GET /billings/:id returns { billing, workflow, payments, approvalHistory }
   const { data, isLoading, error } = useQuery({
     queryKey: ['billing', id],
     queryFn:  () => billingApi.get(id),
-    enabled:  !!id,  // Skip jika create mode (tidak ada id)
+    enabled:  !!id,
     retry:    (count, err) => err?.response?.status !== 403 && count < 2,
   })
 
@@ -320,11 +318,23 @@ export default function PermohonanDetail() {
     queryFn:  () => api.get('/accounts', { params: { type: 'BELANJA', status: 'active', leafOnly: 'true', limit: 2000 } }).then(r => r.data),
   })
 
-  const billing = data?.data
+  // Destructure API contract
+  const { billing, workflow, payments = [], approvalHistory = [] } = data ?? {}
   const vendors  = vendorData?.data ?? []
   const accounts = accountData?.data ?? []
 
-  // Sync form dengan billing saat edit mode aktif
+  // ── ViewModels (ADR-008: React membaca vm.x sahaja) ──────────────────────────
+  const appVm  = billing ? ApplicationViewModel.build({ billing, workflow, payments, viewer: user }) : null
+  const taskVm = billing ? TaskViewModel.build({ billing, workflow, viewer: user }) : null
+  const payVm  = billing ? PaymentViewModel.build({ billing, payments }) : null
+
+  // ── Flags dari ViewModel — tiada billing.status langsung ─────────────────────
+  const isLocked  = appVm?.isLocked  ?? false
+  const canEdit   = !id || (appVm?.canEdit ?? false)
+  const canPay    = taskVm?.actions?.includes('PAY') ?? false
+  const canClose  = canPay
+
+  // Sync form bila edit mode aktif
   useEffect(() => {
     if (!editMode || !billing) return
     setForm({ vendorId: billing.vendorId ?? '', projectNo: billing.projectNo ?? '', description: billing.description ?? '' })
@@ -335,23 +345,7 @@ export default function PermohonanDetail() {
     setAttachments(billing.attachments ?? [])
   }, [editMode, billing])
 
-  // Tentukan apakah boleh edit & submit
-  const canEdit   = !id || ((billing?.status === 'DRAFT' || billing?.status === 'RETURNED') && billing?.applicantId === user?.id)
   const canSubmit = canEdit && (form.description.trim() && items.some(i => i.description.trim()) && form.vendorId)
-  const canAction = billing && (billing?.status?.startsWith('PENDING_') || billing?.status === 'APPROVED') && billing?.status !== 'DRAFT'
-
-  // Role checks
-  const roleSlug   = user?.role?.slug
-  const isOwner    = billing?.applicantId === user?.id
-  const isFinance  = ['finance', 'finance_hod', 'admin'].includes(roleSlug)
-  // HOD boleh approve PENDING_HOD, dan Finance HOD boleh juga act sebagai HOD
-  const isHod      = ['hod', 'finance_hod', 'admin'].includes(roleSlug)
-  const canHodAct  = isHod && billing?.status === 'PENDING_HOD'
-  const canFinAct  = isFinance && ['PENDING_FINANCE_CHECK', 'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL'].includes(billing?.status)
-  const canFinAppr = ['finance_hod', 'admin'].includes(roleSlug) && billing?.status === 'PENDING_FINANCE_APPROVAL'
-  const canPay     = isFinance && ['APPROVED', 'PARTIAL_PAID'].includes(billing?.status)
-  const canClose   = isFinance && ['APPROVED', 'PARTIAL_PAID'].includes(billing?.status)
-  const showActions = canHodAct || canFinAct || canFinAppr
 
   // Mutations
   const submitMut = useMutation({
@@ -389,14 +383,12 @@ export default function PermohonanDetail() {
     onError:    (e) => toast.error(e.response?.data?.message ?? 'Gagal menutup permohonan'),
   })
 
-
   const deleteAttMut = useMutation({
     mutationFn: (attId) => billingApi.deleteAtt(id, attId),
     onSuccess:  (_, attId) => setAttachments(prev => prev.filter(a => a.id !== attId)),
     onError:    () => toast.error('Gagal memadam lampiran'),
   })
 
-  // Helpers
   function handleEditToggle() {
     if (editMode) setEditMode(false)
     else if (canEdit) setEditMode(true)
@@ -407,10 +399,6 @@ export default function PermohonanDetail() {
     if (validItems.length === 0) return toast.error('Sekurang-kurangnya satu butiran diperlukan')
     if (!form.description.trim()) return toast.error('Tujuan pembayaran wajib diisi')
     if (!form.vendorId) return toast.error('Sila pilih penerima')
-    // TODO: Re-enable attachment validation in future
-    // if (files.length === 0 && attachments.length === 0)
-    //   return toast.error('Lampiran (resit/invois) wajib disertakan')
-
     saveMut.mutate({
       vendorId:    parseInt(form.vendorId),
       projectNo:   form.projectNo || null,
@@ -457,21 +445,15 @@ export default function PermohonanDetail() {
     raw:   v,
   }))
 
-  const accOpts = accounts.map(a => ({
-    value: a.accNo,
-    label: a.accNo,
-    sub:   a.name,
-  }))
-
+  const accOpts = accounts.map(a => ({ value: a.accNo, label: a.accNo, sub: a.name }))
   const selectedVendor = vendors.find(v => String(v.id) === String(form.vendorId))
-console.log(id, billing);
 
   if (isLoading) return <div className="flex justify-center py-20"><Spinner /></div>
   if (id && error?.response?.status === 403) return null
-  if (id && !billing)  return <div className="p-10 text-center text-gray-400">Permohonan tidak dijumpai</div>
+  if (id && !billing) return <div className="p-10 text-center text-gray-400">Permohonan tidak dijumpai</div>
 
-  // Lock mode: REJECTED, PAID, CLOSED (tidak boleh edit)
-  const isLocked = billing && ['REJECTED', 'PAID', 'PARTIAL_PAID', 'CLOSED'].includes(billing.status)
+  // Papar kemajuan bayaran jika ada transaksi atau selesai dibayar
+  const showPayment = payVm && (payVm.transactions.length > 0 || payVm.paymentSummary.isCompleted)
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -486,7 +468,7 @@ console.log(id, billing);
               <h1 className="text-xl font-semibold text-gray-900">
                 {!id ? 'Permohonan Pembayaran Baru' : billing?.refNo}
               </h1>
-              {billing && <StatusBadge status={billing.status} />}
+              {appVm && <VmStatusBadge display={appVm.display} />}
             </div>
             <p className="text-sm text-gray-400 mt-0.5">MENTERI BESAR KEDAH INCORPORATED</p>
           </div>
@@ -504,7 +486,7 @@ console.log(id, billing);
               {id ? 'Simpan' : 'Simpan Draf'}
             </Button>
           )}
-          {!editMode && canEdit && (billing.status === 'DRAFT' || billing.status === 'RETURNED') && (
+          {!editMode && appVm?.canEdit && (
             <Button onClick={() => submitMut.mutate()} disabled={submitMut.isPending}>
               {submitMut.isPending ? <Spinner className="w-4 h-4 mr-1.5" /> : <Send className="w-4 h-4 mr-1.5" />}
               Hantar
@@ -562,7 +544,6 @@ console.log(id, billing);
               )}
             </div>
 
-            {/* Pembekal */}
             <div className="col-span-2">
               <Label className="text-xs text-gray-400">Nama Pembekal / Kontraktor / Penerima</Label>
               {editMode ? (
@@ -647,8 +628,7 @@ console.log(id, billing);
                   {editMode ? (
                     <textarea
                       className="w-full border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none mt-1"
-                      rows={2}
-                      placeholder="Butiran bekalan/perkhidmatan..."
+                      rows={2} placeholder="Butiran bekalan/perkhidmatan..."
                       value={item.description}
                       onChange={e => updateItem(idx, 'description', e.target.value)}
                     />
@@ -778,11 +758,11 @@ console.log(id, billing);
           </section>
         )}
 
-        {/* Kemajuan bayaran */}
-        {['APPROVED', 'PARTIAL_PAID', 'PAID'].includes(billing?.status) && (billing?.payments?.length > 0 || billing?.status === 'PAID') && (
-          billing?.payments?.length > 0
-            ? <PaymentProgress billing={billing} canPay={canPay} queryKey={['billing', id]} />
-            : billing?.status === 'PAID' && (
+        {/* Kemajuan bayaran — dari PaymentViewModel */}
+        {showPayment && (
+          payVm.transactions.length > 0
+            ? <PaymentProgress billing={{ ...billing, payments }} canPay={canPay} queryKey={['billing', id]} />
+            : payVm.paymentSummary.isCompleted && (
               <section className="bg-teal-50 border border-teal-200 rounded-lg p-5">
                 <h2 className="text-xs font-semibold text-teal-700 uppercase tracking-wide mb-3">Maklumat Pembayaran</h2>
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -795,14 +775,14 @@ console.log(id, billing);
             )
         )}
 
-        {/* Sejarah */}
-        {billing?.approvals?.length > 0 && (
+        {/* Sejarah tindakan — dari approvalHistory (API contract) */}
+        {approvalHistory?.length > 0 && (
           <section className="bg-white border border-gray-200 rounded-lg p-5">
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Sejarah Tindakan</h2>
             <div className="relative">
               <div className="absolute left-4 top-0 bottom-0 w-px bg-gray-200" />
               <div className="space-y-4">
-                {billing.approvals.map((appr, i) => (
+                {approvalHistory.map((appr, i) => (
                   <div key={appr.id} className="relative flex gap-4 pl-10">
                     <div className={`absolute left-2.5 w-3 h-3 rounded-full border-2 border-white top-1 ${appr.action === 'APPROVE' ? 'bg-green-600' : appr.action === 'REJECT' ? 'bg-red-600' : 'bg-orange-600'}`} />
                     <div className="flex-1 min-w-0">
@@ -827,36 +807,10 @@ console.log(id, billing);
           </section>
         )}
 
-        {/* Panel tindakan kelulusan */}
-        {/* {!editMode && !isLocked && showActions && (
-          <section className="bg-amber-50 border border-amber-200 rounded-lg p-5">
-            <h2 className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-4">Tindakan Diperlukan</h2>
-            <div className="flex flex-wrap gap-3">
-              <button onClick={() => setDialog({ type: 'action', action: 'APPROVE' })}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg">
-                <CheckCircle className="w-4 h-4" /> Lulus
-              </button>
-              <button onClick={() => setDialog({ type: 'action', action: 'RETURN' })}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg">
-                <RotateCcw className="w-4 h-4" /> Kembalikan
-              </button>
-              <button onClick={() => setDialog({ type: 'action', action: 'REJECT' })}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg">
-                <XCircle className="w-4 h-4" /> Tolak
-              </button>
-            </div>
-          </section>
-        )} */}
-
-        {isLocked && (
+        {/* Locked — dari appVm.lockedMessage (ADR-008) */}
+        {isLocked && appVm?.lockedMessage && (
           <section className="bg-gray-50 border border-gray-200 rounded-lg p-5 text-center">
-            <p className="text-sm text-gray-600">
-              {billing.status === 'REJECTED'
-                ? 'Permohonan ini telah ditolak dan tidak boleh diubah.'
-                : billing.status === 'CLOSED'
-                ? 'Permohonan ini telah ditutup. Lihat sejarah kelulusan untuk maklumat penutupan.'
-                : 'Permohonan ini telah dibayar dan ditutup.'}
-            </p>
+            <p className="text-sm text-gray-600">{appVm.lockedMessage}</p>
           </section>
         )}
       </div>
@@ -871,13 +825,14 @@ console.log(id, billing);
       />
       {dialog?.type === 'pay' && billing && (
         <PaymentModal
-          billing={billing}
+          billing={{ ...billing, payments }}
           queryKey={['billing', id]}
           onClose={() => setDialog(null)}
         />
       )}
       {dialog?.type === 'close' && (
         <CloseKesDialog
+          payVm={payVm}
           billing={billing}
           onClose={() => setDialog(null)}
           onConfirm={(reason) => closeMut.mutate(reason)}

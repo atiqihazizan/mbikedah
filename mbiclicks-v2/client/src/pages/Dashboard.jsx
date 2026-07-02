@@ -344,7 +344,7 @@ export default function Dashboard() {
                   <CalendarDays className="w-4 h-4 text-blue-500" />
                   <h2 className="font-semibold text-gray-900 text-sm">Kalendar Acara</h2>
                 </div>
-                <div className="flex-1 flex flex-col min-h-0 p-4">
+                <div className="flex-1 flex flex-col min-h-[300px] p-4">
                   <MiniCalendar endpoint="/events/public" theme="light" />
                 </div>
               </div>

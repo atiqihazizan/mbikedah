@@ -17,6 +17,7 @@ import billingRoutes       from './billing.routes.js'
 import vendorRoutes        from './vendor.routes.js'
 import financeCheckRoutes  from './financeCheck.routes.js'
 import paymentRoutes       from './payment.routes.js'
+import meRoutes            from './me.routes.js'
 
 const router = Router()
 
@@ -37,6 +38,7 @@ router.use('/report-layouts', reportLayoutRoutes)
 router.use('/billings',      billingRoutes)
 router.use('/billings',      paymentRoutes)
 router.use('/vendors',       vendorRoutes)
+router.use('/me',            meRoutes)
 router.use('/',              financeCheckRoutes)
 
 export default router

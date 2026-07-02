@@ -2,61 +2,7 @@ import { z } from 'zod'
 import prisma from '../lib/prisma.js'
 import { logActivity } from '../utils/activityLog.js'
 import { recalcPermohonanCache, extractAccNos } from '../utils/budgetCache.js'
-
-// ─── Workflow map (dynamic — bergantung pada workflowType & jumlah) ───────────
-// workflowType=HOD  → pemohon adalah HOD, CEO gantikan PENDING_HOD & PENDING_FINANCE_APPROVAL
-// totalAmount>10000 → CEO lulus selepas PENDING_FINANCE_APPROVAL (PENDING_CEO_FINAL)
-function getStepConfig(billing) {
-  const isHodWorkflow = billing.workflowType === 'HOD'
-  const isHighValue   = parseFloat(billing.totalAmount) > 10000
-
-  return {
-    PENDING_HOD: {
-      role:      ['hod', 'finance_hod', 'admin'],
-      step:      'HOD',
-      onApprove: 'PENDING_FINANCE_CHECK',
-      onReject:  'REJECTED',
-      onReturn:  'RETURNED',
-    },
-    PENDING_CEO: {
-      role:      ['ceo', 'admin'],
-      step:      'CEO',
-      onApprove: 'PENDING_FINANCE_CHECK',
-      onReject:  'REJECTED',
-      onReturn:  'RETURNED',
-    },
-    PENDING_FINANCE_CHECK: {
-      role:      ['finance', 'finance_hod', 'admin'],
-      step:      'FINANCE_CHECK',
-      onApprove: 'PENDING_FINANCE_VERIFY',
-      onReject:  'REJECTED',
-      onReturn:  'RETURNED',
-    },
-    PENDING_FINANCE_VERIFY: {
-      role:      ['finance', 'finance_hod', 'admin'],
-      step:      'FINANCE_VERIFY',
-      // HOD workflow → CEO final; staff workflow → finance_hod approval
-      onApprove: isHodWorkflow ? 'PENDING_CEO_FINAL' : 'PENDING_FINANCE_APPROVAL',
-      onReject:  'REJECTED',
-      onReturn:  'RETURNED',
-    },
-    PENDING_FINANCE_APPROVAL: {
-      role:      ['finance_hod', 'admin'],
-      step:      'FINANCE_APPROVAL',
-      // > 10k → CEO final; otherwise approved
-      onApprove: isHighValue ? 'PENDING_CEO_FINAL' : 'APPROVED',
-      onReject:  'REJECTED',
-      onReturn:  'RETURNED',
-    },
-    PENDING_CEO_FINAL: {
-      role:      ['ceo', 'admin'],
-      step:      'CEO_FINAL',
-      onApprove: 'APPROVED',
-      onReject:  'REJECTED',
-      onReturn:  'RETURNED',
-    },
-  }
-}
+import { getStepConfig, computeActions, STATUS_DISPLAY, buildWorkflowView } from '../lib/workflowRules.js'
 
 // ─── Status constants ─────────────────────────────────────────────────────────
 const AKTIF_STATUSES = [
@@ -322,11 +268,18 @@ export async function getBilling(req, res, next) {
     const isHod   = role === 'finance_hod' && data.departmentId === req.user.departmentId
     const isCeo   = role === 'ceo'
     const isFinance = ['finance', 'finance_hod'].includes(role)
+    const isHodRole = role === 'hod'
 
-    const canView = isOwner || isAdmin || isHod || isCeo || isFinance
+    const canView = isOwner || isAdmin || isHod || isCeo || isFinance || isHodRole
     if (!canView) return res.status(403).json({ message: 'Tiada kebenaran' })
 
-    res.json({ data })
+    // Pisahkan approvalHistory dari data utama
+    const { approvals: approvalHistory, payments, ...billing } = data
+
+    // Bina workflow view — kontrak API untuk frontend
+    const workflow = buildWorkflowView(billing)
+
+    res.json({ billing, workflow, payments, approvalHistory })
   } catch (err) { next(err) }
 }
 
@@ -649,6 +602,65 @@ export async function getBillingReview(req, res, next) {
     })
     if (!data) return res.status(404).json({ message: 'Permohonan tidak dijumpai' })
     res.json({ data })
+  } catch (err) { next(err) }
+}
+
+// ─── View endpoint — backend-driven UI ───────────────────────────────────────
+// GET /billings/:id/view
+// Return: { billing, display, timeline, actions }
+export async function getBillingView(req, res, next) {
+  try {
+    const id      = parseInt(req.params.id)
+    const role    = req.user.role?.slug
+
+    const billing = await prisma.billing.findFirst({
+      where:   { id, isDeleted: false },
+      include: {
+        applicant:   { select: { id: true, name: true, staffNo: true, position: { select: { name: true } } } },
+        department:  { select: { id: true, name: true } },
+        vendor:      { select: { id: true, name: true, type: true, bankName: true, bankAcc: true } },
+        payingBank:  true,
+        items:       { where: { isDeleted: false }, select: { id: true, accNo: true, description: true, invoiceNo: true, qty: true, unitCost: true, amount: true }, orderBy: { id: 'asc' } },
+        approvals:   { include: { actor: { select: { id: true, name: true, position: { select: { name: true } } } } }, orderBy: { actionedAt: 'asc' } },
+        attachments: { where: { isDeleted: false }, include: { uploadedBy: { select: { id: true, name: true } } }, orderBy: { uploadedAt: 'desc' } },
+        paidBy:      { select: { id: true, name: true } },
+        payments:    { include: { paidBy: { select: { id: true, name: true } } }, orderBy: { phase: 'asc' } },
+      },
+    })
+
+    if (!billing) return res.status(404).json({ message: 'Permohonan tidak dijumpai' })
+
+    // Semak kebenaran
+    const isOwner   = billing.applicantId === req.user.id
+    const isAdmin   = role === 'admin'
+    const isHod     = role === 'finance_hod' && billing.departmentId === req.user.departmentId
+    const isCeo     = role === 'ceo'
+    const isFinance = ['finance', 'finance_hod'].includes(role)
+    const canView   = isOwner || isAdmin || isHod || isCeo || isFinance || role === 'hod'
+    if (!canView) return res.status(403).json({ message: 'Tiada kebenaran' })
+
+    // Display info untuk status semasa
+    const display = STATUS_DISPLAY[billing.status] ?? { label: billing.status, color: 'gray', icon: '❓' }
+
+    // Timeline — sejarah tindakan yang lebih kemas
+    const timeline = billing.approvals.map(a => ({
+      id:         a.id,
+      step:       a.step,
+      action:     a.action,
+      fromStatus: a.fromStatus,
+      toStatus:   a.toStatus,
+      remarks:    a.remarks,
+      actionedAt: a.actionedAt,
+      actor: {
+        name:     a.actor?.name,
+        position: a.actor?.position?.name,
+      },
+    }))
+
+    // Actions yang boleh dilakukan oleh user semasa
+    const actions = computeActions(billing, role)
+
+    res.json({ billing, display, timeline, actions })
   } catch (err) { next(err) }
 }
 

@@ -7,7 +7,7 @@ import { mkdirSync, unlinkSync } from 'fs'
 import { authenticate, requireRole } from '../middleware/auth.js'
 import {
   listBillings, listAktif, listSejarah,
-  getBilling, getBillingReview,
+  getBilling, getBillingReview, getBillingView,
   getHodReview, getCeoReview, getFinanceVerifyReview, getFinanceApprovalReview,
   createBilling, updateBilling,
   submitBilling, workflowAction, markPaid, deleteBilling,
@@ -43,6 +43,7 @@ router.use(authenticate)
 router.get('/',          listBillings)
 router.get('/aktif',     listAktif)    // Permohonan aktif/dalam proses ikut role
 router.get('/sejarah',   listSejarah)  // Sejarah siap (PAID/REJECTED/CLOSED) ikut role
+router.get('/:id/view',                getBillingView)           // Backend-driven view (display + timeline + actions)
 router.get('/:id/review',             getBillingReview)         // Dashboard modal
 router.get('/:id/hod',                getHodReview)             // HOD action page
 router.get('/:id/ceo',                getCeoReview)             // CEO action page

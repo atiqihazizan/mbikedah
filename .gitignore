@@ -63,6 +63,9 @@ jspm_packages/
 # Backup folder
 backup/
 sql/
+*_bak*/
+mbiclicks-v2-review.zip
+make zip file.txt
 
 # Personal/Development files (keep locally but don't track in Git)
 *.xlsx
