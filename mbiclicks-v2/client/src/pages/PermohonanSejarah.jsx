@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Eye, History } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { BillingService } from '@/billing/services/BillingService'
@@ -21,19 +21,16 @@ function fmtRM(v) {
 export default function PermohonanSejarah() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const [searchParams] = useSearchParams()
-  const tab  = searchParams.get('status') ?? ''
   const [page, setPage] = useState(1)
 
   const roleSlug  = user?.role?.slug
   const isHod     = ['hod', 'finance_hod', 'admin'].includes(roleSlug)
   const isFinance = ['finance', 'finance_hod', 'admin'].includes(roleSlug)
 
-  useEffect(() => { setPage(1) }, [tab])
-
+  // ADR-033: Sejarah = Ownership — sentiasa rekod milik sendiri
   const { data, isLoading } = useQuery({
-    queryKey: ['billings-sejarah', tab, page],
-    queryFn:  ({ signal }) => BillingService.listSejarah({ status: tab || undefined, page, limit: 20 }, { signal }),
+    queryKey: ['me-history', page],
+    queryFn:  ({ signal }) => BillingService.getMyHistory({ page, limit: 20 }, { signal }),
   })
 
   const rows       = data?.items ?? []

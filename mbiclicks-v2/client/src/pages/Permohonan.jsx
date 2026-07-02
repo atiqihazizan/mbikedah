@@ -18,22 +18,39 @@ function fmtRM(v) {
   return 'RM ' + Number(v).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+const STATUS_TITLES = {
+  PENDING_HOD:              'Kelulusan Jabatan',
+  PENDING_CEO:              'Kelulusan CEO',
+  PENDING_CEO_FINAL:        'Kelulusan Muktamad',
+  PENDING_FINANCE_CHECK:    'Semakan Kewangan',
+  PENDING_FINANCE_VERIFY:   'Pengesahan Kewangan',
+  PENDING_FINANCE_APPROVAL: 'Kelulusan KPK',
+}
+
 export default function Permohonan() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const [searchParams] = useSearchParams()
-  const tab  = searchParams.get('status') ?? ''
+  const tab   = searchParams.get('status') ?? ''
+  const queue = searchParams.get('queue') ?? ''
   const [page, setPage] = useState(1)
+
+  const pageTitle = queue === 'payment' ? 'Tindakan Bayaran'
+    : STATUS_TITLES[tab] ?? 'Permohonan Saya'
 
   const roleSlug  = user?.role?.slug
   const isHod     = ['hod', 'finance_hod', 'admin'].includes(roleSlug)
   const isFinance = ['finance', 'finance_hod', 'admin'].includes(roleSlug)
 
-  useEffect(() => { setPage(1) }, [tab])
+  useEffect(() => { setPage(1) }, [tab, queue])
 
+  // ADR-033: Permohonan = Ownership, Tindakan = Responsibility
+  const isOwnContext = tab === '' && queue === ''
   const { data, isLoading } = useQuery({
-    queryKey: ['billings-aktif', tab, page],
-    queryFn:  ({ signal }) => BillingService.listAktif({ status: tab || undefined, page, limit: 20 }, { signal }),
+    queryKey: isOwnContext ? ['me-applications', page] : ['billings-aktif', tab || queue, page],
+    queryFn:  ({ signal }) => isOwnContext
+      ? BillingService.getMyApplications({ page, limit: 20 }, { signal })
+      : BillingService.listAktif({ status: tab || undefined, page, limit: 20 }, { signal }),
   })
 
   const rows       = data?.items ?? []
@@ -44,7 +61,7 @@ export default function Permohonan() {
     <div className="p-6 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Permohonan Pembayaran</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{pageTitle}</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} permohonan</p>
         </div>
         <Button onClick={() => navigate('/permohonan/baru')} className="flex items-center gap-2">

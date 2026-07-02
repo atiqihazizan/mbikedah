@@ -11,6 +11,7 @@ import {
   getHodReview, getCeoReview, getFinanceVerifyReview, getFinanceApprovalReview,
   createBilling, updateBilling,
   submitBilling, workflowAction, markPaid, deleteBilling,
+  canViewBilling,
 } from '../controllers/billing.controller.js'
 import prisma from '../lib/prisma.js'
 
@@ -108,11 +109,21 @@ router.delete('/:id/attachments/:attId', async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
-// Serve/download attachment
+// Serve/download attachment — guna policy yang sama seperti GET /billings/:id
 router.get('/:id/attachments/:attId/download', async (req, res, next) => {
   try {
+    const billingId = parseInt(req.params.id)
+    const attId     = parseInt(req.params.attId)
+
+    const billing = await prisma.billing.findFirst({
+      where:  { id: billingId, isDeleted: false },
+      select: { id: true, applicantId: true, departmentId: true },
+    })
+    if (!billing) return res.status(404).json({ message: 'Permohonan tidak dijumpai' })
+    if (!canViewBilling(req.user, billing)) return res.status(403).json({ message: 'Tiada kebenaran' })
+
     const att = await prisma.billingAttachment.findFirst({
-      where: { id: parseInt(req.params.attId), billingId: parseInt(req.params.id), isDeleted: false },
+      where: { id: attId, billingId, isDeleted: false },
     })
     if (!att) return res.status(404).json({ message: 'Lampiran tidak dijumpai' })
     res.download(att.path, att.originalName)

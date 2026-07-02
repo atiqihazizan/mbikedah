@@ -1,6 +1,10 @@
 import api from './api'
 
 export const billingApi = {
+  // ADR-033: Ownership endpoints — always applicantId = currentUser.id
+  myApplications: (params, opt = {}) => api.get('/me/applications', { params, ...opt }).then(r => r.data),
+  myHistory:      (params, opt = {}) => api.get('/me/history',      { params, ...opt }).then(r => r.data),
+
   list:         (params, opt = {}) => api.get('/billings', { params, ...opt }).then(r => r.data),
   listAktif:    (params, opt = {}) => api.get('/billings/aktif', { params, ...opt }).then(r => r.data),
   listSejarah:  (params, opt = {}) => api.get('/billings/sejarah', { params, ...opt }).then(r => r.data),

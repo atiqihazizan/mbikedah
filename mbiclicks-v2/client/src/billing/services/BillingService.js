@@ -17,6 +17,19 @@ function wrap(fn) {
 }
 
 export const BillingService = {
+  // ─── Ownership queries (ADR-033) ─────────────────────────────────────────────
+  // Sentiasa applicantId = currentUser.id — digunakan oleh menu Permohonan & Sejarah
+
+  getMyApplications: wrap(async (params, { signal } = {}) => {
+    const raw = await billingApi.myApplications(params, { signal })
+    return BillingAdapter.normalizeList(raw)
+  }),
+
+  getMyHistory: wrap(async (params, { signal } = {}) => {
+    const raw = await billingApi.myHistory(params, { signal })
+    return BillingAdapter.normalizeList(raw)
+  }),
+
   // ─── Queries ────────────────────────────────────────────────────────────────
 
   get: wrap(async (id, { signal } = {}) => {

@@ -36,6 +36,8 @@ async function issueTokens(user, res, req) {
   const accessToken  = signAccess(user.id)
   const refreshToken = signRefresh(user.id)
 
+  // Padam token lama — elak duplikasi jika login dalam second yang sama (JWT iat = saat)
+  await prisma.refreshToken.deleteMany({ where: { userId: user.id } })
   await prisma.refreshToken.create({
     data: {
       userId:    user.id,

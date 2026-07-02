@@ -7,14 +7,36 @@ import { useAuthStore } from '@/store/auth'
 import api from '@/lib/api'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button, Label, Spinner } from '@/components/ui'
 
-const PAGE_TITLE = {
+const STATIC_TITLES = {
   '/dashboard':  'Dashboard',
   '/bajet':      'Pengurusan Bajet',
-  '/permohonan': 'Permohonan Bayaran',
   '/pekeliling': 'Pekeliling',
   '/kalendar':   'Kalendar',
   '/laporan':    'Laporan',
   '/tetapan':    'Tetapan Sistem',
+}
+
+const PERMOHONAN_STATUS_TITLES = {
+  PENDING_HOD:              'Kelulusan Jabatan',
+  PENDING_CEO:              'Kelulusan CEO',
+  PENDING_CEO_FINAL:        'Kelulusan Muktamad',
+  PENDING_FINANCE_CHECK:    'Semakan Kewangan',
+  PENDING_FINANCE_VERIFY:   'Pengesahan Kewangan',
+  PENDING_FINANCE_APPROVAL: 'Kelulusan KPK',
+}
+
+function resolveTitle(location) {
+  if (location.pathname.startsWith('/permohonan')) {
+    if (location.pathname === '/permohonan/sejarah') return 'Sejarah Permohonan'
+    if (location.pathname === '/permohonan/baru')    return 'Permohonan Baru'
+    const params = new URLSearchParams(location.search)
+    const queue  = params.get('queue') ?? ''
+    const status = params.get('status') ?? ''
+    if (queue === 'payment')               return 'Tindakan Bayaran'
+    if (PERMOHONAN_STATUS_TITLES[status])  return PERMOHONAN_STATUS_TITLES[status]
+    return 'Permohonan Saya'
+  }
+  return Object.entries(STATIC_TITLES).find(([path]) => location.pathname.startsWith(path))?.[1] ?? 'MBIClicks'
 }
 
 function ChangePasswordDialog({ open, onClose }) {
@@ -107,9 +129,7 @@ export default function Topbar({ onMenuClick }) {
     qc.invalidateQueries({ queryKey: ['notifications'] })
   }
 
-  const title = Object.entries(PAGE_TITLE).find(([path]) =>
-    location.pathname.startsWith(path)
-  )?.[1] ?? 'MBIClicks'
+  const title = resolveTitle(location)
 
   const initials = user?.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? '?'
 

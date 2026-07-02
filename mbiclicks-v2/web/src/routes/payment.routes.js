@@ -5,11 +5,12 @@ import { listPayments, recordPayment, payPhase, closeBilling } from '../controll
 const router = Router()
 router.use(authenticate)
 
-const canPay = requireRole('finance', 'finance_hod', 'admin')
+const canPay   = requireRole('finance', 'finance_hod', 'admin')
+const canClose = requireRole('finance_hod', 'admin')
 
 router.get('/:id/payments',              listPayments)
 router.post('/:id/payments',             canPay, recordPayment)
 router.patch('/:id/payments/:phaseId',   canPay, payPhase)
-router.post('/:id/close',               canPay, closeBilling)
+router.post('/:id/close',               canClose, closeBilling)
 
 export default router

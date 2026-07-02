@@ -4,6 +4,18 @@ import { logActivity } from '../utils/activityLog.js'
 import { recalcPermohonanCache, extractAccNos } from '../utils/budgetCache.js'
 import { getStepConfig, computeActions, STATUS_DISPLAY, buildWorkflowView } from '../lib/workflowRules.js'
 
+// ─── Authorization policy: boleh lihat billing ───────────────────────────────
+// Owner | Finance (semua) | Admin | CEO | HOD jabatan sendiri sahaja
+export function canViewBilling(user, billing) {
+  const role      = user.role?.slug
+  const isOwner   = billing.applicantId === user.id
+  const isAdmin   = role === 'admin'
+  const isFinance = ['finance', 'finance_hod'].includes(role)
+  const isCeo     = role === 'ceo'
+  const isOwnHod  = role === 'hod' && billing.departmentId === user.departmentId
+  return isOwner || isAdmin || isFinance || isCeo || isOwnHod
+}
+
 // ─── Status constants ─────────────────────────────────────────────────────────
 const AKTIF_STATUSES = [
   'DRAFT', 'RETURNED',
@@ -262,16 +274,8 @@ export async function getBilling(req, res, next) {
     })
     if (!data) return res.status(404).json({ message: 'Permohonan tidak dijumpai' })
 
-    const role    = req.user.role?.slug
-    const isOwner = data.applicantId === req.user.id
-    const isAdmin = role === 'admin'
-    const isHod   = role === 'finance_hod' && data.departmentId === req.user.departmentId
-    const isCeo   = role === 'ceo'
-    const isFinance = ['finance', 'finance_hod'].includes(role)
-    const isHodRole = role === 'hod'
-
-    const canView = isOwner || isAdmin || isHod || isCeo || isFinance || isHodRole
-    if (!canView) return res.status(403).json({ message: 'Tiada kebenaran' })
+    if (!canViewBilling(req.user, data))
+      return res.status(403).json({ message: 'Tiada kebenaran' })
 
     // Pisahkan approvalHistory dari data utama
     const { approvals: approvalHistory, payments, ...billing } = data
@@ -432,6 +436,11 @@ export async function workflowAction(req, res, next) {
     if (!stepCfg.role.includes(req.user.role?.slug))
       return res.status(403).json({ message: 'Tiada kebenaran untuk langkah ini' })
 
+    // HOD hanya boleh bertindak pada permohonan jabatannya sendiri
+    const role = req.user.role?.slug
+    if (role === 'hod' && billing.status === 'PENDING_HOD' && billing.departmentId !== req.user.departmentId)
+      return res.status(403).json({ message: 'Tiada kebenaran — permohonan bukan dari jabatan anda' })
+
     let toStatus
     if (action === 'APPROVE') toStatus = stepCfg.onApprove
     if (action === 'REJECT')  toStatus = stepCfg.onReject
@@ -547,6 +556,9 @@ export async function getHodReview(req, res, next) {
     const { billing, error, message } = await fetchActionBilling(req.params.id,
       { allowedRoles: ['hod', 'finance_hod', 'admin'], allowedStatuses: ['PENDING_HOD'] }, req.user)
     if (error) return res.status(error).json({ message })
+    // HOD hanya boleh semak permohonan jabatannya sendiri
+    if (req.user.role?.slug === 'hod' && billing.departmentId !== req.user.departmentId)
+      return res.status(403).json({ message: 'Tiada kebenaran — permohonan bukan dari jabatan anda' })
     res.json({ data: billing })
   } catch (err) { next(err) }
 }
@@ -582,14 +594,8 @@ export async function getFinanceApprovalReview(req, res, next) {
 }
 
 // ─── Review Preview (untuk approver sahaja) ───────────────────────────────────
-// Endpoint khas untuk modal tindakan — tidak check ownership, check role approver
 export async function getBillingReview(req, res, next) {
   try {
-    const role = req.user.role?.slug
-    const isApprover = ['hod', 'finance_hod', 'finance', 'admin'].includes(role)
-    if (!isApprover)
-      return res.status(403).json({ message: 'Tiada kebenaran' })
-
     const id   = parseInt(req.params.id)
     const data = await prisma.billing.findFirst({
       where:   { id, isDeleted: false },
@@ -601,6 +607,7 @@ export async function getBillingReview(req, res, next) {
       },
     })
     if (!data) return res.status(404).json({ message: 'Permohonan tidak dijumpai' })
+    if (!canViewBilling(req.user, data)) return res.status(403).json({ message: 'Tiada kebenaran' })
     res.json({ data })
   } catch (err) { next(err) }
 }

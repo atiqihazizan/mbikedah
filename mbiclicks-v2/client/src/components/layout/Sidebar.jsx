@@ -1,80 +1,49 @@
 import { useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, FileText, Bell,
-  Calendar, BarChart3, Settings, ChevronDown, LogOut, BookOpen, PiggyBank, Landmark,
-  ClipboardCheck, ChevronRight, History,
+  LayoutDashboard, FileText, ListChecks,
+  PiggyBank, BookOpen, Landmark, BarChart3, Settings,
+  Bell, Calendar, ChevronDown, ChevronRight, LogOut, Plus,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
+import { DashboardService } from '@/dashboard/DashboardService'
 import api from '@/lib/api'
-import { APP_NAME, APP_TAGLINE } from '@/lib/constants'
+import { buildSidebarNav } from './SidebarViewModel'
 
-const KELULUSAN_STATUSES = new Set([
-  'PENDING_FINANCE_CHECK','PENDING_FINANCE_VERIFY','PENDING_FINANCE_APPROVAL',
-  'PENDING_CEO_FINAL','PARTIAL_PAID',
-])
-
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard',  module: 'dashboard' },
-  { to: '/pekeliling',icon: Bell,             label: 'Pekeliling', module: 'circular'  },
-  { to: '/kalendar',  icon: Calendar,         label: 'Kalendar',   module: 'event'     },
+const TOP_NAV = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/pekeliling', icon: Bell,           label: 'Pekeliling' },
+  { to: '/kalendar',   icon: Calendar,       label: 'Kalendar'   },
 ]
 
-const financeOnlyItems = [
+const FINANCE_NAV = [
   { to: '/bajet',      icon: PiggyBank, label: 'Bajet'      },
   { to: '/akaun',      icon: BookOpen,  label: 'Kod Akaun'  },
   { to: '/akaun-bank', icon: Landmark,  label: 'Akaun Bank' },
 ]
 
-// Sub-menu Permohonan Aktif ikut role
-function buildPermohonanSubs({ isHod, isCeo, isFinance }) {
-  const items = [
-    // { status: '',      label: 'Semua' },
-    { status: 'DRAFT', label: 'Draf'  },
-  ]
-  if (isHod)       items.push({ status: 'PENDING_HOD', label: 'Ketua Jabatan' })
-  if (isCeo)       items.push({ status: 'PENDING_CEO', label: 'Ketua Eksekutif' })
-  if (!isFinance)  items.push({ status: 'APPROVED',    label: 'Diluluskan' })
+const LAPORAN_TABS = [
+  { val: 'ringkasan',  label: 'Ringkasan'               },
+  { val: 'penyata',    label: 'Penyata Hasil & Belanja'  },
+  { val: 'subhasil',   label: 'Sub Hasil'                },
+  { val: 'subbelanja', label: 'Sub Belanja'              },
+]
 
-  
-  // return items
-  return items.concat([
-    { status: 'PARTIAL_PAID', label: 'Bayaran Ansuran' },
-    { status: 'PAID',         label: 'Selesai Dibayar' },
-    { status: 'REJECTED',     label: 'Ditolak'         },
-  ])
+const TETAPAN_TABS = [
+  { val: 'pengguna', label: 'Pengguna'            },
+  { val: 'jabatan',  label: 'Jabatan'             },
+  { val: 'jawatan',  label: 'Jawatan'             },
+  { val: 'log',      label: 'Log Aktiviti'        },
+  { val: 'peranan',  label: 'Peranan & Kebenaran' },
+]
+
+function loadSections() {
+  try { return JSON.parse(localStorage.getItem('sidebar-sections')) ?? ['permohonan'] }
+  catch { return ['permohonan'] }
 }
 
-// Sub-menu Sejarah
-// function buildSejarahSubs() {
-//   return [
-//     // { status: '',         label: 'Semua Sejarah'   },
-//     { status: 'PAID',     label: 'Selesai Dibayar' },
-//     { status: 'REJECTED', label: 'Ditolak'         },
-//     { status: 'CLOSED',   label: 'Ditutup'         },
-//   ]
-// }
-
-// Sub-menu Kelulusan untuk finance
-function buildKelulusanSubs({ isFinanceHod }) {
-  const items = [
-    { status: 'PENDING_FINANCE_CHECK',    label: 'Semakan'            },
-    { status: 'PENDING_FINANCE_VERIFY',   label: 'Pengesahan'         },
-    { status: 'PENDING_FINANCE_APPROVAL', label: 'Kelulusan'          },
-  ]
-  if (isFinanceHod)
-    items.push({ status: 'PENDING_CEO_FINAL', label: 'Kelulusan Muktamad' })
-
-  items.push(
-    // { status: 'APPROVED',     label: 'Diluluskan'      },
-    // { status: 'PARTIAL_PAID', label: 'Bayaran Ansuran' },
-    // { status: 'PAID',         label: 'Selesai Dibayar' },
-    // { status: 'REJECTED',     label: 'Ditolak'         },
-  )
-  return items
-}
-
-function SubMenuItem({ to, label, isActive, onClose }) {
+function SubItem({ to, label, isActive, onClose }) {
   return (
     <Link
       to={to}
@@ -91,60 +60,67 @@ function SubMenuItem({ to, label, isActive, onClose }) {
   )
 }
 
-function useSubActive(basePath, paramName, defaultVal = '') {
-  const location = useLocation()
-  const isOn = location.pathname === basePath
-  const current = isOn ? (new URLSearchParams(location.search).get(paramName) ?? defaultVal) : null
-  const check = (val) => isOn && current === val
-  const make  = (val, def = defaultVal) => val === def ? basePath : `${basePath}?${paramName}=${val}`
-  return { isOn, check, make }
+function SectionBtn({ icon: Icon, label, badge, isActive, isOpen, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${
+        isActive ? 'text-white' : 'text-gray-400'
+      }`}
+    >
+      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-green-400' : 'text-gray-500'}`} />
+      <span className="flex-1 font-medium text-left">{label}</span>
+      {badge > 0 && (
+        <span className="text-xs font-bold bg-green-600 text-white px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+          {badge}
+        </span>
+      )}
+      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
+    </button>
+  )
 }
 
 export default function Sidebar({ open, onClose }) {
-  const can      = useAuthStore((s) => s.can)
-  const user     = useAuthStore((s) => s.user)
-  const hasRole  = useAuthStore((s) => s.hasRole)
-  const logout   = useAuthStore((s) => s.logout)
+  const can     = useAuthStore((s) => s.can)
+  const user    = useAuthStore((s) => s.user)
+  const hasRole = useAuthStore((s) => s.hasRole)
+  const logout  = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
   const location = useLocation()
 
-  const isAdmin      = hasRole('admin')
-  const isFinance    = hasRole('finance_hod', 'finance', 'admin')
-  const isFinanceHod = hasRole('finance_hod', 'admin')
-  const isHod        = hasRole('hod', 'finance_hod', 'admin')
-  const isCeo        = hasRole('ceo', 'admin')
+  const isFinance = hasRole('finance_hod', 'finance', 'admin')
+  const isAdmin   = hasRole('admin')
 
-  const perm    = useSubActive('/permohonan', 'status', '')
-  const sejarah = useSubActive('/permohonan/sejarah', 'status', '')
-  const laporan = useSubActive('/laporan', 'sheet', 'ringkasan')
-  const tetapan = useSubActive('/tetapan', 'tab', 'pengguna')
+  const [sections, setSections] = useState(loadSections)
 
-  const [openSection, setOpenSection] = useState(null)
+  const { data: summary } = useQuery({
+    queryKey:  ['me-summary'],
+    queryFn:   ({ signal }) => DashboardService.getSummary({ signal }),
+    staleTime: 30_000,
+  })
 
-  const toggleSection = (name) => setOpenSection((prev) => prev === name ? null : name)
+  const nav = buildSidebarNav({ summary, location })
 
-  const permohonanSubs = buildPermohonanSubs({ isHod, isCeo, isFinance })
-  const kelulusanSubs  = buildKelulusanSubs({ isFinanceHod })
-  // const sejarahSubs    = buildSejarahSubs()
+  function toggleSection(name) {
+    setSections(prev => {
+      const next = prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]
+      localStorage.setItem('sidebar-sections', JSON.stringify(next))
+      return next
+    })
+  }
+  const isOpen = (name) => sections.includes(name)
 
-  const LAPORAN_SUBS = [
-    { val: 'ringkasan',  label: 'Ringkasan'               },
-    { val: 'penyata',    label: 'Penyata Hasil & Belanja'  },
-    { val: 'subhasil',   label: 'Sub Hasil'                },
-    { val: 'subbelanja', label: 'Sub Belanja'              },
-  ]
-
-  const TETAPAN_SUBS = [
-    { val: 'pengguna', label: 'Pengguna'           },
-    { val: 'jabatan',  label: 'Jabatan'            },
-    { val: 'jawatan',  label: 'Jawatan'            },
-    { val: 'log',      label: 'Log Aktiviti'       },
-    { val: 'peranan',  label: 'Peranan & Kebenaran'},
-  ]
-
-  const visible = navItems.filter(
-    (item) => !item.module || item.module === 'dashboard' || can(item.module)
-  )
+  // URL helpers for tabbed sections — not workflow, just ?param=val navigation
+  const laporan = {
+    isOn:  location.pathname === '/laporan',
+    check: (val) => location.pathname === '/laporan' && (new URLSearchParams(location.search).get('sheet') ?? 'ringkasan') === val,
+    make:  (val) => val === 'ringkasan' ? '/laporan' : `/laporan?sheet=${val}`,
+  }
+  const tetapan = {
+    isOn:  location.pathname === '/tetapan',
+    check: (val) => location.pathname === '/tetapan' && (new URLSearchParams(location.search).get('tab') ?? 'pengguna') === val,
+    make:  (val) => val === 'pengguna' ? '/tetapan' : `/tetapan?tab=${val}`,
+  }
 
   async function handleLogout() {
     try { await api.post('/auth/logout') } catch {}
@@ -171,9 +147,7 @@ export default function Sidebar({ open, onClose }) {
         <div className="px-4 py-3 border-b border-gray-700/50">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center shrink-0">
-              <span className="text-white text-sm font-medium">
-                {user.name?.charAt(0).toUpperCase()}
-              </span>
+              <span className="text-white text-sm font-medium">{user.name?.charAt(0).toUpperCase()}</span>
             </div>
             <div className="min-w-0">
               <p className="text-white text-sm font-medium truncate leading-none">{user.name}</p>
@@ -183,20 +157,17 @@ export default function Sidebar({ open, onClose }) {
         </div>
       )}
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
 
-        {/* Menu utama */}
-        {visible.map((item) => (
+        {/* Core */}
+        {TOP_NAV.map(item => (
           <NavLink
             key={item.to}
             to={item.to}
             onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all group ${
-                isActive
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                isActive ? 'bg-green-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
               }`
             }
           >
@@ -210,70 +181,67 @@ export default function Sidebar({ open, onClose }) {
           </NavLink>
         ))}
 
-        {/* Permohonan + sub-menu */}
+        {/* Permohonan — Application Context */}
         {can('billing') && (
           <>
-            <button
-              onClick={() => toggleSection('permohonan')}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${perm.isOn && openSection === 'permohonan' ? 'text-white' : 'text-gray-400'}`}
+            <Link
+              to="/permohonan/baru"
+              onClick={onClose}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all group ${
+                location.pathname === '/permohonan/baru'
+                  ? 'bg-green-600 text-white'
+                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+              }`}
             >
-              <FileText className={`w-4 h-4 flex-shrink-0 ${perm.isOn && openSection === 'permohonan' ? 'text-green-400' : 'text-gray-500'}`} />
-              <span className="flex-1 font-medium text-left">Permohonan</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openSection === 'permohonan' ? 'rotate-0' : '-rotate-90'}`} />
-            </button>
-            {openSection === 'permohonan' && (
+              <Plus className={`w-4 h-4 flex-shrink-0 ${location.pathname === '/permohonan/baru' ? 'text-white' : 'text-gray-500 group-hover:text-white'}`} />
+              <span className="flex-1">Permohonan Baru</span>
+            </Link>
+            <SectionBtn
+              icon={FileText}
+              label="Permohonan"
+              isActive={nav.permohonan.isActive}
+              isOpen={isOpen('permohonan')}
+              onClick={() => toggleSection('permohonan')}
+            />
+            {isOpen('permohonan') && (
               <div className="space-y-0.5 mb-1">
-                {permohonanSubs.map((item) => (
-                  <SubMenuItem key={item.status} to={perm.make(item.status)} label={item.label} isActive={perm.check(item.status)} onClose={onClose} />
+                {nav.permohonan.items.map(item => (
+                  <SubItem key={item.key} to={item.to} label={item.label} isActive={item.isActive} onClose={onClose} />
                 ))}
               </div>
             )}
-
-            {/* Sejarah sub-menu */}
-            {/* <button
-              onClick={() => toggleSection('sejarah')}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${sejarah.isOn ? 'text-white' : 'text-gray-400'}`}
-            >
-              <History className={`w-4 h-4 flex-shrink-0 ${sejarah.isOn ? 'text-green-400' : 'text-gray-500'}`} />
-              <span className="flex-1 font-medium text-left">Sejarah</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openSection === 'sejarah' ? 'rotate-0' : '-rotate-90'}`} />
-            </button>
-            {openSection === 'sejarah' && (
-              <div className="space-y-0.5 mb-1">
-                {sejarahSubs.map((item) => (
-                  <SubMenuItem key={`sj-${item.status}`} to={sejarah.make(item.status)} label={item.label} isActive={sejarah.check(item.status)} onClose={onClose} />
-                ))}
-              </div>
-            )} */}
           </>
         )}
 
-        {/* Kelulusan + Laporan — finance & admin sahaja */}
+        {/* Tindakan — Task Context (ADR-031: only render when tasks exist) */}
+        {nav.tindakan.hasItems && (
+          <>
+            <SectionBtn
+              icon={ListChecks}
+              label="Tindakan"
+              badge={nav.tindakan.totalCount}
+              isActive={nav.tindakan.isActive}
+              isOpen={isOpen('tindakan')}
+              onClick={() => toggleSection('tindakan')}
+            />
+            {isOpen('tindakan') && (
+              <div className="space-y-0.5 mb-1">
+                {nav.tindakan.items.map(item => (
+                  <SubItem key={item.key} to={item.to} label={item.label} isActive={item.isActive} onClose={onClose} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Kewangan — finance data only, no approvals */}
         {isFinance && (
           <>
             <div className="pt-2 pb-1">
               <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest px-3">Kewangan</p>
             </div>
 
-            {/* Kelulusan sub-menu */}
-            <button
-              onClick={() => toggleSection('kelulusan')}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${perm.isOn && openSection === 'kelulusan' ? 'text-white' : 'text-gray-400'}`}
-            >
-              <ClipboardCheck className={`w-4 h-4 flex-shrink-0 ${perm.isOn && openSection === 'kelulusan' ? 'text-blue-400' : 'text-gray-500'}`} />
-              <span className="flex-1 font-medium text-left">Kelulusan</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openSection === 'kelulusan' ? 'rotate-0' : '-rotate-90'}`} />
-            </button>
-            {openSection === 'kelulusan' && (
-              <div className="space-y-0.5 mb-1">
-                {kelulusanSubs.map((item) => (
-                  <SubMenuItem key={`k-${item.status}`} to={perm.make(item.status)} label={item.label} isActive={perm.check(item.status)} onClose={onClose} />
-                ))}
-              </div>
-            )}
-
-            {/* Bajet & Akaun */}
-            {financeOnlyItems.map((item) => (
+            {FINANCE_NAV.map(item => (
               <NavLink key={item.to} to={item.to} onClick={onClose}
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all group ${
@@ -291,51 +259,48 @@ export default function Sidebar({ open, onClose }) {
               </NavLink>
             ))}
 
-            {/* Laporan sub-menu */}
-            <button
+            <SectionBtn
+              icon={BarChart3}
+              label="Laporan"
+              isActive={laporan.isOn}
+              isOpen={isOpen('laporan')}
               onClick={() => toggleSection('laporan')}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${laporan.isOn ? 'text-white' : 'text-gray-400'}`}
-            >
-              <BarChart3 className={`w-4 h-4 flex-shrink-0 ${laporan.isOn ? 'text-green-400' : 'text-gray-500'}`} />
-              <span className="flex-1 font-medium text-left">Laporan</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openSection === 'laporan' ? 'rotate-0' : '-rotate-90'}`} />
-            </button>
-            {openSection === 'laporan' && (
+            />
+            {isOpen('laporan') && (
               <div className="space-y-0.5 mb-1">
-                {LAPORAN_SUBS.map((item) => (
-                  <SubMenuItem key={item.val} to={laporan.make(item.val)} label={item.label} isActive={laporan.check(item.val)} onClose={onClose} />
+                {LAPORAN_TABS.map(item => (
+                  <SubItem key={item.val} to={laporan.make(item.val)} label={item.label} isActive={laporan.check(item.val)} onClose={onClose} />
                 ))}
               </div>
             )}
           </>
         )}
 
-        {/* Admin — Tetapan sub-menu */}
+        {/* Pentadbiran */}
         {isAdmin && (
           <>
             <div className="pt-3 pb-1">
-              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest px-3">Admin</p>
+              <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest px-3">Pentadbiran</p>
             </div>
-            <button
+            <SectionBtn
+              icon={Settings}
+              label="Tetapan"
+              isActive={tetapan.isOn}
+              isOpen={isOpen('tetapan')}
               onClick={() => toggleSection('tetapan')}
-              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-white/5 ${tetapan.isOn ? 'text-white' : 'text-gray-400'}`}
-            >
-              <Settings className={`w-4 h-4 flex-shrink-0 ${tetapan.isOn ? 'text-green-400' : 'text-gray-500'}`} />
-              <span className="flex-1 font-medium text-left">Tetapan</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openSection === 'tetapan' ? 'rotate-0' : '-rotate-90'}`} />
-            </button>
-            {openSection === 'tetapan' && (
+            />
+            {isOpen('tetapan') && (
               <div className="space-y-0.5">
-                {TETAPAN_SUBS.map((item) => (
-                  <SubMenuItem key={item.val} to={tetapan.make(item.val)} label={item.label} isActive={tetapan.check(item.val)} onClose={onClose} />
+                {TETAPAN_TABS.map(item => (
+                  <SubItem key={item.val} to={tetapan.make(item.val)} label={item.label} isActive={tetapan.check(item.val)} onClose={onClose} />
                 ))}
               </div>
             )}
           </>
         )}
+
       </nav>
 
-      {/* Logout */}
       <div className="p-3 border-t border-gray-700/50">
         <button
           onClick={handleLogout}

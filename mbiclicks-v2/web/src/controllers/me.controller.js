@@ -1,6 +1,61 @@
 import prisma from '../lib/prisma.js'
 import { TASK_QUEUE_MAP } from '../lib/workflowRules.js'
 
+// ADR-033: Ownership queries — applicantId = currentUser.id, tanpa pengembangan role
+// ADR-034: Unknown params → ignore. Known params invalid → 400.
+const TERMINAL_STATUSES = ['PAID', 'REJECTED', 'CLOSED']
+
+// Validate contract params (page, limit) — unknown params diabaikan secara senyap
+function parseOwnershipPagination(query) {
+  const rawPage  = query.page  !== undefined ? Number(query.page)  : 1
+  const rawLimit = query.limit !== undefined ? Number(query.limit) : 20
+
+  if (!Number.isInteger(rawPage)  || rawPage  < 1)   return { error: `'page' mesti integer ≥ 1` }
+  if (!Number.isInteger(rawLimit) || rawLimit < 1)   return { error: `'limit' mesti integer ≥ 1` }
+  if (rawLimit > 100)                                 return { error: `'limit' tidak boleh melebihi 100` }
+
+  return { pg: rawPage, lim: rawLimit }
+}
+
+const OWN_LIST_INCLUDE = {
+  applicant:  { select: { id: true, name: true, staffNo: true } },
+  department: { select: { id: true, name: true } },
+  vendor:     { select: { id: true, name: true } },
+  _count:     { select: { attachments: { where: { isDeleted: false } }, items: { where: { isDeleted: false } } } },
+}
+
+// ─── GET /me/applications — Permohonan milik sendiri (aktif) ─────────────────
+export async function getMyApplications(req, res, next) {
+  try {
+    const parsed = parseOwnershipPagination(req.query)
+    if (parsed.error) return res.status(400).json({ error: parsed.error })
+    const { pg, lim } = parsed
+
+    const where = { isDeleted: false, applicantId: req.user.id, status: { notIn: TERMINAL_STATUSES } }
+    const [total, data] = await Promise.all([
+      prisma.billing.count({ where }),
+      prisma.billing.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (pg - 1) * lim, take: lim, include: OWN_LIST_INCLUDE }),
+    ])
+    res.json({ data, total, page: pg, totalPages: Math.ceil(total / lim) })
+  } catch (err) { next(err) }
+}
+
+// ─── GET /me/history — Sejarah permohonan milik sendiri ──────────────────────
+export async function getMyHistory(req, res, next) {
+  try {
+    const parsed = parseOwnershipPagination(req.query)
+    if (parsed.error) return res.status(400).json({ error: parsed.error })
+    const { pg, lim } = parsed
+
+    const where = { isDeleted: false, applicantId: req.user.id, status: { in: TERMINAL_STATUSES } }
+    const [total, data] = await Promise.all([
+      prisma.billing.count({ where }),
+      prisma.billing.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (pg - 1) * lim, take: lim, include: OWN_LIST_INCLUDE }),
+    ])
+    res.json({ data, total, page: pg, totalPages: Math.ceil(total / lim) })
+  } catch (err) { next(err) }
+}
+
 // ─── GET /me/summary ─────────────────────────────────────────────────────────
 export async function getMySummary(req, res, next) {
   try {

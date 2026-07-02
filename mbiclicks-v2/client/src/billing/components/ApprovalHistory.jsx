@@ -10,19 +10,24 @@ function fmtDate(d) {
 const ACTION_LABEL = {
   SUBMIT: 'Dihantar', APPROVE: 'Diluluskan', VERIFY: 'Disahkan',
   REJECT: 'Ditolak',  RETURN:  'Dikembalikan', PAY: 'Dibayar',
+  CLOSE: 'Permohonan Dihentikan',
 }
 const ACTION_COLOR = {
   SUBMIT: 'text-blue-600', APPROVE: 'text-green-600', VERIFY: 'text-green-600',
   REJECT: 'text-red-600',  RETURN:  'text-orange-600', PAY: 'text-teal-600',
+  CLOSE: 'text-gray-600',
 }
 const STEP_LABEL = {
   SUBMIT: 'Pemohon', HOD: 'Ketua Jabatan', CEO: 'Ketua Eksekutif',
+  CEO_FINAL: 'Kelulusan Muktamad CEO',
   FINANCE_CHECK: 'Semakan Kewangan', FINANCE_VERIFY: 'Pengesahan Kewangan',
   FINANCE_APPROVAL: 'Kelulusan Kewangan', PAYMENT: 'Pembayaran',
+  CLOSE: 'Penutupan Kes',
 }
 const DOT_COLOR = {
   APPROVE: 'bg-green-600', REJECT: 'bg-red-600', RETURN: 'bg-orange-500',
   SUBMIT: 'bg-blue-600', PAY: 'bg-teal-600', VERIFY: 'bg-green-600',
+  CLOSE: 'bg-gray-500',
 }
 
 export default function ApprovalHistory({ history = [] }) {

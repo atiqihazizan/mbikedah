@@ -22,9 +22,12 @@ export async function listPayments(req, res, next) {
       orderBy: { phase: 'asc' },
     })
 
-    const totalPaid = payments.reduce((s, p) => s + parseFloat(p.amount), 0)
+    // totalPaid = jumlah yang sudah benar-benar dibayar (paidAt != null)
+    // totalPlanned = jumlah fasa yang belum dibayar (paidAt = null)
+    const totalPaid    = payments.filter(p => p.paidAt).reduce((s, p) => s + parseFloat(p.amount), 0)
+    const totalPlanned = payments.filter(p => !p.paidAt).reduce((s, p) => s + parseFloat(p.amount), 0)
 
-    res.json({ data: payments, totalPaid, totalAmount: parseFloat(billing.totalAmount) })
+    res.json({ data: payments, totalPaid, totalPlanned, totalAmount: parseFloat(billing.totalAmount) })
   } catch (err) { next(err) }
 }
 
