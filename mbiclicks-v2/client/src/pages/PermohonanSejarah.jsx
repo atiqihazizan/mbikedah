@@ -3,9 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, History } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
-import { BILLING_STATUS } from '@/lib/billing'
 import { BillingService } from '@/billing/services/BillingService'
+import { ApplicationViewModel } from '@/billing/viewmodels'
+import { VmStatusBadge } from '@/billing/components'
 import { Button, Spinner } from '@/components/ui'
+import EmptyState from '@/components/EmptyState'
 
 function fmtDate(d) {
   if (!d) return '—'
@@ -14,19 +16,6 @@ function fmtDate(d) {
 
 function fmtRM(v) {
   return 'RM ' + Number(v).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-function StatusBadge({ status }) {
-  const cfg = BILLING_STATUS[status] ?? { label: status, color: 'gray' }
-  const colorMap = {
-    gray: 'bg-gray-100 text-gray-700', teal: 'bg-teal-100 text-teal-700',
-    red: 'bg-red-100 text-red-700',
-  }
-  return (
-    <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${colorMap[cfg.color] ?? colorMap.gray}`}>
-      {cfg.label}
-    </span>
-  )
 }
 
 export default function PermohonanSejarah() {
@@ -66,10 +55,7 @@ export default function PermohonanSejarah() {
         {isLoading ? (
           <div className="flex justify-center py-16"><Spinner /></div>
         ) : rows.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <History className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Tiada rekod sejarah</p>
-          </div>
+          <EmptyState icon={History} title="Tiada rekod sejarah" />
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
@@ -85,30 +71,31 @@ export default function PermohonanSejarah() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {rows.map(row => (
-                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs text-blue-600">{row.refNo}</td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-gray-800">{row.applicant?.name}</div>
-                    <div className="text-xs text-gray-400">{row.applicant?.staffNo}</div>
-                  </td>
-                  {(isFinance || isHod) && (
-                    <td className="px-4 py-3 text-gray-600">{row.department?.name}</td>
-                  )}
-                  <td className="px-4 py-3 text-gray-700">{row.vendor?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-right font-medium">{fmtRM(row.totalAmount)}</td>
-                  <td className="px-4 py-3"><StatusBadge status={row.status} /></td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{fmtDate(row.createdAt)}</td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => navigate(`/permohonan/${row.id}`)}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {rows.map(row => {
+                const vm = ApplicationViewModel.buildFromListItem(row, user)
+                return (
+                  <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 font-mono text-xs text-blue-600">{row.refNo}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-800">{row.applicant?.name}</div>
+                      <div className="text-xs text-gray-400">{row.applicant?.staffNo}</div>
+                    </td>
+                    {(isFinance || isHod) && (
+                      <td className="px-4 py-3 text-gray-600">{row.department?.name}</td>
+                    )}
+                    <td className="px-4 py-3 text-gray-700">{row.vendor?.name ?? '—'}</td>
+                    <td className="px-4 py-3 text-right font-medium">{fmtRM(row.totalAmount)}</td>
+                    <td className="px-4 py-3"><VmStatusBadge display={vm.display} /></td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{fmtDate(row.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => navigate(vm.actionPath)}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-blue-50">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}

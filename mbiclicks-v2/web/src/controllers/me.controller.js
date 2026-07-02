@@ -1,6 +1,70 @@
 import prisma from '../lib/prisma.js'
 import { TASK_QUEUE_MAP } from '../lib/workflowRules.js'
 
+// ─── GET /me/summary ─────────────────────────────────────────────────────────
+export async function getMySummary(req, res, next) {
+  try {
+    const role   = req.user.role?.slug
+    const userId = req.user.id
+    const deptId = req.user.departmentId
+
+    // application: kiraan permohonan milik sendiri
+    const [active, pendingApproval, waitingPayment, partialPayment, completed] = await Promise.all([
+      prisma.billing.count({ where: { applicantId: userId, isDeleted: false,
+        status: { notIn: ['DRAFT', 'PAID', 'CLOSED', 'REJECTED'] } } }),
+      prisma.billing.count({ where: { applicantId: userId, isDeleted: false,
+        status: { in: ['PENDING_HOD', 'PENDING_CEO', 'PENDING_FINANCE_CHECK',
+                        'PENDING_FINANCE_VERIFY', 'PENDING_FINANCE_APPROVAL', 'PENDING_CEO_FINAL'] } } }),
+      prisma.billing.count({ where: { applicantId: userId, isDeleted: false, status: 'APPROVED' } }),
+      prisma.billing.count({ where: { applicantId: userId, isDeleted: false, status: 'PARTIAL_PAID' } }),
+      prisma.billing.count({ where: { applicantId: userId, isDeleted: false, status: { in: ['PAID', 'CLOSED'] } } }),
+    ])
+
+    const application = { active, pendingApproval, waitingPayment, partialPayment, completed }
+
+    // tasks: kiraan task mengikut role
+    let tasks = { total: 0 }
+
+    if (role === 'admin') {
+      const total = await prisma.billing.count({ where: { isDeleted: false,
+        status: { notIn: ['DRAFT', 'PAID', 'CLOSED', 'REJECTED', 'RETURNED'] } } })
+      tasks = { total }
+
+    } else if (role === 'hod') {
+      const total = await prisma.billing.count({ where: { isDeleted: false, status: 'PENDING_HOD', departmentId: deptId } })
+      tasks = { total, hodApproval: total }
+
+    } else if (role === 'finance_hod') {
+      const [hodApproval, financeCheck, financeVerify, financeApproval, payment] = await Promise.all([
+        prisma.billing.count({ where: { isDeleted: false, status: 'PENDING_HOD', departmentId: deptId } }),
+        prisma.billing.count({ where: { isDeleted: false, status: 'PENDING_FINANCE_CHECK' } }),
+        prisma.billing.count({ where: { isDeleted: false, status: 'PENDING_FINANCE_VERIFY' } }),
+        prisma.billing.count({ where: { isDeleted: false, status: 'PENDING_FINANCE_APPROVAL' } }),
+        prisma.billing.count({ where: { isDeleted: false, status: { in: ['APPROVED', 'PARTIAL_PAID'] } } }),
+      ])
+      tasks = { total: hodApproval + financeCheck + financeVerify + financeApproval + payment,
+        hodApproval, financeCheck, financeVerify, financeApproval, payment }
+
+    } else if (role === 'ceo') {
+      const [ceoApproval, ceoFinal] = await Promise.all([
+        prisma.billing.count({ where: { isDeleted: false, status: 'PENDING_CEO' } }),
+        prisma.billing.count({ where: { isDeleted: false, status: 'PENDING_CEO_FINAL' } }),
+      ])
+      tasks = { total: ceoApproval + ceoFinal, ceoApproval, ceoFinal }
+
+    } else if (role === 'finance') {
+      const [financeCheck, financeVerify, payment] = await Promise.all([
+        prisma.billing.count({ where: { isDeleted: false, status: 'PENDING_FINANCE_CHECK' } }),
+        prisma.billing.count({ where: { isDeleted: false, status: 'PENDING_FINANCE_VERIFY' } }),
+        prisma.billing.count({ where: { isDeleted: false, status: { in: ['APPROVED', 'PARTIAL_PAID'] } } }),
+      ])
+      tasks = { total: financeCheck + financeVerify + payment, financeCheck, financeVerify, payment }
+    }
+
+    res.json({ application, tasks })
+  } catch (err) { next(err) }
+}
+
 // Status yang boleh ada task untuk pegawai
 const TASK_STATUSES = Object.keys(TASK_QUEUE_MAP)
 

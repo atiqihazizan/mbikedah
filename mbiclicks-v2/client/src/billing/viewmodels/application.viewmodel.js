@@ -34,6 +34,23 @@ const LOCKED_MESSAGES = {
   PARTIAL_PAID: 'Permohonan ini telah dibayar dan ditutup.',
 }
 
+// ─── Status display untuk list items (tanpa workflow) ───────────────────────
+const STATUS_DISPLAY_MAP = {
+  DRAFT:                    { badge: 'Draf',                color: 'gray'   },
+  PENDING_HOD:              { badge: 'Menunggu KJ',         color: 'yellow' },
+  PENDING_CEO:              { badge: 'Menunggu KE',         color: 'orange' },
+  PENDING_FINANCE_CHECK:    { badge: 'Semakan Kewangan',    color: 'blue'   },
+  PENDING_FINANCE_VERIFY:   { badge: 'Pengesahan Kewangan', color: 'indigo' },
+  PENDING_FINANCE_APPROVAL: { badge: 'Kelulusan Kewangan',  color: 'purple' },
+  PENDING_CEO_FINAL:        { badge: 'Kelulusan Muktamad',  color: 'orange' },
+  APPROVED:                 { badge: 'Diluluskan',          color: 'green'  },
+  PARTIAL_PAID:             { badge: 'Bayaran Ansuran',     color: 'teal'   },
+  PAID:                     { badge: 'Selesai Dibayar',     color: 'teal'   },
+  CLOSED:                   { badge: 'Ditutup',             color: 'gray'   },
+  REJECTED:                 { badge: 'Ditolak',             color: 'red'    },
+  RETURNED:                 { badge: 'Dikembalikan',        color: 'orange' },
+}
+
 // ─── ApplicationViewModel ─────────────────────────────────────────────────────
 export const ApplicationViewModel = {
   /**
@@ -102,6 +119,56 @@ export const ApplicationViewModel = {
       lockedMessage,
       isOwner,
       canEdit,
+    }
+  },
+
+  /**
+   * Untuk list pages — list item tidak ada workflow.
+   * Gunakan status string untuk display + kira actionPath ikut role.
+   * ADR-008: Page tidak perlu import BILLING_STATUS atau semak billing.status.
+   */
+  buildFromListItem(billing, viewer = null) {
+    const status  = billing.status ?? ''
+    const display = STATUS_DISPLAY_MAP[status] ?? { badge: status, color: 'gray' }
+    const id      = billing.id
+    const role    = viewer?.role?.slug ?? ''
+
+    // Kira actionPath dalam ViewModel — page hanya navigate(vm.actionPath)
+    let actionPath  = `/permohonan/${id}`
+    let actionLabel = 'Lihat'
+    let actionColor = 'gray'
+
+    if (role === 'hod' || role === 'finance_hod' || role === 'admin') {
+      if (status === 'PENDING_HOD') {
+        actionPath = `/permohonan/${id}/hod`; actionLabel = 'Semak & Lulus'; actionColor = 'green'
+      }
+    }
+    if (role === 'ceo' || role === 'admin') {
+      if (status === 'PENDING_CEO' || status === 'PENDING_CEO_FINAL') {
+        actionPath = `/permohonan/${id}/ceo`; actionLabel = 'Semak'; actionColor = 'rose'
+      }
+    }
+    if (role === 'finance' || role === 'finance_hod' || role === 'admin') {
+      if (status === 'PENDING_FINANCE_CHECK') {
+        actionPath = `/permohonan/${id}/semakan-kewangan`; actionLabel = 'Semak'; actionColor = 'blue'
+      } else if (status === 'PENDING_FINANCE_VERIFY') {
+        actionPath = `/permohonan/${id}/pengesahan-kewangan`; actionLabel = 'Sahkan'; actionColor = 'indigo'
+      }
+    }
+    if (role === 'finance_hod' || role === 'admin') {
+      if (status === 'PENDING_FINANCE_APPROVAL') {
+        actionPath = `/permohonan/${id}/kelulusan-kewangan`; actionLabel = 'Lulus'; actionColor = 'purple'
+      }
+    }
+
+    return {
+      display:      { color: display.color, badge: display.badge },
+      isLocked:     ['REJECTED', 'PAID', 'PARTIAL_PAID', 'CLOSED'].includes(status),
+      refNo:        billing.refNo,
+      totalAmount:  parseFloat(billing.totalAmount ?? 0),
+      actionPath,
+      actionLabel,
+      actionColor,
     }
   },
 }
