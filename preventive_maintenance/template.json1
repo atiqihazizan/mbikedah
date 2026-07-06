@@ -1,0 +1,171 @@
+{
+  "report_info": {
+    "report_id": "RPT-MBI-YYYYMMDD-XXX",
+    "date": "DD BULAN YYYY",
+    "start_time": "HH:MM AM/PM",
+    "end_time": "HH:MM AM/PM",
+    "technician": "Nama Teknisi",
+    "location": "Bilik Server Utama"
+  },
+  "server_info": {
+    "name": "MBI-SERVER",
+    "model": "Dell OptiPlex 3000",
+    "processor": "Intel Core i5-12500 @ 3.00 GHz",
+    "memory": "16GB DDR4 2400MHz",
+    "storage": "1TB SATA HDD + 512GB NVMe SSD",
+    "os": "Windows 10 Pro 64-bit (Build 19045)",
+    "purpose": "Server backup email dan database sistem mbiclick"
+  },
+  "hardware_checks": [
+    {
+      "component": "CPU Temperature",
+      "measured_value": "XX°C (Max: XX°C)",
+      "status": "OK",
+      "notes": "Suhu dalam julat normal operasi"
+    },
+    {
+      "component": "Memory Test",
+      "measured_value": "16GB detected, 0 errors",
+      "status": "OK",
+      "notes": "Semua slot memory berfungsi dengan baik"
+    },
+    {
+      "component": "Hard Disk Health",
+      "measured_value": "SMART Status: GOOD, Temp: XX°C",
+      "status": "OK",
+      "notes": "Power-on hours: XXXXX jam"
+    },
+    {
+      "component": "SSD Health",
+      "measured_value": "Health: XX%, Write cycles: XXX TBW",
+      "status": "OK",
+      "notes": "SSD dalam kondisi excellent"
+    },
+    {
+      "component": "Power Supply",
+      "measured_value": "12V: XX.XV, 5V: X.XXV, 3.3V: X.XXV",
+      "status": "OK",
+      "notes": "Voltage stability dalam spec"
+    },
+    {
+      "component": "Cooling Fans",
+      "measured_value": "CPU Fan: XXXX RPM, Case Fan: XXX RPM",
+      "status": "OK",
+      "notes": "Kipas berfungsi dengan normal"
+    }
+  ],
+  "software_checks": [
+    {
+      "component": "Windows Update",
+      "version_status": "KBXXXXXXX installed (DD MMM YYYY)",
+      "status": "OK",
+      "notes": "Latest security updates terpasang"
+    },
+    {
+      "component": "Windows Defender",
+      "version_status": "Version X.XXX.XXXX.X",
+      "status": "OK",
+      "notes": "Real-time protection aktif, database terkini"
+    },
+    {
+      "component": "System Event Logs",
+      "version_status": "X Critical, X Warnings, XX Info",
+      "status": "OK",
+      "notes": "Tiada error kritikal dalam 30 hari terakhir"
+    },
+    {
+      "component": "Disk Space Usage",
+      "version_status": "C: XX% used (XXXGB/XXXGB), D: XX% used (XXXGB/1TB)",
+      "status": "OK",
+      "notes": "Ruang disk mencukupi untuk operasi"
+    },
+    {
+      "component": "Running Services",
+      "version_status": "XXX services running, XX stopped",
+      "status": "OK",
+      "notes": "Semua critical services berjalan normal"
+    }
+  ],
+  "performance_cleanup": [
+    {
+      "component": "Disk Defragmentation (C:)",
+      "measured_value": "Fragmented files: X.X% → X.X% (Before → After)",
+      "status": "OK",
+      "notes": "Defrag completed, file access improved"
+    },
+    {
+      "component": "System Cache Cleanup",
+      "measured_value": "Cache cleared: X.XGB (Temp files, Prefetch, DNS)",
+      "status": "OK",
+      "notes": "Windows temp files, prefetch cache, DNS cache cleared"
+    },
+    {
+      "component": "Browser Cache Cleanup",
+      "measured_value": "Chrome: XXXMB, Edge: XXXMB, Firefox: XMB cleared",
+      "status": "OK",
+      "notes": "All browser caches and temporary internet files removed"
+    },
+    {
+      "component": "Windows Update Cache",
+      "measured_value": "SoftwareDistribution folder: X.XGB cleared",
+      "status": "OK",
+      "notes": "Old Windows Update files and download cache cleared"
+    },
+    {
+      "component": "System Event Logs",
+      "measured_value": "Event logs archived: XXXMB, Current: XXMB",
+      "status": "OK",
+      "notes": "Old event logs archived, current logs optimized"
+    },
+    {
+      "component": "Registry Cleanup",
+      "measured_value": "Invalid entries: XXX removed, Orphaned keys: XX fixed",
+      "status": "OK",
+      "notes": "Registry optimized, broken references removed"
+    },
+    {
+      "component": "Recycle Bin",
+      "measured_value": "Files purged: X.XGB (X,XXX files permanently deleted)",
+      "status": "OK",
+      "notes": "Recycle bin completely emptied for all users"
+    }
+  ],
+  "backup_status": [
+    {
+      "item": "Backup Schedule",
+      "value_status": "Manual backup - setiap bulan",
+      "condition": "ACTIVE",
+      "notes": "Backup terakhir: DD BULAN YYYY"
+    },
+    {
+      "item": "Backup Size",
+      "value_status": "~XXXGB (compressed)",
+      "condition": "NORMAL",
+      "notes": "Saiz backup dalam julat yang dijangka"
+    },
+    {
+      "item": "Backup Location",
+      "value_status": "C:\\cpanel_backup\\",
+      "condition": "SECURE",
+      "notes": "Stored pada HDD dedicated"
+    },
+    {
+      "item": "Backup Encryption",
+      "value_status": "No encryption applied",
+      "condition": "WARNING",
+      "notes": "Cadangan: implementasi enkripsi"
+    },
+    {
+      "item": "Last Restore Test",
+      "value_status": "DD BULAN YYYY",
+      "condition": "OK",
+      "notes": "Test restore berjaya dilakukan"
+    }
+  ],
+  "issues_found": [
+    "Contoh: Masalah yang dijumpai semasa pemeriksaan"
+  ],
+  "recommendations": [
+    "Contoh: Cadangan untuk penambahbaikan sistem"
+  ]
+}

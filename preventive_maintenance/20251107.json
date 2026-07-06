@@ -1,0 +1,368 @@
+{
+  "report_info": {
+    "report_id": "RPT-MBI-20251107-001",
+    "date": "07 November 2025",
+    "start_time": "2:30 PM",
+    "end_time": "2:51 PM",
+    "technician": "Muhammad Atiqi Hazizan",
+    "location": "Remote Server - mbikedah.com.my"
+  },
+  "server_info": {
+    "name": "mbikedah.com.my",
+    "hostname": "xenon.sfdns.net",
+    "model": "CloudLinux Server",
+    "processor": "AMD EPYC 7302P 16-Core Processor (16 cores, 32 threads)",
+    "memory": "124GB RAM (37GB used, 81GB available)",
+    "storage": "434GB Root (372GB used, 40GB free) + 3.5TB Temp (2.9TB used, 432GB free)",
+    "os": "Linux 4.18.0-477.13.1.lve.1.el8.x86_64 (CloudLinux 8)",
+    "purpose": "Web hosting server untuk mbikedah.com.my - WordPress site"
+  },
+  "hardware_checks": [
+    {
+      "component": "CPU Status",
+      "measured_value": "Load Average: 11.59, 9.79, 9.44 (16 cores available)",
+      "status": "WARNING",
+      "notes": "Load average agak tinggi (8-12), menunjukkan server sedang sibuk. CPU usage: 30.7% user, 8.5% system, 60% idle"
+    },
+    {
+      "component": "Memory Status",
+      "measured_value": "124GB total, 38GB used, 79GB available, 6.8GB free",
+      "status": "OK",
+      "notes": "Memory usage normal (31% used), masih banyak available. Swap: 760MB used dari 4GB"
+    },
+    {
+      "component": "Disk Space - Root Partition",
+      "measured_value": "/dev/sda3: 372GB used / 434GB (91% used, 40GB free)",
+      "status": "CRITICAL",
+      "notes": "Disk space hampir penuh! Hanya 40GB free. Perlu cleanup segera atau upgrade storage"
+    },
+    {
+      "component": "Disk Space - Temp Partition",
+      "measured_value": "/dev/sdc1: 2.9TB used / 3.5TB (88% used, 432GB free)",
+      "status": "WARNING",
+      "notes": "Temp partition 88% penuh, masih ada ruang tetapi perlu monitoring"
+    },
+    {
+      "component": "Inode Usage",
+      "measured_value": "2,263,390 used / 28,909,568 (8% used)",
+      "status": "OK",
+      "notes": "Inode usage sangat rendah, tiada masalah dengan jumlah file"
+    },
+    {
+      "component": "System Uptime",
+      "measured_value": "817 days, 19 hours, 34 minutes",
+      "status": "OK",
+      "notes": "Server sangat stabil, uptime excellent menunjukkan reliability tinggi"
+    }
+  ],
+  "software_checks": [
+    {
+      "component": "Operating System",
+      "version_status": "CloudLinux 8 (Kernel 4.18.0-477.13.1.lve.1.el8.x86_64)",
+      "status": "OK",
+      "notes": "OS version stabil, kernel dari Julai 2023. Perlu check untuk security updates"
+    },
+    {
+      "component": "PHP Version",
+      "version_status": "PHP 7.4.33 (CLI, NTS) - 55 extensions loaded",
+      "status": "WARNING",
+      "notes": "PHP 7.4 sudah EOL (End of Life). Cadangan upgrade ke PHP 8.1 atau 8.2 untuk security"
+    },
+    {
+      "component": "PHP Configuration",
+      "version_status": "memory_limit: 512M, upload_max: 1G, post_max: 512M, max_execution: 0",
+      "status": "OK",
+      "notes": "PHP settings mencukupi untuk WordPress operations"
+    },
+    {
+      "component": "MySQL Version",
+      "version_status": "MySQL 8.0.43 (Community Server)",
+      "status": "OK",
+      "notes": "MySQL version terkini dan stabil"
+    },
+    {
+      "component": "Web Server",
+      "version_status": "Apache/HTTPD (cPanel managed)",
+      "status": "OK",
+      "notes": "Web server dikendalikan oleh cPanel, status normal"
+    },
+    {
+      "component": "Control Panel",
+      "version_status": "cPanel detected",
+      "status": "OK",
+      "notes": "cPanel active, semua services managed oleh control panel"
+    },
+    {
+      "component": "WordPress Installation",
+      "version_status": "WordPress detected (wp-config.php found)",
+      "status": "OK",
+      "notes": "WordPress site aktif, 31 plugins detected, WP_DEBUG enabled (perlu disable untuk production)"
+    },
+    {
+      "component": "Running Services",
+      "version_status": "All services running, 0 failed services",
+      "status": "OK",
+      "notes": "Tiada failed services, semua critical services berjalan normal"
+    }
+  ],
+  "performance_cleanup": [
+    {
+      "component": "Website Files",
+      "measured_value": "public_html: 2.9GB (4,410 PHP files, 1,718 directories)",
+      "status": "OK",
+      "notes": "Website size normal untuk WordPress site"
+    },
+    {
+      "component": "WordPress Uploads",
+      "measured_value": "wp-content/uploads: 2.7GB",
+      "status": "OK",
+      "notes": "Uploads folder mengambil majoriti space. Boleh consider cleanup old unused media"
+    },
+    {
+      "component": "Mail Storage",
+      "measured_value": "Mail directory: 73GB (mbikedah.com.my mailbox)",
+      "status": "WARNING",
+      "notes": "Mailbox sangat besar (73GB)! Perlu cleanup old emails atau archive"
+    },
+    {
+      "component": "Log Files",
+      "measured_value": "Logs directory: 57MB",
+      "status": "OK",
+      "notes": "Log files size manageable, boleh rotate jika perlu"
+    },
+    {
+      "component": "Cache Files",
+      "measured_value": "LSCache: 14MB, tmp: 22MB",
+      "status": "OK",
+      "notes": "Cache size kecil, tidak perlu cleanup"
+    },
+    {
+      "component": "Backup Files",
+      "measured_value": "Multiple .htaccess backup files detected",
+      "status": "OK",
+      "notes": "Backup files kecil, boleh keep untuk reference"
+    }
+  ],
+  "disk_cleanup_analysis": {
+    "summary": "Analisis mendalam untuk cleanup disk space tanpa affect WordPress atau email operations",
+    "disk_usage_breakdown": [
+      {
+        "directory": "Mail",
+        "size": "73GB",
+        "percentage": "~20%",
+        "safe_to_cleanup": true,
+        "impact_on_wordpress": "ZERO - Email dan WordPress adalah sistem berasingan",
+        "impact_on_email": "LOW - Jika backup dulu sebelum delete",
+        "cleanup_potential": "50-60GB"
+      },
+      {
+        "directory": "public_html (WordPress)",
+        "size": "2.9GB",
+        "percentage": "~0.8%",
+        "safe_to_cleanup": false,
+        "impact_on_wordpress": "HIGH - Boleh affect website jika salah delete",
+        "impact_on_email": "ZERO",
+        "cleanup_potential": "500MB-1GB (limited)"
+      },
+      {
+        "directory": "subdomains",
+        "size": "671MB",
+        "percentage": "~0.2%",
+        "safe_to_cleanup": false,
+        "impact_on_wordpress": "MEDIUM - Boleh affect subdomains",
+        "impact_on_email": "ZERO",
+        "cleanup_potential": "Varies"
+      },
+      {
+        "directory": "logs",
+        "size": "57MB",
+        "percentage": "~0.02%",
+        "safe_to_cleanup": true,
+        "impact_on_wordpress": "ZERO",
+        "impact_on_email": "ZERO",
+        "cleanup_potential": "50-100MB"
+      },
+      {
+        "directory": "cache/tmp",
+        "size": "36MB",
+        "percentage": "~0.01%",
+        "safe_to_cleanup": true,
+        "impact_on_wordpress": "ZERO - Cache akan regenerate",
+        "impact_on_email": "ZERO",
+        "cleanup_potential": "100-500MB"
+      }
+    ],
+    "cleanup_priority": [
+      {
+        "priority": 1,
+        "target": "Email Cleanup (73GB)",
+        "action": "Archive old emails (>6 bulan atau 1 tahun) ke local backup, kemudian delete dari server",
+        "expected_savings": "50-60GB",
+        "risk_level": "LOW",
+        "impact": "ZERO impact pada WordPress, email boleh di-restore dari backup jika perlu",
+        "steps": [
+          "Login cPanel → Email Accounts",
+          "Export/download old emails (>6 bulan atau 1 tahun)",
+          "Verify backup berjaya",
+          "Delete old emails dari server",
+          "Empty Spam dan Trash folders",
+          "Delete emails dengan large attachments (>10MB) yang tidak penting"
+        ]
+      },
+      {
+        "priority": 2,
+        "target": "WordPress Cache & Logs",
+        "action": "Clear WordPress cache via plugin dan rotate log files",
+        "expected_savings": "100-500MB",
+        "risk_level": "LOW",
+        "impact": "ZERO - Cache akan regenerate automatically, logs tidak affect functionality",
+        "steps": [
+          "Clear WordPress cache via LSCache plugin atau WP Super Cache",
+          "Delete transient cache dari database",
+          "Rotate atau compress old log files",
+          "Clear cPanel cache files"
+        ]
+      },
+      {
+        "priority": 3,
+        "target": "WordPress Media Optimization (OPTIONAL)",
+        "action": "Review dan delete unused media files (perlu verify dulu)",
+        "expected_savings": "500MB-1GB",
+        "risk_level": "MEDIUM",
+        "impact": "POSSIBLE - Boleh affect website jika delete wrong files",
+        "steps": [
+          "Identify unused images/media yang tidak digunakan di posts/pages",
+          "Verify files tidak digunakan sebelum delete",
+          "Backup sebelum delete",
+          "Delete unused media files",
+          "WARNING: Jangan delete active theme/plugin files atau images yang digunakan"
+        ]
+      }
+    ],
+    "safe_cleanup_items": [
+      {
+        "item": "Email Archive",
+        "location": "/home2/mbikedah/mail/",
+        "safe": true,
+        "recommendation": "Archive emails >6 bulan atau 1 tahun ke local backup, kemudian delete dari server"
+      },
+      {
+        "item": "WordPress Cache",
+        "location": "/home2/mbikedah/public_html/wp-content/cache/",
+        "safe": true,
+        "recommendation": "Clear via plugin - akan regenerate automatically"
+      },
+      {
+        "item": "Log Files",
+        "location": "/home2/mbikedah/logs/",
+        "safe": true,
+        "recommendation": "Rotate atau compress old logs - tidak affect functionality"
+      },
+      {
+        "item": "Temp Files",
+        "location": "/home2/mbikedah/tmp/",
+        "safe": true,
+        "recommendation": "Clear temporary files - akan regenerate jika perlu"
+      },
+      {
+        "item": "cPanel Cache",
+        "location": "/home2/mbikedah/.cpanel/datastore",
+        "safe": true,
+        "recommendation": "Safe untuk clear - cPanel akan regenerate"
+      }
+    ],
+    "do_not_delete": [
+      "Active WordPress theme files",
+      "Active WordPress plugin files",
+      "Images/media yang digunakan di website",
+      "Database files",
+      "wp-config.php dan core WordPress files",
+      "Active email folders (Inbox, Sent, Drafts)",
+      "Email yang belum di-backup"
+    ],
+    "target_goal": {
+      "current_free_space": "40GB",
+      "target_free_space": "87GB (20% of 434GB)",
+      "required_cleanup": "47GB minimum",
+      "recommended_approach": "Focus pada Email cleanup (Priority 1) untuk achieve target dengan selamat"
+    },
+    "conclusion": "Email directory (73GB) adalah penyumbang terbesar dan paling selamat untuk cleanup. WordPress cleanup tidak recommended sebagai primary solution kerana size kecil (2.9GB) dan high risk jika salah delete. Best approach: Archive dan delete old emails untuk free 50-60GB tanpa affect WordPress operations."
+  },
+  "backup_status": [
+    {
+      "item": "Backup Schedule",
+      "value_status": "cPanel managed backup",
+      "condition": "ACTIVE",
+      "notes": "Backup dikendalikan oleh cPanel, perlu verify schedule dan retention policy"
+    },
+    {
+      "item": "Backup Location",
+      "value_status": "cPanel backup system",
+      "condition": "SECURE",
+      "notes": "Backup location perlu disahkan melalui cPanel interface"
+    },
+    {
+      "item": "Database Backup",
+      "value_status": "Database: mbikedah_db2020",
+      "condition": "UNKNOWN",
+      "notes": "Perlu verify database backup status melalui cPanel atau MySQL dump schedule"
+    },
+    {
+      "item": "Website Backup",
+      "value_status": "public_html: 2.9GB",
+      "condition": "NORMAL",
+      "notes": "Website size manageable untuk backup operations"
+    }
+  ],
+  "security_checks": [
+    {
+      "component": "SSH Access",
+      "measured_value": "SSH Port: 55000, Key-based authentication active",
+      "status": "OK",
+      "notes": "SSH menggunakan non-standard port dan key authentication - good security practice"
+    },
+    {
+      "component": "Failed Login Attempts",
+      "value_status": "20 failed login attempts since last successful login",
+      "status": "WARNING",
+      "notes": "Multiple failed login attempts detected. Perlu monitor dan consider fail2ban atau similar protection"
+    },
+    {
+      "component": "File Permissions",
+      "measured_value": "Some world-writable files found in public_html",
+      "status": "WARNING",
+      "notes": "Perlu review file permissions untuk security. World-writable files adalah security risk"
+    },
+    {
+      "component": "WordPress Debug Mode",
+      "value_status": "WP_DEBUG: true (enabled)",
+      "status": "WARNING",
+      "notes": "Debug mode enabled di production - perlu disable untuk security dan performance"
+    }
+  ],
+  "issues_found": [
+    "CRITICAL: Root partition disk space hanya 40GB free (91% used) - perlu cleanup segera. Analisis menunjukkan Email directory (73GB) adalah penyumbang terbesar dan paling selamat untuk cleanup tanpa affect WordPress.",
+    "CRITICAL: Mailbox sangat besar (73GB) - mengambil ~20% dari total disk space. Recommended: Archive old emails (>6 bulan) ke local backup, kemudian delete dari server. Expected savings: 50-60GB dengan ZERO impact pada WordPress.",
+    "WARNING: Load average tinggi (8-12) menunjukkan server sedang sibuk - perlu investigate resource-intensive processes",
+    "WARNING: PHP 7.4.33 sudah EOL (End of Life) - perlu upgrade ke PHP 8.1 atau 8.2 untuk security updates",
+    "WARNING: WP_DEBUG enabled di production - perlu disable untuk security dan performance",
+    "WARNING: Multiple failed SSH login attempts (20 attempts) - perlu enhance security dengan fail2ban",
+    "WARNING: Some world-writable files detected di public_html - perlu review permissions untuk security",
+    "INFO: WordPress directory (2.9GB) size normal tetapi cleanup tidak recommended sebagai primary solution kerana high risk jika salah delete files"
+  ],
+  "recommendations": [
+    "CRITICAL - PRIORITY 1: Cleanup Email directory (73GB) - Archive old emails (>6 bulan) ke local backup, kemudian delete dari server. Expected savings: 50-60GB. ZERO impact pada WordPress. Risk: LOW jika backup dulu.",
+    "CRITICAL - PRIORITY 2: Cleanup disk space pada root partition - target: sekurang-kurangnya 20% free space (87GB). Focus pada Email cleanup untuk achieve target dengan selamat.",
+    "PENTING: Upgrade PHP dari 7.4.33 ke PHP 8.1 atau 8.2 untuk security updates dan performance (PHP 7.4 sudah EOL)",
+    "PENTING: Disable WP_DEBUG di production dengan set WP_DEBUG ke false dalam wp-config.php untuk security",
+    "PENTING: Clear WordPress cache dan rotate log files - Expected savings: 100-500MB, ZERO impact, Risk: LOW",
+    "MONITORING: Investigate high load average (8-12) - check untuk resource-intensive processes yang menyebabkan server sibuk",
+    "SECURITY: Implement fail2ban atau similar untuk protect dari brute force SSH attacks (20 failed attempts detected)",
+    "SECURITY: Review dan fix file permissions - remove world-writable permissions pada sensitive files di public_html",
+    "BACKUP: Verify cPanel backup schedule dan test restore procedure sebelum melakukan email cleanup",
+    "MAINTENANCE: Setup automated disk space monitoring alerts untuk prevent future disk space issues",
+    "OPTIMIZATION: Review WordPress plugins - disable unused plugins untuk reduce load average",
+    "NOTE: WordPress cleanup (2.9GB) tidak recommended sebagai primary solution - size kecil dan high risk. Focus pada Email cleanup untuk maximum impact dengan minimum risk."
+  ]
+}
+

@@ -62,8 +62,11 @@ jspm_packages/
 
 # Backup folder
 backup/
+backups/
 sql/
 *_bak*/
+*.sql.gz
+*.dump
 mbiclicks-v2-review.zip
 make zip file.txt
 
@@ -71,7 +74,6 @@ make zip file.txt
 *.xlsx
 *.xls
 *.sh
-preventive_maintenance/
 
 # Build directories
 build/
